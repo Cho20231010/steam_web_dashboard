@@ -20,12 +20,9 @@ function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="sidebar-brand">
+        <div className="sidebar-brand logo-only">
           <img src="/hidden-coders-logo.png" alt="Hidden Coders Logo" />
-          <div>
-            <strong>GameInsight</strong>
-            <span>Hidden Coders</span>
-          </div>
+          <strong>Hidden Coders</strong>
         </div>
 
         <nav className="sidebar-nav">

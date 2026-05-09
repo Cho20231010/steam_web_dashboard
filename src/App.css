@@ -19,6 +19,11 @@
   --red: #e56f63;
   --red-soft: #fff0ee;
   --shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+
+  /* 로고/사이드바 크기 */
+  --sidebar-width: 240px;
+  --logo-width: 200px;
+  --logo-height: 86px;
 }
 
 body {
@@ -47,23 +52,27 @@ button {
 }
 
 .sidebar {
-  width: 170px;
+  width: var(--sidebar-width);
   background: linear-gradient(180deg, var(--navy-1), var(--navy-2));
   color: white;
-  padding: 18px 12px;
+  padding: 20px 14px;
   flex-shrink: 0;
 }
 
 .large-brand {
-  margin-bottom: 22px;
+  width: 100%;
+  height: 92px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 6px 0;
 }
 
 .large-brand img {
-  width: 100%;
-  max-width: 150px;
-  height: auto;
+  width: var(--logo-width);
+  height: var(--logo-height);
   display: block;
-  margin: 0 auto;
   object-fit: contain;
 }
 
@@ -524,6 +533,16 @@ button {
     width: 100%;
   }
 
+  .large-brand {
+    height: 78px;
+    margin-bottom: 14px;
+  }
+
+  .large-brand img {
+    width: 150px;
+    height: 64px;
+  }
+
   .sidebar-nav {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -548,6 +567,15 @@ button {
 }
 
 @media (max-width: 520px) {
+  .large-brand {
+    height: 70px;
+  }
+
+  .large-brand img {
+    width: 130px;
+    height: 56px;
+  }
+
   .top-item {
     grid-template-columns: 30px 60px 1fr;
   }

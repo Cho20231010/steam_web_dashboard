@@ -559,7 +559,11 @@ function getGameGenre(game: Game) {
 }
 
 function getTotalReviews(game: Game) {
-  return toNumber(game.positive_reviews) + toNumber(game.negative_reviews)
+  return (
+    toNumber(game.positive_reviews) +
+    toNumber(game.neutral_reviews) +
+    toNumber(game.negative_reviews)
+  )
 }
 
 function getPositiveRate(game: Game) {

@@ -50,7 +50,6 @@ button {
   min-height: 100vh;
 }
 
-/* 사이드바 */
 .sidebar {
   width: var(--sidebar-width);
   background: linear-gradient(180deg, var(--navy-1), var(--navy-2));
@@ -102,13 +101,11 @@ button {
   color: #ffffff;
 }
 
-/* 메인 공통 */
 .main {
   flex: 1;
   padding: 28px 22px 30px;
 }
 
-/* 홈 화면 */
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -499,7 +496,6 @@ button {
   border-color: #f2c7c7;
 }
 
-/* 리뷰 웹페이지 부분 */
 .review-page {
   width: 100%;
 }
@@ -925,7 +921,6 @@ button {
   text-align: center;
 }
 
-/* 반응형 */
 @media (max-width: 1200px) {
   .summary-grid {
     grid-template-columns: repeat(2, 1fr);

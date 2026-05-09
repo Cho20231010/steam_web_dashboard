@@ -441,9 +441,9 @@ function ReviewPage() {
           <h2>주요 토픽 키워드</h2>
 
           <div className="keyword-cloud">
-            {topicKeywords.map((keyword) => (
+            {topicKeywords.map((keyword, index) => (
               <span
-                key={`${keyword.label}-${keyword.percent}`}
+                key={`${keyword.label}-${keyword.percent}-${index}`}
                 className={`keyword-size-${keyword.size}`}
                 title={`${keyword.percent.toFixed(1)}%`}
               >
@@ -709,112 +709,148 @@ function normalizeTopicKeywords(topics: TopicAnalysis[]): TopicKeyword[] {
   if (!topics.length) {
     return [
       { label: '게임플레이', size: 5, percent: 0 },
-      { label: '플레이 시간', size: 4, percent: 0 },
-      { label: '스토리·전투', size: 4, percent: 0 },
-      { label: '협동/재미', size: 3, percent: 0 },
-      { label: '상점/기타', size: 2, percent: 0 },
+      { label: '플레이', size: 4, percent: 0 },
+      { label: '게임', size: 4, percent: 0 },
+      { label: '스토리', size: 3, percent: 0 },
+      { label: '전투', size: 3, percent: 0 },
+      { label: '재미', size: 2, percent: 0 },
+      { label: '협동', size: 2, percent: 0 },
+      { label: '플레이 시간', size: 1, percent: 0 },
     ]
   }
 
-  return [...topics]
-    .sort(
-      (a, b) =>
-        getTopicWeightPercent(b) -
-        getTopicWeightPercent(a),
-    )
-    .slice(0, 5)
-    .map((topic, index) => ({
-      label: getTopicKoreanLabel(topic),
+  const keywordMap = new Map<string, number>()
+
+  topics.forEach((topic) => {
+    const topicWeight = getTopicWeightPercent(topic)
+    const keywords = extractTopicKeywords(topic)
+
+    keywords.forEach((keyword, keywordIndex) => {
+      const koreanKeyword = convertKeywordToKorean(keyword)
+
+      if (!koreanKeyword) return
+
+      const score = Math.max(topicWeight - keywordIndex * 0.8, 1)
+      const currentScore = keywordMap.get(koreanKeyword) ?? 0
+
+      keywordMap.set(koreanKeyword, currentScore + score)
+    })
+  })
+
+  const normalizedKeywords = Array.from(keywordMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 14)
+    .map(([label, score], index) => ({
+      label,
       size: getKeywordSize(index),
-      percent: getTopicWeightPercent(topic),
+      percent: score,
     }))
+
+  if (normalizedKeywords.length > 0) {
+    return normalizedKeywords
+  }
+
+  return [
+    { label: '게임플레이', size: 5, percent: 0 },
+    { label: '플레이', size: 4, percent: 0 },
+    { label: '게임', size: 4, percent: 0 },
+    { label: '스토리', size: 3, percent: 0 },
+    { label: '전투', size: 3, percent: 0 },
+    { label: '재미', size: 2, percent: 0 },
+    { label: '협동', size: 2, percent: 0 },
+  ]
 }
 
-function getTopicKoreanLabel(topic: TopicAnalysis) {
-  const topicId = Number(topic.topic_id ?? topic.topicId)
-  const keywords = extractTopicKeywords(topic)
-  const keywordText = keywords.join(' ').toLowerCase()
+function convertKeywordToKorean(keyword: string) {
+  const text = keyword.trim().toLowerCase()
 
-  const topicIdMap: Record<number, string> = {
-    0: '스토리·전투',
-    1: '상점/기타',
-    2: '게임플레이',
-    3: '플레이 시간',
-    4: '협동/재미',
+  const ignoredKeywords = new Set([
+    'don',
+    'dont',
+    'de',
+    'doi',
+    'que',
+    'just',
+    'really',
+    'one',
+    'get',
+    'make',
+    'nt',
+  ])
+
+  if (!text || ignoredKeywords.has(text)) {
+    return ''
   }
 
-  if (topicIdMap[topicId]) {
-    return topicIdMap[topicId]
+  const keywordMap: Record<string, string> = {
+    game: '게임',
+    games: '게임',
+    gameplay: '게임플레이',
+    play: '플레이',
+    playing: '플레이',
+    player: '플레이어',
+    players: '플레이어',
+
+    great: '호평',
+    good: '긍정 평가',
+    like: '선호',
+    love: '높은 만족도',
+    fun: '재미',
+
+    story: '스토리',
+    narrative: '서사',
+    character: '캐릭터',
+    characters: '캐릭터',
+    quest: '퀘스트',
+    lore: '세계관',
+
+    combat: '전투',
+    battle: '전투',
+    boss: '보스전',
+    weapon: '무기',
+    weapons: '무기',
+    skill: '스킬',
+
+    friends: '협동',
+    friend: '협동',
+    coop: '협동',
+    multiplayer: '멀티플레이',
+
+    time: '플레이 시간',
+    hours: '플레이 시간',
+    hour: '플레이 시간',
+    long: '장기 플레이',
+
+    graphic: '그래픽',
+    graphics: '그래픽',
+    visual: '비주얼',
+    visuals: '비주얼',
+    art: '아트',
+    design: '디자인',
+
+    sound: '사운드',
+    music: '음악',
+    audio: '오디오',
+    voice: '음성',
+
+    shop: '상점',
+    price: '가격',
+    money: '가격',
+    item: '아이템',
+    items: '아이템',
+    dlc: 'DLC',
+
+    bug: '버그',
+    server: '서버',
+    lag: '렉',
+    crash: '오류',
+    performance: '성능',
+    optimization: '최적화',
+
+    peak: '동시 접속',
   }
 
-  if (
-    keywordText.includes('story') ||
-    keywordText.includes('combat') ||
-    keywordText.includes('quest') ||
-    keywordText.includes('character') ||
-    keywordText.includes('lore')
-  ) {
-    return '스토리·전투'
-  }
-
-  if (
-    keywordText.includes('friend') ||
-    keywordText.includes('coop') ||
-    keywordText.includes('multi') ||
-    keywordText.includes('fun')
-  ) {
-    return '협동/재미'
-  }
-
-  if (
-    keywordText.includes('time') ||
-    keywordText.includes('hour') ||
-    keywordText.includes('long') ||
-    keywordText.includes('playtime')
-  ) {
-    return '플레이 시간'
-  }
-
-  if (
-    keywordText.includes('shop') ||
-    keywordText.includes('price') ||
-    keywordText.includes('money') ||
-    keywordText.includes('item') ||
-    keywordText.includes('dlc')
-  ) {
-    return '상점/기타'
-  }
-
-  if (
-    keywordText.includes('graphic') ||
-    keywordText.includes('visual') ||
-    keywordText.includes('art') ||
-    keywordText.includes('design') ||
-    keywordText.includes('animation')
-  ) {
-    return '그래픽'
-  }
-
-  if (
-    keywordText.includes('sound') ||
-    keywordText.includes('music') ||
-    keywordText.includes('audio') ||
-    keywordText.includes('voice')
-  ) {
-    return '사운드'
-  }
-
-  if (
-    keywordText.includes('bug') ||
-    keywordText.includes('server') ||
-    keywordText.includes('lag') ||
-    keywordText.includes('crash') ||
-    keywordText.includes('performance')
-  ) {
-    return '성능/최적화'
-  }
-
-  return '게임플레이'
+  return keywordMap[text] ?? ''
 }
 
 function extractTopicKeywords(topic: TopicAnalysis) {
@@ -847,8 +883,9 @@ function getTopicWeightPercent(topic: TopicAnalysis) {
 function getKeywordSize(index: number) {
   if (index === 0) return 5
   if (index <= 2) return 4
-  if (index === 3) return 3
-  return 2
+  if (index <= 5) return 3
+  if (index <= 9) return 2
+  return 1
 }
 
 function getGameId(game: Game) {

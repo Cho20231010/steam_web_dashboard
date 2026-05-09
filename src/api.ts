@@ -100,6 +100,7 @@ export type SentimentAnalysis = {
 export type TopicAnalysis = {
   topic_id?: number
   topicId?: number
+
   keywords?: string[]
   top_keywords?: string[]
   topKeywords?: string[]

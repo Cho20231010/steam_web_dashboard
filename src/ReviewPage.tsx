@@ -46,6 +46,7 @@ function ReviewPage() {
     null,
   )
   const [selectedGameId, setSelectedGameId] = useState('')
+  const [gameSearchKeyword, setGameSearchKeyword] = useState('')
   const [selectedGameDetail, setSelectedGameDetail] = useState<Game | null>(null)
   const [selectedGameSentiment, setSelectedGameSentiment] =
     useState<SentimentAnalysis | null>(null)
@@ -86,6 +87,35 @@ function ReviewPage() {
 
     loadReviewData()
   }, [])
+
+  const reviewGames = useMemo(() => normalizeReviewGames(games), [games])
+
+  const filteredReviewGames = useMemo(() => {
+    const keyword = gameSearchKeyword.trim().toLowerCase()
+
+    if (!keyword) {
+      return reviewGames
+    }
+
+    return reviewGames.filter((game) =>
+      game.name.toLowerCase().includes(keyword),
+    )
+  }, [gameSearchKeyword, reviewGames])
+
+  useEffect(() => {
+    const keyword = gameSearchKeyword.trim()
+
+    if (!keyword) return
+    if (filteredReviewGames.length === 0) return
+
+    const selectedGameExists = filteredReviewGames.some(
+      (game) => game.id === selectedGameId,
+    )
+
+    if (!selectedGameExists) {
+      setSelectedGameId(filteredReviewGames[0].id)
+    }
+  }, [filteredReviewGames, gameSearchKeyword, selectedGameId])
 
   useEffect(() => {
     async function loadSelectedGameData() {
@@ -129,8 +159,6 @@ function ReviewPage() {
 
     loadSelectedGameData()
   }, [selectedGameId])
-
-  const reviewGames = useMemo(() => normalizeReviewGames(games), [games])
 
   const selectedGameFromList = useMemo(() => {
     return reviewGames.find((game) => game.id === selectedGameId) ?? reviewGames[0]
@@ -208,17 +236,23 @@ function ReviewPage() {
 
   const positiveTopGames = useMemo(() => {
     return reviewGames
-      .filter((game) => game.reviewCount > 0 && game.positiveRate > 0)
+      .filter((game) => game.positiveRate > 0)
       .sort((a, b) => b.positiveRate - a.positiveRate)
       .slice(0, 5)
   }, [reviewGames])
 
   const negativeTopGames = useMemo(() => {
     return reviewGames
-      .filter((game) => game.reviewCount > 0 && game.negativeRate > 0)
+      .filter((game) => game.negativeRate > 0)
       .sort((a, b) => b.negativeRate - a.negativeRate)
       .slice(0, 5)
   }, [reviewGames])
+
+  const selectedOptionValue = filteredReviewGames.some(
+    (game) => game.id === selectedGame?.id,
+  )
+    ? selectedGame?.id ?? ''
+    : ''
 
   if (loading) {
     return (
@@ -288,16 +322,28 @@ function ReviewPage() {
         <article className="review-card selected-game-card">
           <h2>선택한 게임</h2>
 
+          <input
+            className="game-search-input"
+            type="text"
+            value={gameSearchKeyword}
+            onChange={(event) => setGameSearchKeyword(event.target.value)}
+            placeholder="게임 이름 검색"
+          />
+
           <select
             className="game-select"
-            value={selectedGame?.id ?? ''}
+            value={selectedOptionValue}
             onChange={(event) => setSelectedGameId(event.target.value)}
           >
-            {reviewGames.map((game) => (
-              <option key={game.id} value={game.id}>
-                {game.name}
-              </option>
-            ))}
+            {filteredReviewGames.length > 0 ? (
+              filteredReviewGames.map((game) => (
+                <option key={game.id} value={game.id}>
+                  {game.name}
+                </option>
+              ))
+            ) : (
+              <option value="">검색 결과가 없습니다.</option>
+            )}
           </select>
 
           <div className="selected-game-image">
@@ -617,7 +663,9 @@ function normalizeSentiment(
     const ratioNegative = (negativeCount / countTotal) * 100
 
     const preferredTotal =
-      fallbackTotalCount > countTotal * 5 ? fallbackTotalCount : explicitTotalCount || countTotal
+      fallbackTotalCount > countTotal * 5
+        ? fallbackTotalCount
+        : explicitTotalCount || countTotal
 
     if (preferredTotal > countTotal) {
       return {
@@ -706,7 +754,9 @@ function createFallbackSentiment(game?: ReviewGameView): NormalizedSentiment {
   }
 
   const neutral =
-    game.neutralRate > 0 ? game.neutralRate : Math.max(0, 100 - game.positiveRate - game.negativeRate)
+    game.neutralRate > 0
+      ? game.neutralRate
+      : Math.max(0, 100 - game.positiveRate - game.negativeRate)
 
   return {
     positive: game.positiveRate,
@@ -796,6 +846,7 @@ function mapKeywordToCategory(value: string): string | null {
     'elden',
     'ring',
     'game',
+    'games',
   ])
 
   if (uselessKeywords.has(text)) {

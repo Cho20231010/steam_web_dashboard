@@ -25,6 +25,7 @@ type ReviewGameView = {
   positiveRate: number
   neutralRate: number
   negativeRate: number
+  averagePlaytime: number
   image?: string
 }
 
@@ -224,12 +225,11 @@ function ReviewPage() {
   }, [selectedGame, selectedGameSentiment])
 
   const topicKeywords = useMemo(() => {
-    if (selectedGameTopics.length > 0) {
-      return normalizeTopicKeywords(selectedGameTopics)
-    }
+    const targetTopics =
+      selectedGameTopics.length > 0 ? selectedGameTopics : globalTopics
 
-    return normalizeTopicKeywords(globalTopics)
-  }, [selectedGameTopics, globalTopics])
+    return normalizeTopicKeywords(targetTopics, selectedGame, selectedValues)
+  }, [selectedGameTopics, globalTopics, selectedGame, selectedValues])
 
   const positiveTopGames = useMemo(() => {
     return [...reviewGames]
@@ -552,6 +552,7 @@ function normalizeReviewGames(games: Game[]): ReviewGameView[] {
       positiveRate,
       neutralRate,
       negativeRate,
+      averagePlaytime: toNumber(game.average_playtime),
       image: gameId
         ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${gameId}/header.jpg`
         : undefined,
@@ -705,21 +706,21 @@ function createGameSentiment(game?: ReviewGameView): NormalizedSentiment {
   }
 }
 
-function normalizeTopicKeywords(topics: TopicAnalysis[]): TopicKeyword[] {
-  if (!topics.length) {
-    return [
-      { label: '게임플레이', size: 5, percent: 0 },
-      { label: '플레이', size: 4, percent: 0 },
-      { label: '게임', size: 4, percent: 0 },
-      { label: '스토리', size: 3, percent: 0 },
-      { label: '전투', size: 3, percent: 0 },
-      { label: '재미', size: 2, percent: 0 },
-      { label: '협동', size: 2, percent: 0 },
-      { label: '플레이 시간', size: 1, percent: 0 },
-    ]
+function normalizeTopicKeywords(
+  topics: TopicAnalysis[],
+  selectedGame?: ReviewGameView,
+  selectedSentiment?: NormalizedSentiment,
+): TopicKeyword[] {
+  const keywordMap = new Map<string, number>()
+
+  function addKeyword(label: string, score: number) {
+    if (!label) return
+    keywordMap.set(label, (keywordMap.get(label) ?? 0) + score)
   }
 
-  const keywordMap = new Map<string, number>()
+  if (selectedGame) {
+    addGameBasedKeywords(selectedGame, selectedSentiment, addKeyword)
+  }
 
   topics.forEach((topic) => {
     const topicWeight = getTopicWeightPercent(topic)
@@ -731,9 +732,7 @@ function normalizeTopicKeywords(topics: TopicAnalysis[]): TopicKeyword[] {
       if (!koreanKeyword) return
 
       const score = Math.max(topicWeight - keywordIndex * 0.8, 1)
-      const currentScore = keywordMap.get(koreanKeyword) ?? 0
-
-      keywordMap.set(koreanKeyword, currentScore + score)
+      addKeyword(koreanKeyword, score)
     })
   })
 
@@ -759,6 +758,85 @@ function normalizeTopicKeywords(topics: TopicAnalysis[]): TopicKeyword[] {
     { label: '재미', size: 2, percent: 0 },
     { label: '협동', size: 2, percent: 0 },
   ]
+}
+
+function addGameBasedKeywords(
+  game: ReviewGameView,
+  sentiment: NormalizedSentiment | undefined,
+  addKeyword: (label: string, score: number) => void,
+) {
+  const genreLabels = convertGenreTextToKoreanKeywords(game.genre)
+
+  genreLabels.forEach((label, index) => {
+    addKeyword(label, 95 - index * 5)
+  })
+
+  if (game.totalReviews >= 100000) {
+    addKeyword('리뷰 많음', 88)
+  } else if (game.totalReviews >= 10000) {
+    addKeyword('리뷰 활발', 78)
+  }
+
+  if (game.averagePlaytime >= 3000) {
+    addKeyword('장기 플레이', 86)
+  } else if (game.averagePlaytime >= 1000) {
+    addKeyword('플레이 시간', 76)
+  }
+
+  const positive = sentiment?.positive ?? game.positiveRate
+  const neutral = sentiment?.neutral ?? game.neutralRate
+  const negative = sentiment?.negative ?? game.negativeRate
+
+  if (positive >= 85) {
+    addKeyword('호평', 84)
+    addKeyword('높은 만족도', 76)
+  } else if (positive >= 70) {
+    addKeyword('긍정 평가', 74)
+  }
+
+  if (neutral >= 12) {
+    addKeyword('중립 반응', 72)
+  }
+
+  if (negative >= 30) {
+    addKeyword('부정 이슈', 84)
+    addKeyword('개선 필요', 74)
+  } else if (negative >= 15) {
+    addKeyword('불만 요소', 68)
+  }
+}
+
+function convertGenreTextToKoreanKeywords(genre: string) {
+  const lower = genre.toLowerCase()
+
+  const genreKeywordMap: Array<[string, string]> = [
+    ['action', '액션'],
+    ['adventure', '어드벤처'],
+    ['rpg', 'RPG'],
+    ['role-playing', 'RPG'],
+    ['strategy', '전략'],
+    ['simulation', '시뮬레이션'],
+    ['indie', '인디'],
+    ['casual', '캐주얼'],
+    ['sports', '스포츠'],
+    ['racing', '레이싱'],
+    ['free to play', '무료 플레이'],
+    ['massively multiplayer', '멀티플레이'],
+    ['multiplayer', '멀티플레이'],
+    ['early access', '앞서 해보기'],
+    ['horror', '공포'],
+    ['survival', '생존'],
+    ['shooter', '슈팅'],
+    ['puzzle', '퍼즐'],
+    ['platformer', '플랫폼'],
+    ['fighting', '격투'],
+  ]
+
+  const labels = genreKeywordMap
+    .filter(([keyword]) => lower.includes(keyword))
+    .map(([, label]) => label)
+
+  return Array.from(new Set(labels))
 }
 
 function convertKeywordToKorean(keyword: string) {

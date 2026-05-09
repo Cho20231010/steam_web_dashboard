@@ -94,40 +94,7 @@ button {
 
 .main {
   flex: 1;
-  padding: 24px 22px 30px;
-}
-
-.page-header {
-  margin-bottom: 18px;
-  text-align: center;
-}
-
-.page-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 20px;
-  border-radius: 999px;
-  background: var(--blue);
-  color: white;
-  font-size: 14px;
-  font-weight: 800;
-  margin-bottom: 14px;
-}
-
-.page-title-box h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-}
-
-.page-title-box p {
-  margin: 10px auto 0;
-  max-width: 760px;
-  color: var(--sub);
-  font-size: 15px;
-  line-height: 1.6;
+  padding: 28px 22px 30px;
 }
 
 .summary-grid {
@@ -367,18 +334,22 @@ button {
   display: flex;
   justify-content: space-between;
   margin-bottom: 7px;
+  gap: 12px;
 }
 
 .topic-header span {
   color: var(--text);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
+  line-height: 1.35;
+  word-break: keep-all;
 }
 
 .topic-header strong {
   font-size: 13px;
   font-weight: 800;
   color: #111827;
+  white-space: nowrap;
 }
 
 .topic-bar {
@@ -395,7 +366,6 @@ button {
   border-radius: inherit;
 }
 
-/* 상관관계 인사이트 영역 */
 .insight-card {
   padding: 18px 18px 20px;
 }
@@ -441,7 +411,7 @@ button {
 }
 
 .insight-table td {
-  padding: 16px 20px;
+  padding: 15px 20px;
   border-bottom: 1px solid #edf0f5;
   font-size: 14px;
   vertical-align: middle;
@@ -457,20 +427,22 @@ button {
 }
 
 .col-item {
-  width: 17%;
+  width: 18%;
 }
 
 .col-correlation {
-  width: 16%;
+  width: 15%;
 }
 
 .col-insight {
-  width: 50%;
+  width: 49%;
 }
 
 .insight-label {
   color: #374151;
   font-weight: 800;
+  line-height: 1.5;
+  word-break: keep-all;
 }
 
 .correlation-value {
@@ -498,6 +470,7 @@ button {
   color: #4b5563;
   font-weight: 600;
   line-height: 1.55;
+  word-break: keep-all;
 }
 
 .status-card,

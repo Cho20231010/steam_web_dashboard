@@ -143,17 +143,6 @@ function App() {
       </aside>
 
       <main className="main">
-        <header className="page-header">
-          <span className="page-chip">1. 홈 화면</span>
-          <div className="page-title-box">
-            <h1>홈 대시보드</h1>
-            <p>
-              Steam 게임 시장 데이터를 기반으로 인기 게임, 리뷰 감성, 주요 토픽,
-              상관관계 인사이트를 한눈에 볼 수 있는 메인 화면입니다.
-            </p>
-          </div>
-        </header>
-
         {loading && (
           <section className="status-card">
             <strong>데이터를 불러오는 중입니다...</strong>
@@ -476,53 +465,237 @@ function normalizeSentiment(sentiment: SentimentAnalysis | null) {
 
 function normalizeTopics(topics: TopicAnalysis[]): TopicView[] {
   return topics
-    .map((topic) => {
-      const label =
-        topic.label ??
-        topic.topic ??
-        topic.keyword ??
-        topic.name ??
-        '토픽명 없음'
+    .map((topic, index) => {
+      const label = createTopicLabel(topic, index)
 
       const value = normalizeRatio(
-        topic.value ?? topic.ratio ?? topic.weight ?? topic.percentage,
+        topic.value ??
+          topic.ratio ??
+          topic.weight ??
+          topic.percentage ??
+          topic.percent,
       )
 
-      return { label, value }
+      return {
+        label,
+        value,
+      }
     })
     .sort((a, b) => b.value - a.value)
 }
 
-function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
-  return items.map((item) => {
-    const item1 = item.item1 ?? item.feature_x ?? item.x ?? '항목 1'
-    const item2 = item.item2 ?? item.feature_y ?? item.y ?? '항목 2'
-    const correlation = toNumber(
-      item.correlation ?? item.correlation_coefficient ?? item.coefficient,
-    )
+function createTopicLabel(topic: TopicAnalysis, index: number) {
+  const directName =
+    pickMeaningfulText(
+      topic.topic_name,
+      topic.topicName,
+      topic.topic_label,
+      topic.topicLabel,
+      topic.display_name,
+      topic.label,
+      topic.name,
+      topic.keyword,
+    ) ?? ''
 
-    return {
-      item1,
-      item2,
-      correlation,
-      insight:
-        item.insight ??
-        item.description ??
-        createCorrelationInsight(item1, item2, correlation),
-    }
-  })
+  if (directName) {
+    return formatTopicText(directName)
+  }
+
+  const topicValue =
+    typeof topic.topic === 'string' || typeof topic.topic === 'number'
+      ? String(topic.topic)
+      : ''
+
+  if (topicValue && !isNumericText(topicValue)) {
+    return formatTopicText(topicValue)
+  }
+
+  const keywordName = createKeywordTopicName(
+    topic.keywords ??
+      topic.top_keywords ??
+      topic.topKeywords ??
+      topic.words ??
+      topic.top_words ??
+      topic.topWords ??
+      topic.terms,
+  )
+
+  if (keywordName) {
+    return keywordName
+  }
+
+  const topicId = topic.topic_id ?? topic.topicId ?? topic.topic
+
+  if (topicId !== undefined && topicId !== null && String(topicId).trim() !== '') {
+    return `토픽 ${Number(topicId) + 1 || index + 1}`
+  }
+
+  return `토픽 ${index + 1}`
+}
+
+function createKeywordTopicName(value: unknown) {
+  const words = toKeywordArray(value)
+
+  if (words.length === 0) {
+    return ''
+  }
+
+  return words.slice(0, 3).map(formatTopicText).join(' · ')
+}
+
+function toKeywordArray(value: unknown) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item).trim())
+      .filter((item) => item && !isInvalidText(item))
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(/[,/|·\n]+/)
+      .map((item) => item.trim())
+      .filter((item) => item && !isInvalidText(item))
+  }
+
+  return []
+}
+
+function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
+  return items
+    .map((item) => {
+      const rawItem1 =
+        item.item1 ?? item.feature_x ?? item.x ?? item.variable_1 ?? item.variable1
+      const rawItem2 =
+        item.item2 ?? item.feature_y ?? item.y ?? item.variable_2 ?? item.variable2
+
+      const item1 = formatMetricName(rawItem1 ?? '항목 1')
+      const item2 = formatMetricName(rawItem2 ?? '항목 2')
+
+      const correlation = toNumber(
+        item.correlation ??
+          item.correlation_coefficient ??
+          item.coefficient ??
+          item.value,
+      )
+
+      return {
+        item1,
+        item2,
+        correlation,
+        insight: createCorrelationInsight(item1, item2, correlation),
+      }
+    })
+    .sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation))
 }
 
 function createCorrelationInsight(item1: string, item2: string, correlation: number) {
+  const absValue = Math.abs(correlation)
+
+  if (absValue < 0.1) {
+    return `${item1}와 ${item2} 사이의 뚜렷한 상관관계는 확인되지 않습니다.`
+  }
+
   if (correlation > 0) {
-    return `${item1}이 높을수록 ${item2}도 높아지는 경향이 있습니다.`
+    return `${item1} 값이 높을수록 ${item2}도 함께 높아지는 경향이 있습니다.`
   }
 
-  if (correlation < 0) {
-    return `${item1}이 높아질수록 ${item2}가 낮아지는 경향이 있습니다.`
+  return `${item1} 값이 높아질수록 ${item2}는 낮아지는 경향이 있습니다.`
+}
+
+function formatMetricName(value: unknown) {
+  const raw = String(value ?? '').trim()
+
+  if (!raw) {
+    return '항목'
   }
 
-  return `${item1}와 ${item2} 사이의 뚜렷한 상관관계는 확인되지 않습니다.`
+  const lower = raw.toLowerCase()
+
+  const metricMap: Record<string, string> = {
+    price: '가격',
+    log_price: '가격',
+    original_price: '정가',
+    discount_price: '할인가',
+    is_free: '무료 여부',
+    free: '무료 여부',
+
+    positive_rate: '긍정 비율',
+    positive_ratio: '긍정 리뷰 비율',
+    sentiment_positive_ratio: '긍정 리뷰 비율',
+    sentiment_negative_ratio: '부정 리뷰 비율',
+    sentiment_neutral_ratio: '중립 리뷰 비율',
+    sentiment_compound_mean: '종합 감성 점수',
+    sentiment_score: '감성 점수',
+
+    review_count: '리뷰 수',
+    total_reviews: '총 리뷰 수',
+    reviews: '리뷰 수',
+
+    owners: '보유자 수',
+    owners_value: '보유자 수',
+    estimated_owners: '예상 보유자 수',
+
+    popularity_score: '인기도',
+    ccu: '동시 접속자 수',
+    peak_ccu: '최고 동시 접속자 수',
+    average_playtime: '평균 플레이 시간',
+    median_playtime: '중앙값 플레이 시간',
+  }
+
+  if (metricMap[lower]) {
+    return metricMap[lower]
+  }
+
+  if (lower.startsWith('genre::')) {
+    const genre = raw.replace(/^genre::/i, '').trim()
+    return `${formatTopicText(genre)} 장르`
+  }
+
+  if (lower.startsWith('tag::')) {
+    const tag = raw.replace(/^tag::/i, '').trim()
+    return `${formatTopicText(tag)} 태그`
+  }
+
+  return formatTopicText(raw)
+}
+
+function formatTopicText(value: string) {
+  return value
+    .replaceAll('_', ' ')
+    .replaceAll('-', ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function pickMeaningfulText(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value !== 'string') continue
+
+    const text = value.trim()
+
+    if (!text || isInvalidText(text)) continue
+
+    return text
+  }
+
+  return undefined
+}
+
+function isInvalidText(value: string) {
+  const lower = value.trim().toLowerCase()
+
+  return (
+    lower === 'none' ||
+    lower === 'null' ||
+    lower === 'undefined' ||
+    lower === 'nan' ||
+    lower === '토픽명 없음' ||
+    lower === '이름 없음'
+  )
+}
+
+function isNumericText(value: string) {
+  return /^\d+(\.\d+)?$/.test(value.trim())
 }
 
 function sumReviewCount(games: Game[]) {

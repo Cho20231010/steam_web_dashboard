@@ -49,7 +49,6 @@ export type Game = {
   price?: number | string
   owners?: string
 
-  // 이미지 관련 필드
   header_image?: string
   capsule_image?: string
   image_url?: string
@@ -69,14 +68,29 @@ export type SentimentAnalysis = {
 }
 
 export type TopicAnalysis = {
-  topic?: string
+  topic_id?: number | string
+  topicId?: number | string
+  topic?: string | number
+  topic_name?: string
+  topicName?: string
+  topic_label?: string
+  topicLabel?: string
+  display_name?: string
   label?: string
   keyword?: string
+  keywords?: string | string[]
+  top_keywords?: string | string[]
+  topKeywords?: string | string[]
+  words?: string | string[]
+  top_words?: string | string[]
+  topWords?: string | string[]
+  terms?: string | string[]
   name?: string
   value?: number
   ratio?: number
   weight?: number
   percentage?: number
+  percent?: number
 }
 
 export type CorrelationResult = {
@@ -86,9 +100,14 @@ export type CorrelationResult = {
   feature_y?: string
   x?: string
   y?: string
+  variable_1?: string
+  variable_2?: string
+  variable1?: string
+  variable2?: string
   correlation?: number
   correlation_coefficient?: number
   coefficient?: number
+  value?: number
   insight?: string
   description?: string
 }

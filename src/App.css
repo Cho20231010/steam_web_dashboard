@@ -13,9 +13,11 @@
   --navy-2: #081a31;
   --blue: #5d63f1;
   --blue-soft: #edf0ff;
-  --green: #64c870;
+  --green: #4fc36b;
+  --green-soft: #eaf8ee;
   --gray: #c7cad1;
-  --red: #e67f73;
+  --red: #e56f63;
+  --red-soft: #fff0ee;
   --shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
@@ -166,6 +168,7 @@ button {
   font-size: 24px;
   font-weight: 900;
   letter-spacing: -0.03em;
+  color: #000000;
 }
 
 .content-grid {
@@ -189,6 +192,7 @@ button {
   font-weight: 900;
   text-align: center;
   line-height: 1.3;
+  color: #000000;
 }
 
 .top-list {
@@ -252,6 +256,7 @@ button {
   font-size: 14px;
   font-weight: 900;
   line-height: 1.35;
+  color: #111827;
 }
 
 .top-info span {
@@ -300,6 +305,7 @@ button {
   display: block;
   font-size: 18px;
   font-weight: 900;
+  color: #000000;
 }
 
 .donut-inner span {
@@ -348,6 +354,7 @@ button {
 .legend strong {
   font-size: 14px;
   font-weight: 800;
+  color: #111827;
 }
 
 .topic-list {
@@ -371,6 +378,7 @@ button {
 .topic-header strong {
   font-size: 13px;
   font-weight: 800;
+  color: #111827;
 }
 
 .topic-bar {
@@ -387,44 +395,109 @@ button {
   border-radius: inherit;
 }
 
+/* 상관관계 인사이트 영역 */
+.insight-card {
+  padding: 18px 18px 20px;
+}
+
 .insight-card h2 {
   text-align: left;
   margin-bottom: 14px;
+  color: #000000;
+}
+
+.insight-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #edf0f5;
+  border-radius: 16px;
+  background: #ffffff;
 }
 
 .insight-table {
   width: 100%;
-  border-collapse: collapse;
-}
-
-.insight-table th,
-.insight-table td {
-  padding: 14px 12px;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-  font-size: 14px;
-  vertical-align: middle;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
 }
 
 .insight-table th {
-  background: #f8f9fc;
-  color: var(--sub);
+  background: #f7f8fc;
+  color: #4b5563;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 900;
+  text-align: left;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e7eaf1;
 }
 
-.insight-table tr:last-child td {
+.insight-table th:first-child {
+  border-top-left-radius: 16px;
+}
+
+.insight-table th:last-child {
+  border-top-right-radius: 16px;
+}
+
+.insight-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #edf0f5;
+  font-size: 14px;
+  vertical-align: middle;
+  background: #ffffff;
+}
+
+.insight-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.positive {
-  color: var(--green);
+.insight-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.col-item {
+  width: 17%;
+}
+
+.col-correlation {
+  width: 16%;
+}
+
+.col-insight {
+  width: 50%;
+}
+
+.insight-label {
+  color: #374151;
+  font-weight: 800;
+}
+
+.correlation-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 900;
 }
 
-.negative {
+.correlation-value.positive {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.correlation-value.negative {
   color: var(--red);
-  font-weight: 900;
+  background: var(--red-soft);
+}
+
+.insight-desc {
+  color: #4b5563;
+  font-weight: 600;
+  line-height: 1.55;
 }
 
 .status-card,
@@ -490,6 +563,10 @@ button {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .insight-card h2 {
+    text-align: center;
+  }
 }
 
 @media (max-width: 520px) {
@@ -511,5 +588,9 @@ button {
   .top-score {
     grid-column: 3;
     justify-self: start;
+  }
+
+  .insight-table {
+    min-width: 680px;
   }
 }

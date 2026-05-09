@@ -277,28 +277,52 @@ function App() {
               <h2>상관관계 인사이트</h2>
 
               {insightList.length > 0 ? (
-                <table className="insight-table">
-                  <thead>
-                    <tr>
-                      <th>항목 1</th>
-                      <th>항목 2</th>
-                      <th>상관계수</th>
-                      <th>인사이트</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {insightList.map((item, index) => (
-                      <tr key={`${item.item1}-${item.item2}-${index}`}>
-                        <td>{item.item1}</td>
-                        <td>{item.item2}</td>
-                        <td className={item.correlation >= 0 ? 'positive' : 'negative'}>
-                          {item.correlation.toFixed(2)}
-                        </td>
-                        <td>{item.insight}</td>
+                <div className="insight-table-wrap">
+                  <table className="insight-table">
+                    <colgroup>
+                      <col className="col-item" />
+                      <col className="col-item" />
+                      <col className="col-correlation" />
+                      <col className="col-insight" />
+                    </colgroup>
+
+                    <thead>
+                      <tr>
+                        <th>항목 1</th>
+                        <th>항목 2</th>
+                        <th>상관계수</th>
+                        <th>인사이트</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+
+                    <tbody>
+                      {insightList.map((item, index) => (
+                        <tr key={`${item.item1}-${item.item2}-${index}`}>
+                          <td>
+                            <span className="insight-label">{item.item1}</span>
+                          </td>
+                          <td>
+                            <span className="insight-label">{item.item2}</span>
+                          </td>
+                          <td>
+                            <span
+                              className={
+                                item.correlation >= 0
+                                  ? 'correlation-value positive'
+                                  : 'correlation-value negative'
+                              }
+                            >
+                              {item.correlation.toFixed(2)}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="insight-desc">{item.insight}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <EmptyText text="상관관계 데이터가 없습니다." />
               )}
@@ -484,9 +508,21 @@ function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
       insight:
         item.insight ??
         item.description ??
-        `${item1}와 ${item2} 사이의 상관관계를 확인할 수 있습니다.`,
+        createCorrelationInsight(item1, item2, correlation),
     }
   })
+}
+
+function createCorrelationInsight(item1: string, item2: string, correlation: number) {
+  if (correlation > 0) {
+    return `${item1}이 높을수록 ${item2}도 높아지는 경향이 있습니다.`
+  }
+
+  if (correlation < 0) {
+    return `${item1}이 높아질수록 ${item2}가 낮아지는 경향이 있습니다.`
+  }
+
+  return `${item1}와 ${item2} 사이의 뚜렷한 상관관계는 확인되지 않습니다.`
 }
 
 function sumReviewCount(games: Game[]) {
@@ -545,28 +581,42 @@ function getSteamHeaderImage(appId?: string) {
 
 function toNumber(value: unknown) {
   if (typeof value === 'number') return value
+
   if (typeof value === 'string') {
     const parsed = Number(value.replaceAll(',', '').replace('%', ''))
     return Number.isFinite(parsed) ? parsed : 0
   }
+
   return 0
 }
 
 function normalizeRatio(value: unknown) {
   const number = toNumber(value)
-  if (number <= 1 && number > 0) return number * 100
+
+  if (number <= 1 && number > 0) {
+    return number * 100
+  }
+
   return number
 }
 
 function formatNumber(value: unknown) {
   const number = toNumber(value)
-  if (!number) return '-'
+
+  if (!number) {
+    return '-'
+  }
+
   return number.toLocaleString()
 }
 
 function formatPercent(value: unknown) {
   const number = normalizeRatio(value)
-  if (!number) return '-'
+
+  if (!number) {
+    return '-'
+  }
+
   return `${number.toFixed(1)}%`
 }
 

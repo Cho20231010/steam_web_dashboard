@@ -1,17 +1,27 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://steam-market-dashboard-production.up.railway.app'
 
-if (!API_BASE_URL) {
-  throw new Error('VITE_API_BASE_URL 환경변수가 설정되지 않았습니다.')
-}
-
-async function request<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`)
-
-  if (!response.ok) {
-    throw new Error(`API 요청 실패: ${path} / status: ${response.status}`)
-  }
-
-  return response.json()
+export type Game = {
+  game_id?: number
+  id?: number
+  app_id?: number
+  appid?: number
+  steam_appid?: number
+  name?: string
+  title?: string
+  genre?: string | null
+  genres?: string[] | string | null
+  price?: number | null
+  owners?: string | null
+  positive_reviews?: number
+  negative_reviews?: number
+  average_playtime?: number | null
+  image_url?: string
+  image?: string
+  header_image?: string
+  capsule_image?: string
+  [key: string]: unknown
 }
 
 export type DashboardSummary = {
@@ -27,128 +37,98 @@ export type DashboardSummary = {
   top_genre?: string
   topGenre?: string
   representative_genre?: string
-}
-
-export type Game = {
-  id?: number | string
-  appid?: number | string
-  app_id?: number | string
-  appId?: number | string
-  steam_appid?: number | string
-  steamAppId?: number | string
-  game_id?: number | string
-  name?: string
-  title?: string
-  genre?: string
-  genres?: string | string[]
-  positive_rate?: number
-  positiveRate?: number
-  score?: number | string
-  review_count?: number
-  total_reviews?: number
-  price?: number | string
-  owners?: string
-
-  header_image?: string
-  capsule_image?: string
-  image_url?: string
-  image?: string
+  [key: string]: unknown
 }
 
 export type SentimentAnalysis = {
   positive?: number
   neutral?: number
   negative?: number
+  total?: number
   positive_ratio?: number
   neutral_ratio?: number
   negative_ratio?: number
   positiveRate?: number
   neutralRate?: number
   negativeRate?: number
+  reliability?: string
+  warning?: string | null
+  [key: string]: unknown
 }
 
 export type TopicAnalysis = {
-  topic_id?: number | string
-  topicId?: number | string
-  topic?: string | number
-  topic_name?: string
-  topicName?: string
-  topic_label?: string
-  topicLabel?: string
-  display_name?: string
-  label?: string
-  keyword?: string
-  keywords?: string | string[]
-  top_keywords?: string | string[]
-  topKeywords?: string | string[]
-  words?: string | string[]
-  top_words?: string | string[]
-  topWords?: string | string[]
-  terms?: string | string[]
-  name?: string
-  value?: number
-  ratio?: number
+  topic_id?: number
+  keywords?: string[]
   weight?: number
-  percentage?: number
-  percent?: number
+  weight_percent?: number
+  sample_size?: number
+  min_sample_size?: number
+  reliability?: string
+  warning?: string | null
+  [key: string]: unknown
 }
 
 export type CorrelationResult = {
-  item1?: string
-  item2?: string
   feature_x?: string
   feature_y?: string
+  item1?: string
+  item2?: string
   x?: string
   y?: string
   variable_1?: string
   variable_2?: string
   variable1?: string
   variable2?: string
-
-  correlation?: number | string
-  correlation_coefficient?: number | string
-  correlation_value?: number | string
-  coefficient?: number | string
-  value?: number | string
-
-  p_value?: number | string
-  sample_size?: number | string
-  min_sample_size?: number | string
+  correlation?: number
+  correlation_value?: number
+  correlation_coefficient?: number
+  coefficient?: number
+  value?: number
+  p_value?: number
+  sample_size?: number
   reliability?: string
-  warning?: string
+  warning?: string | null
+  [key: string]: unknown
+}
 
-  insight?: string
-  description?: string
+async function fetchJson<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`)
+
+  if (!response.ok) {
+    throw new Error(`API 요청 실패: ${response.status} ${path}`)
+  }
+
+  return response.json() as Promise<T>
 }
 
 export function getDashboardSummary() {
-  return request<DashboardSummary>('/dashboard/summary')
+  return fetchJson<DashboardSummary>('/summary')
 }
 
 export function getGames() {
-  return request<Game[]>('/games')
+  return fetchJson<Game[]>('/games')
 }
 
 export function getGameDetail(gameId: string | number) {
-  return request<Game>(`/games/${gameId}`)
-}
-
-export function getGameSentiment(gameId: string | number) {
-  return request<SentimentAnalysis>(`/games/${gameId}/sentiment`)
-}
-
-export function getGameTopics(gameId: string | number) {
-  return request<TopicAnalysis[]>(`/games/${gameId}/topics`)
+  return fetchJson<Game>(`/games/${gameId}`)
 }
 
 export function getSentimentAnalysis() {
-  return request<SentimentAnalysis>('/analysis/sentiment')
+  return fetchJson<SentimentAnalysis>('/analysis/sentiment')
 }
 
 export function getTopicAnalysis() {
-  return request<TopicAnalysis[]>('/analysis/topics')
+  return fetchJson<TopicAnalysis[]>('/analysis/topics')
 }
 
 export function getCorrelationAnalysis() {
-  return request<CorrelationResult[]>('/analysis/correlation')
+  return fetchJson<CorrelationResult[]>('/analysis/correlation')
+}
+
+export function getGameSentiment(gameId: string | number) {
+  return fetchJson<SentimentAnalysis>(`/games/${gameId}/sentiment`)
+}
+
+export function getGameTopics(gameId: string | number) {
+  return fetchJson<TopicAnalysis[]>(`/games/${gameId}/topics`)
 }

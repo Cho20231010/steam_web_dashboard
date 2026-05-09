@@ -50,7 +50,6 @@ button {
   min-height: 100vh;
 }
 
-/* 사이드바 */
 .sidebar {
   width: var(--sidebar-width);
   background: linear-gradient(180deg, var(--navy-1), var(--navy-2));
@@ -102,13 +101,11 @@ button {
   color: #ffffff;
 }
 
-/* 메인 공통 */
 .main {
   flex: 1;
   padding: 28px 22px 30px;
 }
 
-/* 홈 화면 */
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -414,14 +411,6 @@ button {
   border-bottom: 1px solid #e7eaf1;
 }
 
-.insight-table th:first-child {
-  border-top-left-radius: 16px;
-}
-
-.insight-table th:last-child {
-  border-top-right-radius: 16px;
-}
-
 .insight-table td {
   padding: 15px 20px;
   border-bottom: 1px solid #edf0f5;
@@ -434,25 +423,9 @@ button {
   border-bottom: 0;
 }
 
-.insight-table tbody tr:hover td {
-  background: #fafbff;
-}
-
 .insight-table th:nth-child(3),
 .insight-table td:nth-child(3) {
   text-align: center;
-}
-
-.col-item {
-  width: 18%;
-}
-
-.col-correlation {
-  width: 15%;
-}
-
-.col-insight {
-  width: 49%;
 }
 
 .insight-label {
@@ -950,6 +923,14 @@ button {
 }
 
 @media (max-width: 1200px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
   .review-grid {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -964,13 +945,48 @@ button {
   .review-donut-layout {
     justify-content: flex-start;
   }
+}
 
-  .review-chart-card,
-  .selected-game-card,
-  .game-sentiment-card,
-  .keyword-card,
-  .ranking-card {
-    min-height: auto;
+@media (max-width: 860px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .large-brand {
+    min-height: 92px;
+    margin-bottom: 14px;
+  }
+
+  .large-brand img {
+    width: 165px;
+    max-height: 80px;
+    height: auto;
+  }
+
+  .sidebar-nav {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .main {
+    padding: 18px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sentiment-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .insight-card h2 {
+    text-align: center;
   }
 }
 

@@ -39,6 +39,9 @@ type NormalizedSentiment = {
   totalCount: number
 }
 
+const FALLBACK_KEYWORDS = ['게임플레이', '스토리', '그래픽', '탐험', '난이도', '사운드']
+const MINIMUM_REVIEW_COUNT_FOR_RANKING = 1
+
 function ReviewPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [games, setGames] = useState<Game[]>([])
@@ -130,23 +133,19 @@ function ReviewPage() {
           getGameTopics(selectedGameId),
         ])
 
-        if (detailResult.status === 'fulfilled') {
-          setSelectedGameDetail(detailResult.value)
-        } else {
-          setSelectedGameDetail(null)
-        }
+        setSelectedGameDetail(
+          detailResult.status === 'fulfilled' ? detailResult.value : null,
+        )
 
-        if (sentimentResult.status === 'fulfilled') {
-          setSelectedGameSentiment(sentimentResult.value)
-        } else {
-          setSelectedGameSentiment(null)
-        }
+        setSelectedGameSentiment(
+          sentimentResult.status === 'fulfilled' ? sentimentResult.value : null,
+        )
 
-        if (topicResult.status === 'fulfilled' && Array.isArray(topicResult.value)) {
-          setSelectedGameTopics(topicResult.value)
-        } else {
-          setSelectedGameTopics([])
-        }
+        setSelectedGameTopics(
+          topicResult.status === 'fulfilled' && Array.isArray(topicResult.value)
+            ? topicResult.value
+            : [],
+        )
       } catch (error) {
         console.error(error)
         setSelectedGameDetail(null)
@@ -236,14 +235,22 @@ function ReviewPage() {
 
   const positiveTopGames = useMemo(() => {
     return reviewGames
-      .filter((game) => game.positiveRate > 0)
+      .filter(
+        (game) =>
+          game.reviewCount >= MINIMUM_REVIEW_COUNT_FOR_RANKING &&
+          game.positiveRate > 0,
+      )
       .sort((a, b) => b.positiveRate - a.positiveRate)
       .slice(0, 5)
   }, [reviewGames])
 
   const negativeTopGames = useMemo(() => {
     return reviewGames
-      .filter((game) => game.negativeRate > 0)
+      .filter(
+        (game) =>
+          game.reviewCount >= MINIMUM_REVIEW_COUNT_FOR_RANKING &&
+          game.negativeRate > 0,
+      )
       .sort((a, b) => b.negativeRate - a.negativeRate)
       .slice(0, 5)
   }, [reviewGames])
@@ -335,6 +342,10 @@ function ReviewPage() {
             value={selectedOptionValue}
             onChange={(event) => setSelectedGameId(event.target.value)}
           >
+            {selectedOptionValue === '' && (
+              <option value="">게임을 선택하세요.</option>
+            )}
+
             {filteredReviewGames.length > 0 ? (
               filteredReviewGames.map((game) => (
                 <option key={game.id} value={game.id}>
@@ -429,30 +440,19 @@ function ReviewPage() {
         <article className="review-card keyword-card">
           <h2>주요 토픽 키워드</h2>
 
-          {topicKeywords.length > 0 ? (
-            <div className="keyword-cloud">
-              {topicKeywords.map((keyword) => (
-                <span
-                  key={`${keyword.label}-${keyword.size}`}
-                  className={`keyword-size-${keyword.size}`}
-                >
-                  {keyword.label}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div className="keyword-cloud">
-              <span className="keyword-size-5">게임플레이</span>
-              <span className="keyword-size-4">스토리</span>
-              <span className="keyword-size-4">그래픽</span>
-              <span className="keyword-size-2">탐험</span>
-              <span className="keyword-size-2">난이도</span>
-              <span className="keyword-size-1">사운드</span>
-            </div>
-          )}
+          <div className="keyword-cloud">
+            {topicKeywords.map((keyword) => (
+              <span
+                key={`${keyword.label}-${keyword.size}`}
+                className={`keyword-size-${keyword.size}`}
+              >
+                {keyword.label}
+              </span>
+            ))}
+          </div>
         </article>
 
-        <article className="review-card ranking-card">
+        <article className="review-card ranking-card positive-ranking-card">
           <h2>긍정 리뷰가 높은 게임 TOP 5</h2>
 
           <ReviewRankingList
@@ -462,7 +462,7 @@ function ReviewPage() {
           />
         </article>
 
-        <article className="review-card ranking-card">
+        <article className="review-card ranking-card negative-ranking-card">
           <h2>부정 리뷰 비율 높은 게임 TOP 5</h2>
 
           <ReviewRankingList
@@ -556,8 +556,6 @@ function normalizeReviewGames(games: Game[]): ReviewGameView[] {
       'sentiment_positive_ratio',
       'positive_ratio',
       'recommendation_rate',
-      'score',
-      'rating',
     ])
 
     let neutralRate = getPercentFromRecord(record, [
@@ -800,17 +798,23 @@ function getPercentFromRecord(record: Record<string, unknown>, keys: string[]) {
 }
 
 function normalizeTopicKeywords(topics: TopicAnalysis[]): TopicKeyword[] {
-  const mapped = topics
-    .flatMap((topic) => extractTopicTokens(topic))
-    .map(mapKeywordToCategory)
-    .filter(Boolean) as string[]
+  const categoryScore = new Map<string, number>()
 
-  const unique = Array.from(new Set(mapped))
+  topics.forEach((topic) => {
+    extractTopicTokens(topic).forEach((token) => {
+      const category = mapKeywordToKoreanCategory(token)
 
-  const finalLabels =
-    unique.length > 0
-      ? unique.slice(0, 7)
-      : ['게임플레이', '스토리', '그래픽', '탐험', '난이도', '사운드']
+      if (!category) return
+
+      categoryScore.set(category, (categoryScore.get(category) ?? 0) + 1)
+    })
+  })
+
+  const labels = Array.from(categoryScore.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([label]) => label)
+
+  const finalLabels = labels.length > 0 ? labels.slice(0, 7) : FALLBACK_KEYWORDS
 
   return finalLabels.map((label, index) => ({
     label,
@@ -857,7 +861,7 @@ function extractTopicTokens(topic: TopicAnalysis): string[] {
   return rawValues
 }
 
-function mapKeywordToCategory(value: string): string | null {
+function mapKeywordToKoreanCategory(value: string): string | null {
   const text = formatTopicText(value).toLowerCase()
 
   if (!text) return null
@@ -877,6 +881,14 @@ function mapKeywordToCategory(value: string): string | null {
     'ring',
     'game',
     'games',
+    'player',
+    'players',
+    'time',
+    'really',
+    'just',
+    'one',
+    'get',
+    'make',
   ])
 
   if (uselessKeywords.has(text)) {
@@ -890,7 +902,10 @@ function mapKeywordToCategory(value: string): string | null {
     text.includes('battle') ||
     text.includes('control') ||
     text.includes('movement') ||
-    text.includes('gun')
+    text.includes('gun') ||
+    text.includes('weapon') ||
+    text.includes('skill') ||
+    text.includes('match')
   ) {
     return '게임플레이'
   }
@@ -900,7 +915,9 @@ function mapKeywordToCategory(value: string): string | null {
     text.includes('narrative') ||
     text.includes('quest') ||
     text.includes('character') ||
-    text.includes('lore')
+    text.includes('lore') ||
+    text.includes('ending') ||
+    text.includes('dialogue')
   ) {
     return '스토리'
   }
@@ -909,7 +926,10 @@ function mapKeywordToCategory(value: string): string | null {
     text.includes('graphic') ||
     text.includes('visual') ||
     text.includes('art') ||
-    text.includes('design')
+    text.includes('design') ||
+    text.includes('animation') ||
+    text.includes('model') ||
+    text.includes('texture')
   ) {
     return '그래픽'
   }
@@ -919,7 +939,9 @@ function mapKeywordToCategory(value: string): string | null {
     text.includes('exploration') ||
     text.includes('world') ||
     text.includes('map') ||
-    text.includes('open')
+    text.includes('open') ||
+    text.includes('area') ||
+    text.includes('location')
   ) {
     return '탐험'
   }
@@ -928,7 +950,9 @@ function mapKeywordToCategory(value: string): string | null {
     text.includes('boss') ||
     text.includes('difficulty') ||
     text.includes('hard') ||
-    text.includes('challenge')
+    text.includes('challenge') ||
+    text.includes('death') ||
+    text.includes('die')
   ) {
     return '난이도'
   }
@@ -937,7 +961,8 @@ function mapKeywordToCategory(value: string): string | null {
     text.includes('sound') ||
     text.includes('music') ||
     text.includes('audio') ||
-    text.includes('voice')
+    text.includes('voice') ||
+    text.includes('ost')
   ) {
     return '사운드'
   }
@@ -948,9 +973,22 @@ function mapKeywordToCategory(value: string): string | null {
     text.includes('lag') ||
     text.includes('bug') ||
     text.includes('crash') ||
-    text.includes('server')
+    text.includes('server') ||
+    text.includes('fps') ||
+    text.includes('loading')
   ) {
     return '최적화'
+  }
+
+  if (
+    text.includes('price') ||
+    text.includes('sale') ||
+    text.includes('money') ||
+    text.includes('free') ||
+    text.includes('value') ||
+    text.includes('dlc')
+  ) {
+    return '가격/가성비'
   }
 
   return null

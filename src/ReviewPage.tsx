@@ -60,6 +60,9 @@ function ReviewPage() {
   const [selectedGameDetail, setSelectedGameDetail] = useState<Game | null>(null)
   const [selectedGameSentiment, setSelectedGameSentiment] =
     useState<SentimentAnalysis | null>(null)
+  const [rankingSentiments, setRankingSentiments] = useState<
+    Record<string, NormalizedSentiment>
+  >({})
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -256,6 +259,50 @@ function ReviewPage() {
       })
       .slice(0, 5)
   }, [reviewGames])
+
+  useEffect(() => {
+    const rankingGames = [...positiveTopGames, ...negativeTopGames]
+    const uniqueRankingGames = Array.from(
+      new Map(rankingGames.map((game) => [game.id, game])).values(),
+    )
+
+    if (uniqueRankingGames.length === 0) {
+      setRankingSentiments({})
+      return
+    }
+
+    let isCancelled = false
+
+    async function loadRankingSentiments() {
+      const entries = await Promise.all(
+        uniqueRankingGames.map(async (game) => {
+          try {
+            const sentiment = await getGameSentiment(game.id)
+            const normalized = normalizeSentiment(sentiment, game.totalReviews)
+
+            if (normalized.totalCount > 0) {
+              return [game.id, normalized] as const
+            }
+
+            return [game.id, createGameSentiment(game)] as const
+          } catch (error) {
+            console.error(error)
+            return [game.id, createGameSentiment(game)] as const
+          }
+        }),
+      )
+
+      if (!isCancelled) {
+        setRankingSentiments(Object.fromEntries(entries))
+      }
+    }
+
+    loadRankingSentiments()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [positiveTopGames, negativeTopGames])
 
   const selectedOptionValue = filteredReviewGames.some(
     (game) => game.id === selectedGame?.id,
@@ -455,12 +502,20 @@ function ReviewPage() {
 
         <article className="review-card ranking-card positive-ranking-card">
           <h2>긍정 반응이 많은 게임 TOP 5</h2>
-          <ReviewRankingList games={positiveTopGames} mode="positive" />
+          <ReviewRankingList
+            games={positiveTopGames}
+            mode="positive"
+            rankingSentiments={rankingSentiments}
+          />
         </article>
 
         <article className="review-card ranking-card negative-ranking-card">
           <h2>부정 반응이 많은 게임 TOP 5</h2>
-          <ReviewRankingList games={negativeTopGames} mode="negative" />
+          <ReviewRankingList
+            games={negativeTopGames}
+            mode="negative"
+            rankingSentiments={rankingSentiments}
+          />
         </article>
       </section>
     </div>
@@ -494,9 +549,11 @@ function ReviewLegendItem({
 function ReviewRankingList({
   games,
   mode,
+  rankingSentiments,
 }: {
   games: ReviewGameView[]
   mode: RankingMode
+  rankingSentiments: Record<string, NormalizedSentiment>
 }) {
   if (games.length === 0) {
     return <p className="review-empty-text">표시할 게임 데이터가 없습니다.</p>
@@ -505,8 +562,9 @@ function ReviewRankingList({
   return (
     <div className="review-ranking-list">
       {games.map((game, index) => {
+        const sentiment = rankingSentiments[game.id] ?? createGameSentiment(game)
         const reviewRate =
-          mode === 'positive' ? game.positiveRate : game.negativeRate
+          mode === 'positive' ? sentiment.positive : sentiment.negative
 
         return (
           <div className="review-ranking-item" key={`${game.id}-${mode}`}>
@@ -617,7 +675,8 @@ function normalizeSentiment(
     const neutral = (neutralCount / totalFromCount) * 100
     const negative = (negativeCount / totalFromCount) * 100
 
-    const displayTotal = toNumber(sentiment.total) || fallbackTotalCount || totalFromCount
+    const displayTotal =
+      toNumber(sentiment.total) || fallbackTotalCount || totalFromCount
 
     return {
       positive,

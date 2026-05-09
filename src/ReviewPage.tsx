@@ -546,52 +546,42 @@ function normalizeReviewGames(games: Game[]): ReviewGameView[] {
     const positiveCount = getPositiveCount(record)
     const neutralCount = getNeutralCount(record)
     const negativeCount = getNegativeCount(record)
-
-    const explicitPositiveRate = normalizeRatio(
-      readFirst(record, [
-        'positive_rate',
-        'positiveRate',
-        'positive_review_ratio',
-        'positiveReviewRatio',
-        'sentiment_positive_ratio',
-        'positive_ratio',
-        'recommendation_rate',
-        'score',
-        'rating',
-      ]),
-    )
-
-    const explicitNeutralRate = normalizeRatio(
-      readFirst(record, [
-        'neutral_rate',
-        'neutralRate',
-        'neutral_review_ratio',
-        'sentiment_neutral_ratio',
-        'neutral_ratio',
-      ]),
-    )
-
-    const explicitNegativeRate = normalizeRatio(
-      readFirst(record, [
-        'negative_rate',
-        'negativeRate',
-        'negative_review_ratio',
-        'negativeReviewRatio',
-        'sentiment_negative_ratio',
-        'negative_ratio',
-      ]),
-    )
-
     const countTotal = positiveCount + neutralCount + negativeCount
 
-    let positiveRate = explicitPositiveRate
-    let neutralRate = explicitNeutralRate
-    let negativeRate = explicitNegativeRate
+    let positiveRate = getPercentFromRecord(record, [
+      'positive_rate',
+      'positiveRate',
+      'positive_review_ratio',
+      'positiveReviewRatio',
+      'sentiment_positive_ratio',
+      'positive_ratio',
+      'recommendation_rate',
+      'score',
+      'rating',
+    ])
+
+    let neutralRate = getPercentFromRecord(record, [
+      'neutral_rate',
+      'neutralRate',
+      'neutral_review_ratio',
+      'neutralReviewRatio',
+      'sentiment_neutral_ratio',
+      'neutral_ratio',
+    ])
+
+    let negativeRate = getPercentFromRecord(record, [
+      'negative_rate',
+      'negativeRate',
+      'negative_review_ratio',
+      'negativeReviewRatio',
+      'sentiment_negative_ratio',
+      'negative_ratio',
+    ])
 
     if (countTotal > 0) {
-      if (positiveRate <= 0) positiveRate = (positiveCount / countTotal) * 100
-      if (neutralRate <= 0) neutralRate = (neutralCount / countTotal) * 100
-      if (negativeRate <= 0) negativeRate = (negativeCount / countTotal) * 100
+      positiveRate = (positiveCount / countTotal) * 100
+      neutralRate = (neutralCount / countTotal) * 100
+      negativeRate = (negativeCount / countTotal) * 100
     }
 
     if (negativeRate <= 0 && positiveRate > 0) {
@@ -645,6 +635,8 @@ function normalizeSentiment(
   const neutralCount = getNeutralCount(record)
   const negativeCount = getNegativeCount(record)
 
+  const countTotal = positiveCount + neutralCount + negativeCount
+
   const explicitTotalCount = toNumber(
     readFirst(record, [
       'total_count',
@@ -655,54 +647,30 @@ function normalizeSentiment(
     ]),
   )
 
-  const countTotal = positiveCount + neutralCount + negativeCount
-
   if (countTotal > 0) {
-    const ratioPositive = (positiveCount / countTotal) * 100
-    const ratioNeutral = (neutralCount / countTotal) * 100
-    const ratioNegative = (negativeCount / countTotal) * 100
+    const positive = (positiveCount / countTotal) * 100
+    const neutral = (neutralCount / countTotal) * 100
+    const negative = (negativeCount / countTotal) * 100
 
     const preferredTotal =
       fallbackTotalCount > countTotal * 5
         ? fallbackTotalCount
         : explicitTotalCount || countTotal
 
-    if (preferredTotal > countTotal) {
-      return {
-        positive: ratioPositive,
-        neutral: ratioNeutral,
-        negative: ratioNegative,
-        positiveCount: Math.round((ratioPositive / 100) * preferredTotal),
-        neutralCount: Math.round((ratioNeutral / 100) * preferredTotal),
-        negativeCount: Math.round((ratioNegative / 100) * preferredTotal),
-        totalCount: preferredTotal,
-      }
-    }
-
     return {
-      positive: ratioPositive,
-      neutral: ratioNeutral,
-      negative: ratioNegative,
-      positiveCount,
-      neutralCount,
-      negativeCount,
-      totalCount: explicitTotalCount || countTotal,
+      positive,
+      neutral,
+      negative,
+      positiveCount: Math.round((positive / 100) * preferredTotal),
+      neutralCount: Math.round((neutral / 100) * preferredTotal),
+      negativeCount: Math.round((negative / 100) * preferredTotal),
+      totalCount: preferredTotal,
     }
   }
 
-  const positive = normalizeRatio(
-    readFirst(record, ['positive_ratio', 'positiveRate', 'positive']),
-  )
-  const neutral = normalizeRatio(
-    readFirst(record, ['neutral_ratio', 'neutralRate', 'neutral']),
-  )
-  const negative = normalizeRatio(
-    readFirst(record, ['negative_ratio', 'negativeRate', 'negative']),
-  )
+  const ratioValues = getSentimentRatioValues(record)
 
-  const ratioTotal = positive + neutral + negative
-
-  if (ratioTotal === 0) {
+  if (!ratioValues) {
     return {
       positive: 0,
       neutral: 0,
@@ -714,28 +682,19 @@ function normalizeSentiment(
     }
   }
 
-  const normalizedPositive = (positive / ratioTotal) * 100
-  const normalizedNeutral = (neutral / ratioTotal) * 100
-  const normalizedNegative = (negative / ratioTotal) * 100
-
+  const { positive, neutral, negative } = ratioValues
   const totalCount = explicitTotalCount || fallbackTotalCount
 
   return {
-    positive: normalizedPositive,
-    neutral: normalizedNeutral,
-    negative: normalizedNegative,
+    positive,
+    neutral,
+    negative,
     positiveCount:
-      totalCount > 0
-        ? Math.round((normalizedPositive / 100) * totalCount)
-        : Math.round(normalizedPositive),
+      totalCount > 0 ? Math.round((positive / 100) * totalCount) : 0,
     neutralCount:
-      totalCount > 0
-        ? Math.round((normalizedNeutral / 100) * totalCount)
-        : Math.round(normalizedNeutral),
+      totalCount > 0 ? Math.round((neutral / 100) * totalCount) : 0,
     negativeCount:
-      totalCount > 0
-        ? Math.round((normalizedNegative / 100) * totalCount)
-        : Math.round(normalizedNegative),
+      totalCount > 0 ? Math.round((negative / 100) * totalCount) : 0,
     totalCount,
   }
 }
@@ -767,6 +726,77 @@ function createFallbackSentiment(game?: ReviewGameView): NormalizedSentiment {
     negativeCount: Math.round((game.negativeRate / 100) * game.reviewCount),
     totalCount: game.reviewCount,
   }
+}
+
+function getSentimentRatioValues(record: Record<string, unknown>) {
+  let positive = getPercentFromRecord(record, [
+    'positive_ratio',
+    'positiveRate',
+    'positive_rate',
+    'sentiment_positive_ratio',
+  ])
+
+  let neutral = getPercentFromRecord(record, [
+    'neutral_ratio',
+    'neutralRate',
+    'neutral_rate',
+    'sentiment_neutral_ratio',
+  ])
+
+  let negative = getPercentFromRecord(record, [
+    'negative_ratio',
+    'negativeRate',
+    'negative_rate',
+    'sentiment_negative_ratio',
+  ])
+
+  const hasExplicitRatio = positive > 0 || neutral > 0 || negative > 0
+
+  if (!hasExplicitRatio) {
+    const genericPositive = toNumber(record.positive)
+    const genericNeutral = toNumber(record.neutral)
+    const genericNegative = toNumber(record.negative)
+
+    const hasAtLeastTwoValues =
+      [genericPositive, genericNeutral, genericNegative].filter((value) => value > 0)
+        .length >= 2
+
+    if (!hasAtLeastTwoValues) {
+      return null
+    }
+
+    positive = normalizeRatio(genericPositive)
+    neutral = normalizeRatio(genericNeutral)
+    negative = normalizeRatio(genericNegative)
+  }
+
+  const total = positive + neutral + negative
+
+  if (total <= 0) {
+    return null
+  }
+
+  return {
+    positive: (positive / total) * 100,
+    neutral: (neutral / total) * 100,
+    negative: (negative / total) * 100,
+  }
+}
+
+function getPercentFromRecord(record: Record<string, unknown>, keys: string[]) {
+  const value = readFirst(record, keys)
+
+  if (value === undefined || value === null || value === '') {
+    return 0
+  }
+
+  const percent = normalizeRatio(value)
+
+  if (!Number.isFinite(percent)) {
+    return 0
+  }
+
+  return Math.max(0, Math.min(100, percent))
 }
 
 function normalizeTopicKeywords(topics: TopicAnalysis[]): TopicKeyword[] {
@@ -974,7 +1004,6 @@ function getPositiveCount(record: Record<string, unknown>) {
       'positiveReviewCount',
       'positive_review_count',
       'upvotes',
-      'positive',
     ]),
   )
 }
@@ -986,7 +1015,6 @@ function getNeutralCount(record: Record<string, unknown>) {
       'neutral_reviews',
       'neutralReviewCount',
       'neutral_review_count',
-      'neutral',
     ]),
   )
 }
@@ -999,7 +1027,6 @@ function getNegativeCount(record: Record<string, unknown>) {
       'negativeReviewCount',
       'negative_review_count',
       'downvotes',
-      'negative',
     ]),
   )
 }

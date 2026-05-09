@@ -553,7 +553,6 @@ button {
   text-align: left;
 }
 
-/* 전체 리뷰 감성 분포 */
 .review-chart-card {
   min-height: 330px;
 }
@@ -629,7 +628,6 @@ button {
   font-weight: 700;
 }
 
-/* 선택한 게임 */
 .selected-game-card {
   min-height: 330px;
 }
@@ -726,7 +724,6 @@ button {
   text-align: right;
 }
 
-/* 게임별 감성 분포 */
 .game-sentiment-card {
   min-height: 300px;
 }
@@ -811,7 +808,6 @@ button {
   font-weight: 900;
 }
 
-/* 주요 토픽 키워드 */
 .keyword-card {
   min-height: 300px;
 }
@@ -859,7 +855,6 @@ button {
   font-size: 15px;
 }
 
-/* TOP 5 랭킹 카드 */
 .ranking-card {
   min-height: 250px;
   height: 100%;
@@ -905,7 +900,6 @@ button {
   white-space: nowrap;
 }
 
-/* 상태/빈 데이터 문구 */
 .review-status-card {
   background: #ffffff;
   border: 1px solid #e6eaf2;

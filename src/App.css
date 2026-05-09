@@ -549,3 +549,40 @@ button {
     height: 52px;
   }
 }
+
+.status-card {
+  margin-bottom: 20px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.status-card strong {
+  display: block;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.status-card p {
+  margin: 8px 0 0;
+  color: var(--sub);
+  line-height: 1.6;
+}
+
+.status-card.error {
+  border-color: rgba(239, 107, 107, 0.35);
+  background: #fff5f5;
+}
+
+.empty-text {
+  margin: 0;
+  padding: 20px;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: var(--sub);
+  font-size: 14px;
+  line-height: 1.6;
+}

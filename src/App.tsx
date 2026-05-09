@@ -1,28 +1,135 @@
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import {
+  getCorrelationAnalysis,
+  getDashboardSummary,
+  getGames,
+  getSentimentAnalysis,
+  getTopicAnalysis,
+  type CorrelationResult,
+  type DashboardSummary,
+  type Game,
+  type SentimentAnalysis,
+  type TopicAnalysis,
+} from './api'
 
-const topGames = [
-  { rank: 1, name: 'Elden Ring', genre: 'RPG', score: '95.2%' },
-  { rank: 2, name: "Baldur's Gate 3", genre: 'RPG', score: '93.1%' },
-  { rank: 3, name: 'Hogwarts Legacy', genre: 'RPG', score: '89.7%' },
-  { rank: 4, name: 'Stardew Valley', genre: 'Simulation', score: '97.3%' },
-  { rank: 5, name: 'Cyberpunk 2077', genre: 'RPG', score: '76.8%' },
-]
+type TopGameView = {
+  rank: number
+  id: string
+  name: string
+  genre: string
+  score: string
+}
 
-const topics = [
-  { label: '게임플레이', value: 18.7 },
-  { label: '스토리', value: 15.2 },
-  { label: '그래픽', value: 13.6 },
-  { label: '최적화', value: 10.4 },
-  { label: '사운드', value: 7.8 },
-]
+type TopicView = {
+  label: string
+  value: number
+}
+
+type InsightView = {
+  item1: string
+  item2: string
+  correlation: number
+  insight: string
+}
 
 function App() {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null)
+  const [games, setGames] = useState<Game[]>([])
+  const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null)
+  const [topics, setTopics] = useState<TopicAnalysis[]>([])
+  const [correlations, setCorrelations] = useState<CorrelationResult[]>([])
+  const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        setLoading(true)
+        setErrorMessage('')
+
+        const [
+          summaryData,
+          gamesData,
+          sentimentData,
+          topicsData,
+          correlationData,
+        ] = await Promise.all([
+          getDashboardSummary(),
+          getGames(),
+          getSentimentAnalysis(),
+          getTopicAnalysis(),
+          getCorrelationAnalysis(),
+        ])
+
+        setSummary(summaryData)
+        setGames(Array.isArray(gamesData) ? gamesData : [])
+        setSentiment(sentimentData)
+        setTopics(Array.isArray(topicsData) ? topicsData : [])
+        setCorrelations(Array.isArray(correlationData) ? correlationData : [])
+      } catch (error) {
+        console.error(error)
+        setErrorMessage('백엔드 데이터를 불러오지 못했습니다. API 주소 또는 CORS 설정을 확인해주세요.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboardData()
+  }, [])
+
+  const topGames = useMemo(() => {
+    return normalizeTopGames(games).slice(0, 5)
+  }, [games])
+
+  const topicList = useMemo(() => {
+    return normalizeTopics(topics).slice(0, 5)
+  }, [topics])
+
+  const insightList = useMemo(() => {
+    return normalizeCorrelations(correlations).slice(0, 5)
+  }, [correlations])
+
+  const totalGames = formatNumber(
+    summary?.total_games ??
+      summary?.totalGames ??
+      summary?.game_count ??
+      games.length,
+  )
+
+  const totalReviews = formatNumber(
+    summary?.total_reviews ??
+      summary?.totalReviews ??
+      summary?.review_count ??
+      sumReviewCount(games),
+  )
+
+  const positiveRate = formatPercent(
+    summary?.average_positive_rate ??
+      summary?.positive_rate ??
+      summary?.positiveRate ??
+      sentiment?.positive_ratio ??
+      sentiment?.positiveRate ??
+      sentiment?.positive,
+  )
+
+  const topGenre =
+    summary?.top_genre ??
+    summary?.topGenre ??
+    summary?.representative_genre ??
+    findTopGenre(games)
+
+  const sentimentValues = normalizeSentiment(sentiment)
+
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="sidebar-brand logo-only">
+        <div className="sidebar-brand">
           <img src="/hidden-coders-logo.png" alt="Hidden Coders Logo" />
-          <strong>Hidden Coders</strong>
+          <div>
+            <strong>Hidden Coders</strong>
+            <span>Steam Market Analysis</span>
+          </div>
         </div>
 
         <nav className="sidebar-nav">
@@ -41,120 +148,159 @@ function App() {
             <span className="page-badge">Steam 데이터 기반 시장 분석</span>
             <h1>홈 대시보드</h1>
             <p>
-              Steam 게임 시장 데이터를 기반으로 인기 게임, 리뷰 감성,
-              주요 토픽, 상관관계 인사이트를 한눈에 볼 수 있는 메인 화면입니다.
+              Railway에 배포된 백엔드 API 데이터를 기반으로 게임 목록, 감성 분석,
+              토픽 분석, 상관관계 결과를 불러오는 메인 화면입니다.
             </p>
           </div>
         </header>
 
-        <section className="summary-grid">
-          <SummaryCard title="총 게임 수" value="12,345" icon="🎮" />
-          <SummaryCard title="총 리뷰 수" value="3,456,789" icon="💬" />
-          <SummaryCard title="평균 긍정 비율" value="78.4%" icon="📈" sub="+ 2.1%" />
-          <SummaryCard title="대표 장르" value="RPG" icon="🏆" />
-        </section>
+        {loading && (
+          <section className="status-card">
+            <strong>데이터를 불러오는 중입니다...</strong>
+            <p>백엔드 API에서 대시보드 데이터를 가져오고 있습니다.</p>
+          </section>
+        )}
 
-        <section className="content-grid">
-          <div className="card">
-            <h2>인기 게임 TOP 5</h2>
-            <div className="top-list">
-              {topGames.map((game) => (
-                <div className="top-item" key={game.rank}>
-                  <div className="top-rank">{game.rank}</div>
-                  <div className="top-info">
-                    <strong>{game.name}</strong>
-                    <span>{game.genre}</span>
+        {!loading && errorMessage && (
+          <section className="status-card error">
+            <strong>데이터 로드 실패</strong>
+            <p>{errorMessage}</p>
+          </section>
+        )}
+
+        {!loading && !errorMessage && (
+          <>
+            <section className="summary-grid">
+              <SummaryCard title="총 게임 수" value={totalGames} icon="🎮" />
+              <SummaryCard title="총 리뷰 수" value={totalReviews} icon="💬" />
+              <SummaryCard title="평균 긍정 비율" value={positiveRate} icon="📈" />
+              <SummaryCard title="대표 장르" value={topGenre} icon="🏆" />
+            </section>
+
+            <section className="content-grid">
+              <div className="card">
+                <h2>인기 게임 TOP 5</h2>
+
+                {topGames.length > 0 ? (
+                  <div className="top-list">
+                    {topGames.map((game) => (
+                      <div className="top-item" key={`${game.rank}-${game.id}`}>
+                        <div className="top-rank">{game.rank}</div>
+                        <div className="top-info">
+                          <strong>{game.name}</strong>
+                          <span>{game.genre}</span>
+                        </div>
+                        <div className="top-score">{game.score}</div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="top-score">{game.score}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+                ) : (
+                  <EmptyText text="게임 데이터가 없습니다." />
+                )}
+              </div>
 
-          <div className="card">
-            <h2>감성 요약</h2>
-            <div className="sentiment-wrap">
-              <div className="donut-chart">
-                <div className="donut-inner">
-                  <strong>78.4%</strong>
-                  <span>긍정</span>
+              <div className="card">
+                <h2>감성 요약</h2>
+
+                <div className="sentiment-wrap">
+                  <div
+                    className="donut-chart"
+                    style={{
+                      background: `conic-gradient(
+                        var(--green) 0% ${sentimentValues.positive}%,
+                        var(--yellow) ${sentimentValues.positive}% ${
+                          sentimentValues.positive + sentimentValues.neutral
+                        }%,
+                        var(--red) ${
+                          sentimentValues.positive + sentimentValues.neutral
+                        }% 100%
+                      )`,
+                    }}
+                  >
+                    <div className="donut-inner">
+                      <strong>{sentimentValues.positive.toFixed(1)}%</strong>
+                      <span>긍정</span>
+                    </div>
+                  </div>
+
+                  <div className="legend">
+                    <div>
+                      <span className="dot green" />
+                      <p>긍정</p>
+                      <strong>{sentimentValues.positive.toFixed(1)}%</strong>
+                    </div>
+                    <div>
+                      <span className="dot yellow" />
+                      <p>중립</p>
+                      <strong>{sentimentValues.neutral.toFixed(1)}%</strong>
+                    </div>
+                    <div>
+                      <span className="dot red" />
+                      <p>부정</p>
+                      <strong>{sentimentValues.negative.toFixed(1)}%</strong>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="legend">
-                <div>
-                  <span className="dot green" />
-                  <p>긍정</p>
-                  <strong>78.4%</strong>
-                </div>
-                <div>
-                  <span className="dot yellow" />
-                  <p>중립</p>
-                  <strong>14.5%</strong>
-                </div>
-                <div>
-                  <span className="dot red" />
-                  <p>부정</p>
-                  <strong>7.1%</strong>
-                </div>
+              <div className="card">
+                <h2>주요 토픽 TOP 5</h2>
+
+                {topicList.length > 0 ? (
+                  <div className="topic-list">
+                    {topicList.map((topic) => (
+                      <div className="topic-item" key={topic.label}>
+                        <div className="topic-header">
+                          <span>{topic.label}</span>
+                          <strong>{topic.value.toFixed(1)}%</strong>
+                        </div>
+                        <div className="topic-bar">
+                          <div
+                            className="topic-fill"
+                            style={{ width: `${Math.min(topic.value, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyText text="토픽 데이터가 없습니다." />
+                )}
               </div>
-            </div>
-          </div>
+            </section>
 
-          <div className="card">
-            <h2>주요 토픽 TOP 5</h2>
-            <div className="topic-list">
-              {topics.map((topic) => (
-                <div className="topic-item" key={topic.label}>
-                  <div className="topic-header">
-                    <span>{topic.label}</span>
-                    <strong>{topic.value}%</strong>
-                  </div>
-                  <div className="topic-bar">
-                    <div
-                      className="topic-fill"
-                      style={{ width: `${topic.value * 4}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+            <section className="card insight-card">
+              <h2>상관관계 인사이트</h2>
 
-        <section className="card insight-card">
-          <h2>상관관계 인사이트</h2>
-          <table className="insight-table">
-            <thead>
-              <tr>
-                <th>항목 1</th>
-                <th>항목 2</th>
-                <th>상관계수</th>
-                <th>인사이트</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>가격</td>
-                <td>긍정률</td>
-                <td className="negative">-0.35</td>
-                <td>가격이 높아질수록 긍정률이 낮아지는 경향이 있습니다.</td>
-              </tr>
-              <tr>
-                <td>플레이타임</td>
-                <td>긍정률</td>
-                <td className="positive">0.41</td>
-                <td>플레이타임이 길수록 긍정률이 높아지는 경향이 있습니다.</td>
-              </tr>
-              <tr>
-                <td>리뷰 수</td>
-                <td>긍정률</td>
-                <td className="positive">0.28</td>
-                <td>리뷰 수가 많을수록 긍정률이 높아지는 경향이 있습니다.</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
+              {insightList.length > 0 ? (
+                <table className="insight-table">
+                  <thead>
+                    <tr>
+                      <th>항목 1</th>
+                      <th>항목 2</th>
+                      <th>상관계수</th>
+                      <th>인사이트</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {insightList.map((item, index) => (
+                      <tr key={`${item.item1}-${item.item2}-${index}`}>
+                        <td>{item.item1}</td>
+                        <td>{item.item2}</td>
+                        <td className={item.correlation >= 0 ? 'positive' : 'negative'}>
+                          {item.correlation.toFixed(2)}
+                        </td>
+                        <td>{item.insight}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <EmptyText text="상관관계 데이터가 없습니다." />
+              )}
+            </section>
+          </>
+        )}
       </main>
     </div>
   )
@@ -164,12 +310,10 @@ function SummaryCard({
   title,
   value,
   icon,
-  sub,
 }: {
   title: string
   value: string
   icon: string
-  sub?: string
 }) {
   return (
     <div className="summary-card">
@@ -178,9 +322,179 @@ function SummaryCard({
         <em>{icon}</em>
       </div>
       <strong>{value}</strong>
-      {sub && <p>{sub}</p>}
     </div>
   )
+}
+
+function EmptyText({ text }: { text: string }) {
+  return <p className="empty-text">{text}</p>
+}
+
+function normalizeTopGames(games: Game[]): TopGameView[] {
+  return [...games]
+    .sort((a, b) => {
+      const bScore = toNumber(b.positive_rate ?? b.positiveRate ?? b.score)
+      const aScore = toNumber(a.positive_rate ?? a.positiveRate ?? a.score)
+      return bScore - aScore
+    })
+    .map((game, index) => {
+      const score = toNumber(game.positive_rate ?? game.positiveRate ?? game.score)
+      const genre = Array.isArray(game.genres)
+        ? game.genres.join(', ')
+        : game.genre ?? game.genres ?? '장르 정보 없음'
+
+      return {
+        rank: index + 1,
+        id: String(game.id ?? game.appid ?? game.app_id ?? game.game_id ?? index),
+        name: game.name ?? game.title ?? '이름 없음',
+        genre,
+        score: score > 0 ? `${score.toFixed(1)}%` : '-',
+      }
+    })
+}
+
+function normalizeSentiment(sentiment: SentimentAnalysis | null) {
+  if (!sentiment) {
+    return {
+      positive: 0,
+      neutral: 0,
+      negative: 0,
+    }
+  }
+
+  const positive = normalizeRatio(
+    sentiment.positive_ratio ?? sentiment.positiveRate ?? sentiment.positive,
+  )
+  const neutral = normalizeRatio(
+    sentiment.neutral_ratio ?? sentiment.neutralRate ?? sentiment.neutral,
+  )
+  const negative = normalizeRatio(
+    sentiment.negative_ratio ?? sentiment.negativeRate ?? sentiment.negative,
+  )
+
+  const total = positive + neutral + negative
+
+  if (total === 0) {
+    return {
+      positive: 0,
+      neutral: 0,
+      negative: 0,
+    }
+  }
+
+  return {
+    positive: (positive / total) * 100,
+    neutral: (neutral / total) * 100,
+    negative: (negative / total) * 100,
+  }
+}
+
+function normalizeTopics(topics: TopicAnalysis[]): TopicView[] {
+  return topics
+    .map((topic) => {
+      const label =
+        topic.label ??
+        topic.topic ??
+        topic.keyword ??
+        topic.name ??
+        '토픽명 없음'
+
+      const value = normalizeRatio(
+        topic.value ?? topic.ratio ?? topic.weight ?? topic.percentage,
+      )
+
+      return {
+        label,
+        value,
+      }
+    })
+    .sort((a, b) => b.value - a.value)
+}
+
+function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
+  return items.map((item) => {
+    const item1 = item.item1 ?? item.feature_x ?? item.x ?? '항목 1'
+    const item2 = item.item2 ?? item.feature_y ?? item.y ?? '항목 2'
+    const correlation = toNumber(
+      item.correlation ?? item.correlation_coefficient ?? item.coefficient,
+    )
+
+    return {
+      item1,
+      item2,
+      correlation,
+      insight:
+        item.insight ??
+        item.description ??
+        `${item1}와 ${item2} 사이의 상관관계를 확인할 수 있습니다.`,
+    }
+  })
+}
+
+function sumReviewCount(games: Game[]) {
+  return games.reduce((sum, game) => {
+    return sum + toNumber(game.review_count ?? game.total_reviews)
+  }, 0)
+}
+
+function findTopGenre(games: Game[]) {
+  const genreCount = new Map<string, number>()
+
+  games.forEach((game) => {
+    const rawGenre = Array.isArray(game.genres)
+      ? game.genres[0]
+      : game.genre ?? game.genres
+
+    if (!rawGenre) return
+
+    String(rawGenre)
+      .split(',')
+      .map((genre) => genre.trim())
+      .filter(Boolean)
+      .forEach((genre) => {
+        genreCount.set(genre, (genreCount.get(genre) ?? 0) + 1)
+      })
+  })
+
+  const [topGenre] = [...genreCount.entries()].sort((a, b) => b[1] - a[1])[0] ?? []
+
+  return topGenre ?? '-'
+}
+
+function toNumber(value: unknown) {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const parsed = Number(value.replaceAll(',', '').replace('%', ''))
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  return 0
+}
+
+function normalizeRatio(value: unknown) {
+  const number = toNumber(value)
+
+  if (number <= 1 && number > 0) {
+    return number * 100
+  }
+
+  return number
+}
+
+function formatNumber(value: unknown) {
+  const number = toNumber(value)
+
+  if (!number) return '-'
+
+  return number.toLocaleString()
+}
+
+function formatPercent(value: unknown) {
+  const number = normalizeRatio(value)
+
+  if (!number) return '-'
+
+  return `${number.toFixed(1)}%`
 }
 
 export default App

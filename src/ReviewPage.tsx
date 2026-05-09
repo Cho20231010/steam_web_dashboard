@@ -47,6 +47,8 @@ type NormalizedSentiment = {
 
 type RankingMode = 'positive' | 'negative'
 
+const RANKING_CANDIDATE_LIMIT = 50
+
 function ReviewPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [games, setGames] = useState<Game[]>([])
@@ -234,39 +236,15 @@ function ReviewPage() {
     return normalizeTopicKeywords(targetTopics, selectedGame, selectedValues)
   }, [selectedGameTopics, globalTopics, selectedGame, selectedValues])
 
-  const positiveTopGames = useMemo(() => {
+  const rankingCandidateGames = useMemo(() => {
     return [...reviewGames]
-      .filter((game) => game.positiveReviews > 0)
-      .sort((a, b) => {
-        if (b.positiveReviews !== a.positiveReviews) {
-          return b.positiveReviews - a.positiveReviews
-        }
-
-        return b.positiveRate - a.positiveRate
-      })
-      .slice(0, 5)
-  }, [reviewGames])
-
-  const negativeTopGames = useMemo(() => {
-    return [...reviewGames]
-      .filter((game) => game.negativeReviews > 0)
-      .sort((a, b) => {
-        if (b.negativeReviews !== a.negativeReviews) {
-          return b.negativeReviews - a.negativeReviews
-        }
-
-        return b.negativeRate - a.negativeRate
-      })
-      .slice(0, 5)
+      .filter((game) => game.totalReviews > 0)
+      .sort((a, b) => b.totalReviews - a.totalReviews)
+      .slice(0, RANKING_CANDIDATE_LIMIT)
   }, [reviewGames])
 
   useEffect(() => {
-    const rankingGames = [...positiveTopGames, ...negativeTopGames]
-    const uniqueRankingGames = Array.from(
-      new Map(rankingGames.map((game) => [game.id, game])).values(),
-    )
-
-    if (uniqueRankingGames.length === 0) {
+    if (rankingCandidateGames.length === 0) {
       setRankingSentiments({})
       return
     }
@@ -275,7 +253,7 @@ function ReviewPage() {
 
     async function loadRankingSentiments() {
       const entries = await Promise.all(
-        uniqueRankingGames.map(async (game) => {
+        rankingCandidateGames.map(async (game) => {
           try {
             const sentiment = await getGameSentiment(game.id)
             const normalized = normalizeSentiment(sentiment, game.totalReviews)
@@ -302,7 +280,37 @@ function ReviewPage() {
     return () => {
       isCancelled = true
     }
-  }, [positiveTopGames, negativeTopGames])
+  }, [rankingCandidateGames])
+
+  const positiveTopGames = useMemo(() => {
+    return [...rankingCandidateGames]
+      .sort((a, b) => {
+        const aRate = getRankingRate(a, 'positive', rankingSentiments)
+        const bRate = getRankingRate(b, 'positive', rankingSentiments)
+
+        if (bRate !== aRate) {
+          return bRate - aRate
+        }
+
+        return b.totalReviews - a.totalReviews
+      })
+      .slice(0, 5)
+  }, [rankingCandidateGames, rankingSentiments])
+
+  const negativeTopGames = useMemo(() => {
+    return [...rankingCandidateGames]
+      .sort((a, b) => {
+        const aRate = getRankingRate(a, 'negative', rankingSentiments)
+        const bRate = getRankingRate(b, 'negative', rankingSentiments)
+
+        if (bRate !== aRate) {
+          return bRate - aRate
+        }
+
+        return b.totalReviews - a.totalReviews
+      })
+      .slice(0, 5)
+  }, [rankingCandidateGames, rankingSentiments])
 
   const selectedOptionValue = filteredReviewGames.some(
     (game) => game.id === selectedGame?.id,
@@ -562,9 +570,7 @@ function ReviewRankingList({
   return (
     <div className="review-ranking-list">
       {games.map((game, index) => {
-        const sentiment = rankingSentiments[game.id] ?? createGameSentiment(game)
-        const reviewRate =
-          mode === 'positive' ? sentiment.positive : sentiment.negative
+        const reviewRate = getRankingRate(game, mode, rankingSentiments)
 
         return (
           <div className="review-ranking-item" key={`${game.id}-${mode}`}>
@@ -576,6 +582,16 @@ function ReviewRankingList({
       })}
     </div>
   )
+}
+
+function getRankingRate(
+  game: ReviewGameView,
+  mode: RankingMode,
+  rankingSentiments: Record<string, NormalizedSentiment>,
+) {
+  const sentiment = rankingSentiments[game.id] ?? createGameSentiment(game)
+
+  return mode === 'positive' ? sentiment.positive : sentiment.negative
 }
 
 function normalizeReviewGames(games: Game[]): ReviewGameView[] {

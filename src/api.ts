@@ -104,10 +104,18 @@ export type CorrelationResult = {
   variable_2?: string
   variable1?: string
   variable2?: string
-  correlation?: number
-  correlation_coefficient?: number
-  coefficient?: number
-  value?: number
+
+  correlation?: number | string
+  correlation_coefficient?: number | string
+  correlation_value?: number | string
+  coefficient?: number | string
+  value?: number | string
+
+  p_value?: number | string
+  sample_size?: number | string
+  reliability?: string
+  warning?: string
+
   insight?: string
   description?: string
 }

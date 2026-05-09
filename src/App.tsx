@@ -294,13 +294,7 @@ function App() {
                             <span className="insight-label">{item.item2}</span>
                           </td>
                           <td>
-                            <span
-                              className={
-                                item.correlation >= 0
-                                  ? 'correlation-value positive'
-                                  : 'correlation-value negative'
-                              }
-                            >
+                            <span className={getCorrelationClassName(item.correlation)}>
                               {item.correlation.toFixed(2)}
                             </span>
                           </td>
@@ -464,9 +458,20 @@ function normalizeSentiment(sentiment: SentimentAnalysis | null) {
 }
 
 function normalizeTopics(topics: TopicAnalysis[]): TopicView[] {
+  const fallbackLabels = [
+    '게임플레이',
+    '스토리',
+    '그래픽',
+    '사운드',
+    '성능/최적화',
+    '가격/가성비',
+  ]
+
+  const usedLabels = new Set<string>()
+
   return topics
     .map((topic, index) => {
-      const label = createTopicLabel(topic, index)
+      const rawLabel = createTopicLabel(topic, index)
 
       const value = normalizeRatio(
         topic.value ??
@@ -477,11 +482,27 @@ function normalizeTopics(topics: TopicAnalysis[]): TopicView[] {
       )
 
       return {
-        label,
+        rawLabel,
         value,
       }
     })
     .sort((a, b) => b.value - a.value)
+    .map((topic, index) => {
+      let label = convertTopicToKoreanCategory(topic.rawLabel, index)
+
+      if (usedLabels.has(label)) {
+        label =
+          fallbackLabels.find((fallbackLabel) => !usedLabels.has(fallbackLabel)) ??
+          `${label} ${index + 1}`
+      }
+
+      usedLabels.add(label)
+
+      return {
+        label,
+        value: topic.value,
+      }
+    })
 }
 
 function createTopicLabel(topic: TopicAnalysis, index: number) {
@@ -533,6 +554,87 @@ function createTopicLabel(topic: TopicAnalysis, index: number) {
   return `토픽 ${index + 1}`
 }
 
+function convertTopicToKoreanCategory(label: string, index: number) {
+  const text = label.toLowerCase()
+
+  if (
+    text.includes('story') ||
+    text.includes('narrative') ||
+    text.includes('character') ||
+    text.includes('quest') ||
+    text.includes('ending')
+  ) {
+    return '스토리'
+  }
+
+  if (
+    text.includes('graphic') ||
+    text.includes('visual') ||
+    text.includes('art') ||
+    text.includes('design') ||
+    text.includes('animation') ||
+    text.includes('modeling')
+  ) {
+    return '그래픽'
+  }
+
+  if (
+    text.includes('sound') ||
+    text.includes('music') ||
+    text.includes('audio') ||
+    text.includes('voice') ||
+    text.includes('ost')
+  ) {
+    return '사운드'
+  }
+
+  if (
+    text.includes('bug') ||
+    text.includes('error') ||
+    text.includes('crash') ||
+    text.includes('performance') ||
+    text.includes('peak') ||
+    text.includes('lag') ||
+    text.includes('server') ||
+    text.includes('optimization')
+  ) {
+    return '성능/최적화'
+  }
+
+  if (
+    text.includes('price') ||
+    text.includes('sale') ||
+    text.includes('free') ||
+    text.includes('money') ||
+    text.includes('value')
+  ) {
+    return '가격/가성비'
+  }
+
+  if (
+    text.includes('play') ||
+    text.includes('gameplay') ||
+    text.includes('game') ||
+    text.includes('fun') ||
+    text.includes('good') ||
+    text.includes('control') ||
+    text.includes('combat') ||
+    text.includes('level')
+  ) {
+    return '게임플레이'
+  }
+
+  const fallbackLabels = [
+    '게임플레이',
+    '스토리',
+    '그래픽',
+    '사운드',
+    '성능/최적화',
+  ]
+
+  return fallbackLabels[index] ?? `토픽 ${index + 1}`
+}
+
 function createKeywordTopicName(value: unknown) {
   const words = toKeywordArray(value)
 
@@ -574,6 +676,7 @@ function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
       const correlation = toNumber(
         item.correlation ??
           item.correlation_coefficient ??
+          item.correlation_value ??
           item.coefficient ??
           item.value,
       )
@@ -590,16 +693,37 @@ function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
 
 function createCorrelationInsight(item1: string, item2: string, correlation: number) {
   const absValue = Math.abs(correlation)
+  const coefficientText = correlation.toFixed(2)
 
   if (absValue < 0.1) {
-    return `${item1}와 ${item2} 사이의 뚜렷한 상관관계는 확인되지 않습니다.`
+    return `${item1}와 ${item2} 사이의 상관계수는 ${coefficientText}로, 뚜렷한 상관관계는 확인되지 않습니다.`
+  }
+
+  if (absValue >= 0.7 && correlation > 0) {
+    return `${item1}와 ${item2} 사이의 상관계수는 ${coefficientText}로, 강한 양의 상관관계가 나타납니다.`
+  }
+
+  if (absValue >= 0.7 && correlation < 0) {
+    return `${item1}와 ${item2} 사이의 상관계수는 ${coefficientText}로, 강한 음의 상관관계가 나타납니다.`
   }
 
   if (correlation > 0) {
-    return `${item1} 값이 높을수록 ${item2}도 함께 높아지는 경향이 있습니다.`
+    return `${item1}와 ${item2} 사이의 상관계수는 ${coefficientText}로, ${item1} 값이 높을수록 ${item2}도 함께 높아지는 경향이 있습니다.`
   }
 
-  return `${item1} 값이 높아질수록 ${item2}는 낮아지는 경향이 있습니다.`
+  return `${item1}와 ${item2} 사이의 상관계수는 ${coefficientText}로, ${item1} 값이 높아질수록 ${item2}는 낮아지는 경향이 있습니다.`
+}
+
+function getCorrelationClassName(correlation: number) {
+  if (Math.abs(correlation) < 0.1) {
+    return 'correlation-value neutral'
+  }
+
+  if (correlation > 0) {
+    return 'correlation-value positive'
+  }
+
+  return 'correlation-value negative'
 }
 
 function formatMetricName(value: unknown) {
@@ -636,10 +760,15 @@ function formatMetricName(value: unknown) {
     estimated_owners: '예상 보유자 수',
 
     popularity_score: '인기도',
+    popularity_rank_percent: '인기 순위 비율',
     ccu: '동시 접속자 수',
     peak_ccu: '최고 동시 접속자 수',
+
     average_playtime: '평균 플레이 시간',
     median_playtime: '중앙값 플레이 시간',
+
+    genre_count: '장르 수',
+    release_year: '출시 연도',
   }
 
   if (metricMap[lower]) {
@@ -648,7 +777,7 @@ function formatMetricName(value: unknown) {
 
   if (lower.startsWith('genre::')) {
     const genre = raw.replace(/^genre::/i, '').trim()
-    return `${formatTopicText(genre)} 장르`
+    return `${formatGenreName(genre)} 장르`
   }
 
   if (lower.startsWith('tag::')) {
@@ -657,6 +786,37 @@ function formatMetricName(value: unknown) {
   }
 
   return formatTopicText(raw)
+}
+
+function formatGenreName(value: string) {
+  const text = value.trim()
+  const lower = text.toLowerCase()
+
+  const genreMap: Record<string, string> = {
+    action: '액션',
+    adventure: '어드벤처',
+    casual: '캐주얼',
+    indie: '인디',
+    rpg: 'RPG',
+    simulation: '시뮬레이션',
+    strategy: '전략',
+    sports: '스포츠',
+    racing: '레이싱',
+    'free to play': '무료 플레이',
+    'massively multiplayer': '대규모 멀티플레이어',
+    'early access': '앞서 해보기',
+    'animation & modeling': '애니메이션/모델링',
+    'design & illustration': '디자인/일러스트',
+    'photo editing': '사진 편집',
+    'video production': '영상 제작',
+    'audio production': '오디오 제작',
+    utilities: '유틸리티',
+    'software training': '소프트웨어 교육',
+    violent: '폭력성',
+    'game development': '게임 개발',
+  }
+
+  return genreMap[lower] ?? formatTopicText(text)
 }
 
 function formatTopicText(value: string) {

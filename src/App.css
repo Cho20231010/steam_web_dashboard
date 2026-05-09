@@ -466,6 +466,11 @@ button {
   background: var(--red-soft);
 }
 
+.correlation-value.neutral {
+  color: #6b7280;
+  background: #f0f2f5;
+}
+
 .insight-desc {
   color: #4b5563;
   font-weight: 600;

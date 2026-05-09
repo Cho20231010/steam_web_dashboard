@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  getGameDetail,
   getGames,
   getGameSentiment,
   getGameTopics,
@@ -15,6 +16,7 @@ type ReviewGameView = {
   name: string
   genre: string
   positiveRate: number
+  neutralRate: number
   negativeRate: number
   reviewCount: number
   image?: string
@@ -31,6 +33,7 @@ function ReviewPage() {
     null,
   )
   const [selectedGameId, setSelectedGameId] = useState('')
+  const [selectedGameDetail, setSelectedGameDetail] = useState<Game | null>(null)
   const [selectedGameSentiment, setSelectedGameSentiment] =
     useState<SentimentAnalysis | null>(null)
   const [selectedGameTopics, setSelectedGameTopics] = useState<TopicAnalysis[]>([])
@@ -50,14 +53,13 @@ function ReviewPage() {
         ])
 
         const safeGames = Array.isArray(gamesData) ? gamesData : []
+        const normalizedGames = normalizeReviewGames(safeGames)
 
         setGames(safeGames)
         setOverallSentiment(sentimentData)
 
-        const firstGame = normalizeReviewGames(safeGames)[0]
-
-        if (firstGame) {
-          setSelectedGameId(firstGame.id)
+        if (normalizedGames[0]) {
+          setSelectedGameId(normalizedGames[0].id)
         }
       } catch (error) {
         console.error(error)
@@ -77,24 +79,32 @@ function ReviewPage() {
       try {
         setDetailLoading(true)
 
-        const [sentimentData, topicData] = await Promise.allSettled([
+        const [detailResult, sentimentResult, topicResult] = await Promise.allSettled([
+          getGameDetail(selectedGameId),
           getGameSentiment(selectedGameId),
           getGameTopics(selectedGameId),
         ])
 
-        if (sentimentData.status === 'fulfilled') {
-          setSelectedGameSentiment(sentimentData.value)
+        if (detailResult.status === 'fulfilled') {
+          setSelectedGameDetail(detailResult.value)
+        } else {
+          setSelectedGameDetail(null)
+        }
+
+        if (sentimentResult.status === 'fulfilled') {
+          setSelectedGameSentiment(sentimentResult.value)
         } else {
           setSelectedGameSentiment(null)
         }
 
-        if (topicData.status === 'fulfilled' && Array.isArray(topicData.value)) {
-          setSelectedGameTopics(topicData.value)
+        if (topicResult.status === 'fulfilled' && Array.isArray(topicResult.value)) {
+          setSelectedGameTopics(topicResult.value)
         } else {
           setSelectedGameTopics([])
         }
       } catch (error) {
         console.error(error)
+        setSelectedGameDetail(null)
         setSelectedGameSentiment(null)
         setSelectedGameTopics([])
       } finally {
@@ -107,28 +117,62 @@ function ReviewPage() {
 
   const reviewGames = useMemo(() => normalizeReviewGames(games), [games])
 
-  const selectedGame = useMemo(() => {
+  const selectedGameFromList = useMemo(() => {
     return reviewGames.find((game) => game.id === selectedGameId) ?? reviewGames[0]
   }, [reviewGames, selectedGameId])
 
+  const selectedGame = useMemo(() => {
+    if (!selectedGameFromList) return undefined
+
+    const detailGame = selectedGameDetail
+      ? normalizeReviewGames([selectedGameDetail])[0]
+      : undefined
+
+    return {
+      ...selectedGameFromList,
+      ...detailGame,
+      id: selectedGameFromList.id,
+      steamAppId: detailGame?.steamAppId ?? selectedGameFromList.steamAppId,
+      name: detailGame?.name ?? selectedGameFromList.name,
+      genre: detailGame?.genre ?? selectedGameFromList.genre,
+      image: detailGame?.image ?? selectedGameFromList.image,
+      reviewCount:
+        detailGame?.reviewCount && detailGame.reviewCount > 0
+          ? detailGame.reviewCount
+          : selectedGameFromList.reviewCount,
+    }
+  }, [selectedGameDetail, selectedGameFromList])
+
   const overallValues = normalizeSentiment(overallSentiment)
 
-  const selectedValues = normalizeSentiment(
-    selectedGameSentiment ?? createFallbackSentiment(selectedGame),
-  )
+  const selectedValues = useMemo(() => {
+    const normalized = normalizeSentiment(selectedGameSentiment)
+
+    if (normalized.totalCount > 0) {
+      return normalized
+    }
+
+    return createFallbackSentiment(selectedGame)
+  }, [selectedGame, selectedGameSentiment])
+
+  const selectedReviewCount = useMemo(() => {
+    return getBestReviewCount(selectedGame, selectedValues)
+  }, [selectedGame, selectedValues])
 
   const topicKeywords = useMemo(() => {
     return normalizeTopicKeywords(selectedGameTopics)
   }, [selectedGameTopics])
 
   const positiveTopGames = useMemo(() => {
-    return [...reviewGames]
+    return reviewGames
+      .filter((game) => game.positiveRate > 0)
       .sort((a, b) => b.positiveRate - a.positiveRate)
       .slice(0, 5)
   }, [reviewGames])
 
   const negativeTopGames = useMemo(() => {
-    return [...reviewGames]
+    return reviewGames
+      .filter((game) => game.negativeRate > 0)
       .sort((a, b) => b.negativeRate - a.negativeRate)
       .slice(0, 5)
   }, [reviewGames])
@@ -230,7 +274,7 @@ function ReviewPage() {
             </div>
             <div>
               <span>리뷰 수</span>
-              <strong>{formatNumber(selectedGame?.reviewCount ?? 0)}</strong>
+              <strong>{formatNumber(selectedReviewCount)}</strong>
             </div>
           </div>
         </article>
@@ -251,13 +295,13 @@ function ReviewPage() {
                   className="stacked-positive"
                   style={{ width: `${selectedValues.positive}%` }}
                 >
-                  {selectedValues.positive >= 18 && '긍정'}
+                  {selectedValues.positive >= 16 && '긍정'}
                 </div>
                 <div
                   className="stacked-neutral"
                   style={{ width: `${selectedValues.neutral}%` }}
                 >
-                  {selectedValues.neutral >= 12 && '중립'}
+                  {selectedValues.neutral >= 10 && '중립'}
                 </div>
                 <div
                   className="stacked-negative"
@@ -300,7 +344,7 @@ function ReviewPage() {
             <div className="keyword-cloud">
               {topicKeywords.map((keyword) => (
                 <span
-                  key={keyword.label}
+                  key={`${keyword.label}-${keyword.size}`}
                   className={`keyword-size-${keyword.size}`}
                 >
                   {keyword.label}
@@ -308,15 +352,7 @@ function ReviewPage() {
               ))}
             </div>
           ) : (
-            <div className="keyword-cloud">
-              <span className="keyword-size-5">게임플레이</span>
-              <span className="keyword-size-4">스토리</span>
-              <span className="keyword-size-4">그래픽</span>
-              <span className="keyword-size-2">사운드</span>
-              <span className="keyword-size-2">난이도</span>
-              <span className="keyword-size-1">보스</span>
-              <span className="keyword-size-1">탐험</span>
-            </div>
+            <p className="review-empty-text">토픽 키워드 데이터가 없습니다.</p>
           )}
         </article>
 
@@ -386,7 +422,7 @@ function ReviewRankingList({
       {games.map((game, index) => (
         <div className="review-ranking-item" key={`${game.id}-${valueKey}`}>
           <span>{index + 1}</span>
-          <strong>{game.name}</strong>
+          <strong title={game.name}>{game.name}</strong>
           <em>{game[valueKey].toFixed(1)}%</em>
         </div>
       ))}
@@ -396,77 +432,156 @@ function ReviewRankingList({
 
 function normalizeReviewGames(games: Game[]): ReviewGameView[] {
   return games.map((game, index) => {
+    const record = toRecord(game)
+
     const steamAppId = toSteamAppId(
-      game.steam_appid ??
-        game.steamAppId ??
-        game.app_id ??
-        game.appId ??
-        game.appid ??
-        game.game_id,
+      readFirst(record, [
+        'steam_appid',
+        'steamAppId',
+        'app_id',
+        'appId',
+        'appid',
+        'app_id',
+        'game_id',
+      ]),
     )
 
     const positiveRate = normalizeRatio(
-      game.positive_rate ?? game.positiveRate ?? game.score,
+      readFirst(record, [
+        'positive_rate',
+        'positiveRate',
+        'positive_review_ratio',
+        'positiveReviewRatio',
+        'sentiment_positive_ratio',
+        'positive_ratio',
+        'score',
+        'rating',
+      ]),
     )
 
-    const negativeRate = Math.max(0, 100 - positiveRate)
+    const neutralRate = normalizeRatio(
+      readFirst(record, [
+        'neutral_rate',
+        'neutralRate',
+        'neutral_review_ratio',
+        'sentiment_neutral_ratio',
+        'neutral_ratio',
+      ]),
+    )
 
-    const genre = Array.isArray(game.genres)
-      ? game.genres.join(', ')
-      : game.genre ?? game.genres ?? '장르 정보 없음'
+    const explicitNegativeRate = normalizeRatio(
+      readFirst(record, [
+        'negative_rate',
+        'negativeRate',
+        'negative_review_ratio',
+        'sentiment_negative_ratio',
+        'negative_ratio',
+      ]),
+    )
 
-    const image =
-      game.image_url ??
-      game.image ??
-      game.header_image ??
-      game.capsule_image ??
-      getSteamHeaderImage(steamAppId)
+    const negativeRate =
+      explicitNegativeRate > 0
+        ? explicitNegativeRate
+        : positiveRate > 0
+          ? Math.max(0, 100 - positiveRate - neutralRate)
+          : 0
+
+    const genreValue = readFirst(record, ['genre', 'genres'])
+    const genre = Array.isArray(genreValue)
+      ? genreValue.join(', ')
+      : String(genreValue ?? '장르 정보 없음')
+
+    const image = String(
+      readFirst(record, [
+        'image_url',
+        'image',
+        'header_image',
+        'capsule_image',
+        'thumbnail',
+        'thumbnail_url',
+      ]) ??
+        getSteamHeaderImage(steamAppId) ??
+        '',
+    )
 
     return {
       id: String(
-        game.id ??
-          game.steam_appid ??
-          game.app_id ??
-          game.appid ??
-          game.game_id ??
-          index,
+        readFirst(record, [
+          'id',
+          'game_id',
+          'steam_appid',
+          'app_id',
+          'appid',
+          'steamAppId',
+        ]) ?? index,
       ),
       steamAppId,
-      name: game.name ?? game.title ?? '이름 없음',
+      name: String(readFirst(record, ['name', 'title']) ?? '이름 없음'),
       genre,
       positiveRate,
+      neutralRate,
       negativeRate,
-      reviewCount: toNumber(game.review_count ?? game.total_reviews),
+      reviewCount: getReviewCountFromRecord(record),
       image,
     }
   })
 }
 
 function normalizeSentiment(sentiment: SentimentAnalysis | null) {
-  if (!sentiment) {
+  const record = toRecord(sentiment)
+
+  const positiveCount = toNumber(
+    readFirst(record, [
+      'positive_count',
+      'positive_reviews',
+      'positiveReviewCount',
+      'positive_review_count',
+    ]),
+  )
+  const neutralCount = toNumber(
+    readFirst(record, [
+      'neutral_count',
+      'neutral_reviews',
+      'neutralReviewCount',
+      'neutral_review_count',
+    ]),
+  )
+  const negativeCount = toNumber(
+    readFirst(record, [
+      'negative_count',
+      'negative_reviews',
+      'negativeReviewCount',
+      'negative_review_count',
+    ]),
+  )
+
+  const countTotal = positiveCount + neutralCount + negativeCount
+
+  if (countTotal > 0) {
     return {
-      positive: 0,
-      neutral: 0,
-      negative: 0,
-      positiveCount: 0,
-      neutralCount: 0,
-      negativeCount: 0,
+      positive: (positiveCount / countTotal) * 100,
+      neutral: (neutralCount / countTotal) * 100,
+      negative: (negativeCount / countTotal) * 100,
+      positiveCount,
+      neutralCount,
+      negativeCount,
+      totalCount: countTotal,
     }
   }
 
   const positive = normalizeRatio(
-    sentiment.positive_ratio ?? sentiment.positiveRate ?? sentiment.positive,
+    readFirst(record, ['positive_ratio', 'positiveRate', 'positive']),
   )
   const neutral = normalizeRatio(
-    sentiment.neutral_ratio ?? sentiment.neutralRate ?? sentiment.neutral,
+    readFirst(record, ['neutral_ratio', 'neutralRate', 'neutral']),
   )
   const negative = normalizeRatio(
-    sentiment.negative_ratio ?? sentiment.negativeRate ?? sentiment.negative,
+    readFirst(record, ['negative_ratio', 'negativeRate', 'negative']),
   )
 
-  const total = positive + neutral + negative
+  const ratioTotal = positive + neutral + negative
 
-  if (total === 0) {
+  if (ratioTotal === 0) {
     return {
       positive: 0,
       neutral: 0,
@@ -474,84 +589,122 @@ function normalizeSentiment(sentiment: SentimentAnalysis | null) {
       positiveCount: 0,
       neutralCount: 0,
       negativeCount: 0,
+      totalCount: 0,
     }
   }
 
-  const normalizedPositive = (positive / total) * 100
-  const normalizedNeutral = (neutral / total) * 100
-  const normalizedNegative = (negative / total) * 100
+  const normalizedPositive = (positive / ratioTotal) * 100
+  const normalizedNeutral = (neutral / ratioTotal) * 100
+  const normalizedNegative = (negative / ratioTotal) * 100
+
+  const totalReviewCount = toNumber(
+    readFirst(record, ['total_count', 'total_reviews', 'review_count', 'reviews']),
+  )
 
   return {
     positive: normalizedPositive,
     neutral: normalizedNeutral,
     negative: normalizedNegative,
-    positiveCount: Math.round(positive),
-    neutralCount: Math.round(neutral),
-    negativeCount: Math.round(negative),
+    positiveCount:
+      totalReviewCount > 0
+        ? Math.round((normalizedPositive / 100) * totalReviewCount)
+        : Math.round(normalizedPositive),
+    neutralCount:
+      totalReviewCount > 0
+        ? Math.round((normalizedNeutral / 100) * totalReviewCount)
+        : Math.round(normalizedNeutral),
+    negativeCount:
+      totalReviewCount > 0
+        ? Math.round((normalizedNegative / 100) * totalReviewCount)
+        : Math.round(normalizedNegative),
+    totalCount: totalReviewCount,
   }
 }
 
 function createFallbackSentiment(game?: ReviewGameView) {
-  if (!game) return null
+  if (!game) {
+    return {
+      positive: 0,
+      neutral: 0,
+      negative: 0,
+      positiveCount: 0,
+      neutralCount: 0,
+      negativeCount: 0,
+      totalCount: 0,
+    }
+  }
+
+  const neutral = game.neutralRate > 0 ? game.neutralRate : 100 - game.positiveRate - game.negativeRate
 
   return {
     positive: game.positiveRate,
-    neutral: Math.min(10, Math.max(0, 100 - game.positiveRate - game.negativeRate)),
+    neutral: Math.max(0, neutral),
     negative: game.negativeRate,
+    positiveCount: Math.round((game.positiveRate / 100) * game.reviewCount),
+    neutralCount: Math.round((Math.max(0, neutral) / 100) * game.reviewCount),
+    negativeCount: Math.round((game.negativeRate / 100) * game.reviewCount),
+    totalCount: game.reviewCount,
   }
 }
 
 function normalizeTopicKeywords(topics: TopicAnalysis[]): TopicKeyword[] {
   const labels = topics
-    .map((topic, index) => createTopicLabel(topic, index))
+    .flatMap((topic, index) => createTopicLabels(topic, index))
+    .map(convertTopicToKoreanCategory)
     .filter(Boolean)
-    .slice(0, 7)
 
-  if (labels.length === 0) {
-    return []
-  }
+  const uniqueLabels = Array.from(new Set(labels)).slice(0, 7)
 
-  return labels.map((label, index) => ({
-    label: convertTopicToKoreanCategory(label, index),
+  return uniqueLabels.map((label, index) => ({
+    label,
     size: Math.max(1, 5 - Math.floor(index / 2)),
   }))
 }
 
-function createTopicLabel(topic: TopicAnalysis, index: number) {
-  const directName =
-    pickMeaningfulText(
-      topic.topic_name,
-      topic.topicName,
-      topic.topic_label,
-      topic.topicLabel,
-      topic.display_name,
-      topic.label,
-      topic.name,
-      topic.keyword,
-    ) ?? ''
+function createTopicLabels(topic: TopicAnalysis, index: number) {
+  const record = toRecord(topic)
 
-  if (directName) {
-    return formatTopicText(directName)
-  }
-
-  const keywordName = createKeywordTopicName(
-    topic.keywords ??
-      topic.top_keywords ??
-      topic.topKeywords ??
-      topic.words ??
-      topic.top_words ??
-      topic.topWords ??
-      topic.terms,
+  const directName = pickMeaningfulText(
+    readFirst(record, [
+      'topic_name',
+      'topicName',
+      'topic_label',
+      'topicLabel',
+      'display_name',
+      'label',
+      'name',
+      'keyword',
+    ]),
   )
 
-  if (keywordName) {
-    return keywordName
+  const keywordValue = readFirst(record, [
+    'keywords',
+    'top_keywords',
+    'topKeywords',
+    'words',
+    'top_words',
+    'topWords',
+    'terms',
+  ])
+
+  const keywordLabels = toKeywordArray(keywordValue)
+
+  if (directName && keywordLabels.length > 0) {
+    return [directName, ...keywordLabels]
   }
 
-  return `토픽 ${index + 1}`
+  if (keywordLabels.length > 0) {
+    return keywordLabels
+  }
+
+  if (directName) {
+    return [directName]
+  }
+
+  return [`토픽 ${index + 1}`]
 }
 
-function convertTopicToKoreanCategory(label: string, index: number) {
+function convertTopicToKoreanCategory(label: string) {
   const text = label.toLowerCase()
 
   if (
@@ -608,9 +761,7 @@ function convertTopicToKoreanCategory(label: string, index: number) {
     return '게임플레이'
   }
 
-  const fallback = ['게임플레이', '스토리', '그래픽', '탐험', '난이도', '보스', '사운드']
-
-  return fallback[index] ?? label
+  return formatTopicText(label)
 }
 
 function calculateCompoundScore(values: {
@@ -622,14 +773,49 @@ function calculateCompoundScore(values: {
   return score.toFixed(2)
 }
 
-function createKeywordTopicName(value: unknown) {
-  const words = toKeywordArray(value)
+function getBestReviewCount(
+  game: ReviewGameView | undefined,
+  values: { totalCount: number },
+) {
+  if (values.totalCount > 0) return values.totalCount
+  return game?.reviewCount ?? 0
+}
 
-  if (words.length === 0) {
-    return ''
+function getReviewCountFromRecord(record: Record<string, unknown>) {
+  return toNumber(
+    readFirst(record, [
+      'review_count',
+      'reviewCount',
+      'total_reviews',
+      'totalReviews',
+      'reviews',
+      'reviews_count',
+      'num_reviews',
+      'total_review_count',
+      'positive_count',
+      'positive_reviews',
+    ]),
+  )
+}
+
+function readFirst(record: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key]
+
+    if (value !== undefined && value !== null && value !== '') {
+      return value
+    }
   }
 
-  return words.slice(0, 3).map(formatTopicText).join(' · ')
+  return undefined
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object') {
+    return value as Record<string, unknown>
+  }
+
+  return {}
 }
 
 function toKeywordArray(value: unknown) {
@@ -641,7 +827,7 @@ function toKeywordArray(value: unknown) {
 
   if (typeof value === 'string') {
     return value
-      .split(/[,/|·\n]+/)
+      .split(/[,/|·\n\s]+/)
       .map((item) => item.trim())
       .filter((item) => item && !isInvalidText(item))
   }

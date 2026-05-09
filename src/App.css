@@ -616,11 +616,14 @@ button {
 
 .review-grid {
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
   gap: 18px;
+  align-items: stretch;
 }
 
 .review-card {
+  display: flex;
+  flex-direction: column;
   background: #ffffff;
   border: 1px solid #e6eaf2;
   border-radius: 20px;
@@ -636,16 +639,18 @@ button {
   text-align: left;
 }
 
+/* 전체 리뷰 감성 분포 */
 .review-chart-card {
-  min-height: 300px;
+  min-height: 330px;
 }
 
 .review-donut-layout {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 42px;
-  min-height: 210px;
+  min-height: 220px;
 }
 
 .review-donut {
@@ -710,8 +715,9 @@ button {
   font-weight: 700;
 }
 
+/* 선택한 게임 */
 .selected-game-card {
-  min-height: 300px;
+  min-height: 330px;
 }
 
 .game-select {
@@ -757,7 +763,8 @@ button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18px;
-  margin-top: 14px;
+  margin-top: auto;
+  padding-top: 14px;
 }
 
 .selected-game-meta span {
@@ -765,6 +772,7 @@ button {
   color: #6b7280;
   font-size: 13px;
   font-weight: 700;
+  line-height: 1.4;
 }
 
 .selected-game-meta strong {
@@ -779,8 +787,9 @@ button {
   text-align: right;
 }
 
+/* 게임별 감성 분포 */
 .game-sentiment-card {
-  min-height: 270px;
+  min-height: 300px;
 }
 
 .game-sentiment-name {
@@ -836,7 +845,8 @@ button {
 .sentiment-rate-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  margin-top: 22px;
+  margin-top: auto;
+  padding-top: 22px;
   gap: 12px;
 }
 
@@ -844,6 +854,7 @@ button {
   padding: 12px;
   border-radius: 12px;
   background: #f7f8fc;
+  text-align: center;
 }
 
 .sentiment-rate-grid span {
@@ -861,11 +872,13 @@ button {
   font-weight: 900;
 }
 
+/* 주요 토픽 키워드 */
 .keyword-card {
-  min-height: 270px;
+  min-height: 300px;
 }
 
 .keyword-cloud {
+  flex: 1;
   min-height: 190px;
   display: flex;
   flex-wrap: wrap;
@@ -879,6 +892,7 @@ button {
   display: inline-block;
   font-weight: 900;
   line-height: 1.2;
+  word-break: keep-all;
 }
 
 .keyword-size-5 {
@@ -906,19 +920,23 @@ button {
   font-size: 15px;
 }
 
+/* TOP 5 랭킹 카드 */
 .ranking-card {
-  min-height: 240px;
+  min-height: 260px;
+  height: 100%;
 }
 
 .review-ranking-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 12px;
 }
 
 .review-ranking-item {
   display: grid;
-  grid-template-columns: 30px 1fr auto;
+  grid-template-columns: 30px minmax(0, 1fr) 72px;
   align-items: center;
   gap: 10px;
   color: #111827;
@@ -944,10 +962,12 @@ button {
   font-size: 15px;
   font-style: normal;
   font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
 }
 
-.review-status-card,
-.review-empty-text {
+/* 상태/빈 데이터 문구 */
+.review-status-card {
   background: #ffffff;
   border: 1px solid #e6eaf2;
   border-radius: 18px;
@@ -963,8 +983,7 @@ button {
   font-weight: 900;
 }
 
-.review-status-card p,
-.review-empty-text {
+.review-status-card p {
   margin: 8px 0 0;
   line-height: 1.6;
 }
@@ -974,6 +993,14 @@ button {
   border-color: #f2c7c7;
 }
 
+.review-empty-text {
+  margin: 8px 0 0;
+  color: #6b7280;
+  line-height: 1.6;
+  font-weight: 700;
+}
+
+/* 반응형 */
 @media (max-width: 1200px) {
   .review-grid {
     grid-template-columns: 1fr;
@@ -982,9 +1009,21 @@ button {
   .review-donut-layout {
     justify-content: flex-start;
   }
+
+  .review-chart-card,
+  .selected-game-card,
+  .game-sentiment-card,
+  .keyword-card,
+  .ranking-card {
+    min-height: auto;
+  }
 }
 
 @media (max-width: 640px) {
+  .review-card {
+    padding: 18px;
+  }
+
   .review-donut-layout {
     flex-direction: column;
     align-items: flex-start;
@@ -1002,5 +1041,20 @@ button {
   .sentiment-rate-grid {
     grid-template-columns: 1fr;
   }
-}
 
+  .review-ranking-item {
+    grid-template-columns: 24px minmax(0, 1fr) 60px;
+  }
+
+  .keyword-size-5 {
+    font-size: 30px;
+  }
+
+  .keyword-size-4 {
+    font-size: 25px;
+  }
+
+  .keyword-size-3 {
+    font-size: 21px;
+  }
+}

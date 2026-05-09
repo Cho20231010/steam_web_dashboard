@@ -504,12 +504,11 @@ button {
 
 .review-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-areas:
     'overall selected'
     'sentiment keyword'
-    'positive positive'
-    'negative negative';
+    'positive negative';
   gap: 18px;
   align-items: stretch;
 }
@@ -555,10 +554,12 @@ button {
 
 .positive-ranking-card {
   grid-area: positive;
+  min-height: 300px;
 }
 
 .negative-ranking-card {
   grid-area: negative;
+  min-height: 300px;
 }
 
 .review-donut-layout {
@@ -849,12 +850,7 @@ button {
 
 .ranking-card {
   width: 100%;
-  min-height: 270px;
-}
-
-.positive-ranking-card,
-.negative-ranking-card {
-  min-height: 270px;
+  min-height: 300px;
 }
 
 .review-ranking-list {
@@ -940,6 +936,7 @@ button {
   text-align: center;
 }
 
+/* 반응형 */
 @media (max-width: 1200px) {
   .summary-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -962,6 +959,11 @@ button {
 
   .review-donut-layout {
     justify-content: flex-start;
+  }
+
+  .positive-ranking-card,
+  .negative-ranking-card {
+    min-height: 300px;
   }
 }
 

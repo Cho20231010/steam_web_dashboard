@@ -106,6 +106,7 @@ button {
   padding: 28px 22px 30px;
 }
 
+/* 홈 화면 */
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -496,6 +497,7 @@ button {
   border-color: #f2c7c7;
 }
 
+/* 리뷰 페이지 */
 .review-page {
   width: 100%;
 }
@@ -506,7 +508,8 @@ button {
   grid-template-areas:
     'overall selected'
     'sentiment keyword'
-    'positive negative';
+    'positive positive'
+    'negative negative';
   gap: 18px;
   align-items: stretch;
 }
@@ -845,6 +848,12 @@ button {
 }
 
 .ranking-card {
+  width: 100%;
+  min-height: 270px;
+}
+
+.positive-ranking-card,
+.negative-ranking-card {
   min-height: 270px;
 }
 
@@ -857,14 +866,24 @@ button {
 
 .review-ranking-item {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 76px;
+  grid-template-columns: 34px minmax(0, 1fr) 90px;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  min-height: 38px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f8fc;
   color: #111827;
 }
 
 .review-ranking-item span {
-  color: #374151;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #edf0ff;
+  color: var(--blue);
   font-size: 14px;
   font-weight: 900;
 }
@@ -1013,7 +1032,7 @@ button {
   }
 
   .review-ranking-item {
-    grid-template-columns: 24px minmax(0, 1fr) 64px;
+    grid-template-columns: 28px minmax(0, 1fr) 70px;
   }
 
   .keyword-size-5 {

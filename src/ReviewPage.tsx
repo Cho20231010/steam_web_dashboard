@@ -3,6 +3,7 @@ import {
   getDashboardSummary,
   getGameDetail,
   getGameSentiment,
+  getGameTopics,
   getGames,
   getSentimentAnalysis,
   getTopicAnalysis,
@@ -52,6 +53,7 @@ function ReviewPage() {
     null,
   )
   const [globalTopics, setGlobalTopics] = useState<TopicAnalysis[]>([])
+  const [selectedGameTopics, setSelectedGameTopics] = useState<TopicAnalysis[]>([])
   const [selectedGameId, setSelectedGameId] = useState('')
   const [gameSearchKeyword, setGameSearchKeyword] = useState('')
   const [selectedGameDetail, setSelectedGameDetail] = useState<Game | null>(null)
@@ -144,9 +146,10 @@ function ReviewPage() {
       try {
         setDetailLoading(true)
 
-        const [detailResult, sentimentResult] = await Promise.allSettled([
+        const [detailResult, sentimentResult, topicResult] = await Promise.allSettled([
           getGameDetail(selectedGameId),
           getGameSentiment(selectedGameId),
+          getGameTopics(selectedGameId),
         ])
 
         setSelectedGameDetail(
@@ -156,10 +159,17 @@ function ReviewPage() {
         setSelectedGameSentiment(
           sentimentResult.status === 'fulfilled' ? sentimentResult.value : null,
         )
+
+        setSelectedGameTopics(
+          topicResult.status === 'fulfilled' && Array.isArray(topicResult.value)
+            ? topicResult.value
+            : [],
+        )
       } catch (error) {
         console.error(error)
         setSelectedGameDetail(null)
         setSelectedGameSentiment(null)
+        setSelectedGameTopics([])
       } finally {
         setDetailLoading(false)
       }
@@ -214,8 +224,12 @@ function ReviewPage() {
   }, [selectedGame, selectedGameSentiment])
 
   const topicKeywords = useMemo(() => {
+    if (selectedGameTopics.length > 0) {
+      return normalizeTopicKeywords(selectedGameTopics)
+    }
+
     return normalizeTopicKeywords(globalTopics)
-  }, [globalTopics])
+  }, [selectedGameTopics, globalTopics])
 
   const positiveTopGames = useMemo(() => {
     return [...reviewGames]
@@ -705,19 +719,21 @@ function normalizeTopicKeywords(topics: TopicAnalysis[]): TopicKeyword[] {
   return [...topics]
     .sort(
       (a, b) =>
-        normalizeRatio(b.weight_percent ?? b.weight) -
-        normalizeRatio(a.weight_percent ?? a.weight),
+        getTopicWeightPercent(b) -
+        getTopicWeightPercent(a),
     )
     .slice(0, 5)
     .map((topic, index) => ({
       label: getTopicKoreanLabel(topic),
       size: getKeywordSize(index),
-      percent: normalizeRatio(topic.weight_percent ?? topic.weight),
+      percent: getTopicWeightPercent(topic),
     }))
 }
 
 function getTopicKoreanLabel(topic: TopicAnalysis) {
-  const topicId = Number(topic.topic_id)
+  const topicId = Number(topic.topic_id ?? topic.topicId)
+  const keywords = extractTopicKeywords(topic)
+  const keywordText = keywords.join(' ').toLowerCase()
 
   const topicIdMap: Record<number, string> = {
     0: '스토리·전투',
@@ -727,28 +743,105 @@ function getTopicKoreanLabel(topic: TopicAnalysis) {
     4: '협동/재미',
   }
 
-  if (topicIdMap[topicId]) return topicIdMap[topicId]
+  if (topicIdMap[topicId]) {
+    return topicIdMap[topicId]
+  }
 
-  const keywords = Array.isArray(topic.keywords) ? topic.keywords : []
-  const keywordText = keywords.join(' ').toLowerCase()
-
-  if (keywordText.includes('story') || keywordText.includes('combat')) {
+  if (
+    keywordText.includes('story') ||
+    keywordText.includes('combat') ||
+    keywordText.includes('quest') ||
+    keywordText.includes('character') ||
+    keywordText.includes('lore')
+  ) {
     return '스토리·전투'
   }
 
-  if (keywordText.includes('friend') || keywordText.includes('fun')) {
+  if (
+    keywordText.includes('friend') ||
+    keywordText.includes('coop') ||
+    keywordText.includes('multi') ||
+    keywordText.includes('fun')
+  ) {
     return '협동/재미'
   }
 
-  if (keywordText.includes('time')) {
+  if (
+    keywordText.includes('time') ||
+    keywordText.includes('hour') ||
+    keywordText.includes('long') ||
+    keywordText.includes('playtime')
+  ) {
     return '플레이 시간'
   }
 
-  if (keywordText.includes('shop')) {
+  if (
+    keywordText.includes('shop') ||
+    keywordText.includes('price') ||
+    keywordText.includes('money') ||
+    keywordText.includes('item') ||
+    keywordText.includes('dlc')
+  ) {
     return '상점/기타'
   }
 
+  if (
+    keywordText.includes('graphic') ||
+    keywordText.includes('visual') ||
+    keywordText.includes('art') ||
+    keywordText.includes('design') ||
+    keywordText.includes('animation')
+  ) {
+    return '그래픽'
+  }
+
+  if (
+    keywordText.includes('sound') ||
+    keywordText.includes('music') ||
+    keywordText.includes('audio') ||
+    keywordText.includes('voice')
+  ) {
+    return '사운드'
+  }
+
+  if (
+    keywordText.includes('bug') ||
+    keywordText.includes('server') ||
+    keywordText.includes('lag') ||
+    keywordText.includes('crash') ||
+    keywordText.includes('performance')
+  ) {
+    return '성능/최적화'
+  }
+
   return '게임플레이'
+}
+
+function extractTopicKeywords(topic: TopicAnalysis) {
+  const values = [
+    topic.keywords,
+    topic.top_keywords,
+    topic.topKeywords,
+    topic.words,
+    topic.terms,
+  ]
+
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      return value.map((item) => String(item))
+    }
+  }
+
+  return []
+}
+
+function getTopicWeightPercent(topic: TopicAnalysis) {
+  return normalizeRatio(
+    topic.weight_percent ??
+      topic.weight ??
+      topic.percentage ??
+      topic.percent,
+  )
 }
 
 function getKeywordSize(index: number) {

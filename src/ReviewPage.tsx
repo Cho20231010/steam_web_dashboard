@@ -45,7 +45,7 @@ type NormalizedSentiment = {
   totalCount: number
 }
 
-const MIN_REVIEW_COUNT_FOR_TOP = 1000
+type RankingMode = 'positive' | 'negative'
 
 function ReviewPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
@@ -233,26 +233,26 @@ function ReviewPage() {
 
   const positiveTopGames = useMemo(() => {
     return [...reviewGames]
-      .filter((game) => game.totalReviews >= MIN_REVIEW_COUNT_FOR_TOP)
+      .filter((game) => game.positiveReviews > 0)
       .sort((a, b) => {
-        if (b.positiveRate !== a.positiveRate) {
-          return b.positiveRate - a.positiveRate
+        if (b.positiveReviews !== a.positiveReviews) {
+          return b.positiveReviews - a.positiveReviews
         }
 
-        return b.totalReviews - a.totalReviews
+        return b.positiveRate - a.positiveRate
       })
       .slice(0, 5)
   }, [reviewGames])
 
   const negativeTopGames = useMemo(() => {
     return [...reviewGames]
-      .filter((game) => game.totalReviews >= MIN_REVIEW_COUNT_FOR_TOP)
+      .filter((game) => game.negativeReviews > 0)
       .sort((a, b) => {
-        if (b.negativeRate !== a.negativeRate) {
-          return b.negativeRate - a.negativeRate
+        if (b.negativeReviews !== a.negativeReviews) {
+          return b.negativeReviews - a.negativeReviews
         }
 
-        return b.totalReviews - a.totalReviews
+        return b.negativeRate - a.negativeRate
       })
       .slice(0, 5)
   }, [reviewGames])
@@ -454,13 +454,13 @@ function ReviewPage() {
         </article>
 
         <article className="review-card ranking-card positive-ranking-card">
-          <h2>긍정 리뷰가 높은 게임 TOP 5</h2>
-          <ReviewRankingList games={positiveTopGames} valueKey="positiveRate" />
+          <h2>긍정 리뷰 수가 많은 게임 TOP 5</h2>
+          <ReviewRankingList games={positiveTopGames} mode="positive" />
         </article>
 
         <article className="review-card ranking-card negative-ranking-card">
-          <h2>부정 리뷰 비율 높은 게임 TOP 5</h2>
-          <ReviewRankingList games={negativeTopGames} valueKey="negativeRate" />
+          <h2>부정 리뷰 수가 많은 게임 TOP 5</h2>
+          <ReviewRankingList games={negativeTopGames} mode="negative" />
         </article>
       </section>
     </div>
@@ -493,10 +493,10 @@ function ReviewLegendItem({
 
 function ReviewRankingList({
   games,
-  valueKey,
+  mode,
 }: {
   games: ReviewGameView[]
-  valueKey: 'positiveRate' | 'negativeRate'
+  mode: RankingMode
 }) {
   if (games.length === 0) {
     return <p className="review-empty-text">표시할 게임 데이터가 없습니다.</p>
@@ -504,13 +504,18 @@ function ReviewRankingList({
 
   return (
     <div className="review-ranking-list">
-      {games.map((game, index) => (
-        <div className="review-ranking-item" key={`${game.id}-${valueKey}`}>
-          <span>{index + 1}</span>
-          <strong title={game.name}>{game.name}</strong>
-          <em>{game[valueKey].toFixed(1)}%</em>
-        </div>
-      ))}
+      {games.map((game, index) => {
+        const reviewCount =
+          mode === 'positive' ? game.positiveReviews : game.negativeReviews
+
+        return (
+          <div className="review-ranking-item" key={`${game.id}-${mode}`}>
+            <span>{index + 1}</span>
+            <strong title={game.name}>{game.name}</strong>
+            <em>{formatNumber(reviewCount)}개</em>
+          </div>
+        )
+      })}
     </div>
   )
 }

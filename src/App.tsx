@@ -663,20 +663,16 @@ function toKeywordArray(value: unknown) {
 }
 
 function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
-  const usedItemNames = new Set<string>()
-
   return items
     .map((item) => {
       const rawItem1 =
         item.item1 ?? item.feature_x ?? item.x ?? item.variable_1 ?? item.variable1
+
       const rawItem2 =
         item.item2 ?? item.feature_y ?? item.y ?? item.variable_2 ?? item.variable2
 
-      const sentimentPair = getSentimentComparisonPair(rawItem1, rawItem2)
-
-      if (!sentimentPair) {
-        return null
-      }
+      const item1 = formatMetricName(rawItem1 ?? '항목 1')
+      const item2 = formatMetricName(rawItem2 ?? '항목 2')
 
       const correlation = toNumber(
         item.correlation ??
@@ -686,112 +682,86 @@ function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
           item.value,
       )
 
-      const item1 = formatMetricName(sentimentPair.compareTarget)
-
       return {
         item1,
-        item2: '감성 비율',
+        item2,
         correlation,
-        insight: createCorrelationInsight(item1, correlation),
+        insight: createCorrelationInsight({
+          item1,
+          item2,
+          correlation,
+          reliability: item.reliability,
+          warning: item.warning,
+        }),
       }
     })
-    .filter((item): item is InsightView => item !== null)
     .sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation))
-    .filter((item) => {
-      if (usedItemNames.has(item.item1)) {
-        return false
-      }
-
-      usedItemNames.add(item.item1)
-      return true
-    })
 }
 
-function getSentimentComparisonPair(rawItem1: unknown, rawItem2: unknown) {
-  const item1 = String(rawItem1 ?? '').trim()
-  const item2 = String(rawItem2 ?? '').trim()
+function createCorrelationInsight({
+  item1,
+  item2,
+  correlation,
+  reliability,
+  warning,
+}: {
+  item1: string
+  item2: string
+  correlation: number
+  reliability?: string | number
+  warning?: string
+}) {
+  const relationText = getCorrelationRelationText(item1, item2, correlation)
+  const reliabilityText = warning ? ` ${formatReliability(reliability)}` : ''
 
-  if (!item1 || !item2) {
-    return null
-  }
-
-  const item1Key = item1.toLowerCase()
-  const item2Key = item2.toLowerCase()
-
-  const item1IsSentiment = isSentimentRatioTarget(item1Key)
-  const item2IsSentiment = isSentimentRatioTarget(item2Key)
-
-  if (!item1IsSentiment && !item2IsSentiment) {
-    return null
-  }
-
-  if (isNegativeSentimentMetric(item1Key) || isNegativeSentimentMetric(item2Key)) {
-    return null
-  }
-
-  if (item1IsSentiment && item2IsSentiment) {
-    if (item1Key.includes('compound')) {
-      return {
-        compareTarget: item1,
-      }
-    }
-
-    if (item2Key.includes('compound')) {
-      return {
-        compareTarget: item2,
-      }
-    }
-
-    return null
-  }
-
-  return {
-    compareTarget: item1IsSentiment ? item2 : item1,
-  }
+  return `${relationText}${reliabilityText}`
 }
 
-function isSentimentRatioTarget(value: string) {
-  return (
-    value.includes('sentiment_positive_ratio') ||
-    value.includes('positive_ratio') ||
-    value.includes('positive_rate') ||
-    value.includes('sentiment_compound_mean') ||
-    value.includes('sentiment_score')
-  )
-}
-
-function isNegativeSentimentMetric(value: string) {
-  return (
-    value.includes('sentiment_negative_ratio') ||
-    value.includes('negative_ratio') ||
-    value.includes('negative_rate')
-  )
-}
-
-function createCorrelationInsight(item1: string, correlation: number) {
-  const coefficientText = correlation.toFixed(2)
+function getCorrelationRelationText(
+  item1: string,
+  item2: string,
+  correlation: number,
+) {
   const strength = getCorrelationStrength(correlation)
-  const subject = withKoreanParticle(item1)
+  const subject = withSubjectParticle(item1)
 
   if (correlation > 0) {
-    return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준입니다. ${item1}이 높아질수록 감성 비율도 긍정적으로 나타나는 경향이 있습니다.`
+    return `${subject} 높아질수록 ${item2}도 함께 높아지는 경향이 ${strength} 수준입니다.`
   }
 
   if (correlation < 0) {
-    return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준입니다. ${item1}이 높아질수록 감성 비율은 낮아지는 경향이 있습니다.`
+    return `${subject} 높아질수록 ${item2}는 낮아지는 경향이 ${strength} 수준입니다.`
   }
 
-  return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준입니다. 두 항목 사이의 뚜렷한 관계는 확인되지 않습니다.`
+  return `${item1}와 ${item2} 사이의 뚜렷한 관계는 확인되지 않습니다.`
 }
 
 function getCorrelationStrength(correlation: number) {
   const absValue = Math.abs(correlation)
 
-  if (absValue >= 0.8) return '매우 높음'
-  if (absValue >= 0.6) return '높음'
+  if (absValue >= 0.8) return '매우 강함'
+  if (absValue >= 0.6) return '강함'
   if (absValue >= 0.4) return '보통'
-  if (absValue >= 0.2) return '낮음'
-  return '매우 낮음'
+  if (absValue >= 0.2) return '약함'
+  return '매우 약함'
+}
+
+function formatReliability(reliability: unknown) {
+  const value = String(reliability ?? '').toLowerCase()
+
+  if (value === 'low') {
+    return '단, 데이터 기준 신뢰도는 낮음으로 표시됩니다.'
+  }
+
+  if (value === 'medium') {
+    return '데이터 기준 신뢰도는 보통입니다.'
+  }
+
+  if (value === 'high') {
+    return '데이터 기준 신뢰도는 높음입니다.'
+  }
+
+  return '데이터 기준 신뢰도 확인이 필요합니다.'
 }
 
 function getCorrelationClassName(correlation: number) {
@@ -806,16 +776,16 @@ function getCorrelationClassName(correlation: number) {
   return 'correlation-value negative'
 }
 
-function withKoreanParticle(word: string) {
+function withSubjectParticle(word: string) {
   const lastChar = word[word.length - 1]
   const code = lastChar.charCodeAt(0)
 
   if (code < 0xac00 || code > 0xd7a3) {
-    return `${word}와`
+    return `${word}가`
   }
 
   const hasBatchim = (code - 0xac00) % 28 !== 0
-  return hasBatchim ? `${word}과` : `${word}와`
+  return hasBatchim ? `${word}이` : `${word}가`
 }
 
 function formatMetricName(value: unknown) {

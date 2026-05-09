@@ -113,6 +113,7 @@ export type CorrelationResult = {
 
   p_value?: number | string
   sample_size?: number | string
+  min_sample_size?: number | string
   reliability?: string
   warning?: string
 

@@ -486,14 +486,11 @@ button {
 }
 
 .insight-desc {
-  display: -webkit-box;
-  overflow: hidden;
+  display: block;
   color: #4b5563;
   font-weight: 600;
   line-height: 1.55;
   word-break: keep-all;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .status-card,

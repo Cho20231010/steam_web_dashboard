@@ -19,6 +19,7 @@ type TopGameView = {
   name: string
   genre: string
   score: string
+  image?: string
 }
 
 type TopicView = {
@@ -124,12 +125,8 @@ function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="sidebar-brand">
+        <div className="sidebar-brand large-brand">
           <img src="/hidden-coders-logo.png" alt="Hidden Coders Logo" />
-          <div>
-            <strong>Hidden Coders</strong>
-            <span>Steam Market Analysis</span>
-          </div>
         </div>
 
         <nav className="sidebar-nav">
@@ -144,12 +141,12 @@ function App() {
 
       <main className="main">
         <header className="page-header">
-          <div>
-            <span className="page-badge">Steam 데이터 기반 시장 분석</span>
+          <span className="page-chip">1. 홈 화면</span>
+          <div className="page-title-box">
             <h1>홈 대시보드</h1>
             <p>
-              Railway에 배포된 백엔드 API 데이터를 기반으로 게임 목록, 감성 분석,
-              토픽 분석, 상관관계 결과를 불러오는 메인 화면입니다.
+              Steam 게임 시장 데이터를 기반으로 인기 게임, 리뷰 감성, 주요 토픽,
+              상관관계 인사이트를 한눈에 볼 수 있는 메인 화면입니다.
             </p>
           </div>
         </header>
@@ -186,10 +183,22 @@ function App() {
                     {topGames.map((game) => (
                       <div className="top-item" key={`${game.rank}-${game.id}`}>
                         <div className="top-rank">{game.rank}</div>
+
+                        <div className="top-thumb">
+                          {game.image ? (
+                            <img src={game.image} alt={game.name} />
+                          ) : (
+                            <div className="thumb-fallback">
+                              {game.name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+
                         <div className="top-info">
                           <strong>{game.name}</strong>
                           <span>{game.genre}</span>
                         </div>
+
                         <div className="top-score">{game.score}</div>
                       </div>
                     ))}
@@ -208,7 +217,7 @@ function App() {
                     style={{
                       background: `conic-gradient(
                         var(--green) 0% ${sentimentValues.positive}%,
-                        var(--yellow) ${sentimentValues.positive}% ${
+                        var(--gray) ${sentimentValues.positive}% ${
                           sentimentValues.positive + sentimentValues.neutral
                         }%,
                         var(--red) ${
@@ -230,7 +239,7 @@ function App() {
                       <strong>{sentimentValues.positive.toFixed(1)}%</strong>
                     </div>
                     <div>
-                      <span className="dot yellow" />
+                      <span className="dot gray" />
                       <p>중립</p>
                       <strong>{sentimentValues.neutral.toFixed(1)}%</strong>
                     </div>
@@ -317,7 +326,7 @@ function SummaryCard({
 }) {
   return (
     <div className="summary-card">
-      <div className="summary-top">
+      <div className="summary-head">
         <span>{title}</span>
         <em>{icon}</em>
       </div>
@@ -349,17 +358,29 @@ function normalizeTopGames(games: Game[]): TopGameView[] {
         name: game.name ?? game.title ?? '이름 없음',
         genre,
         score: score > 0 ? `${score.toFixed(1)}%` : '-',
+        image:
+          (game as Game & {
+            header_image?: string
+            capsule_image?: string
+            image_url?: string
+          }).header_image ??
+          (game as Game & {
+            header_image?: string
+            capsule_image?: string
+            image_url?: string
+          }).capsule_image ??
+          (game as Game & {
+            header_image?: string
+            capsule_image?: string
+            image_url?: string
+          }).image_url,
       }
     })
 }
 
 function normalizeSentiment(sentiment: SentimentAnalysis | null) {
   if (!sentiment) {
-    return {
-      positive: 0,
-      neutral: 0,
-      negative: 0,
-    }
+    return { positive: 0, neutral: 0, negative: 0 }
   }
 
   const positive = normalizeRatio(
@@ -375,11 +396,7 @@ function normalizeSentiment(sentiment: SentimentAnalysis | null) {
   const total = positive + neutral + negative
 
   if (total === 0) {
-    return {
-      positive: 0,
-      neutral: 0,
-      negative: 0,
-    }
+    return { positive: 0, neutral: 0, negative: 0 }
   }
 
   return {
@@ -403,10 +420,7 @@ function normalizeTopics(topics: TopicAnalysis[]): TopicView[] {
         topic.value ?? topic.ratio ?? topic.weight ?? topic.percentage,
       )
 
-      return {
-        label,
-        value,
-      }
+      return { label, value }
     })
     .sort((a, b) => b.value - a.value)
 }
@@ -467,33 +481,24 @@ function toNumber(value: unknown) {
     const parsed = Number(value.replaceAll(',', '').replace('%', ''))
     return Number.isFinite(parsed) ? parsed : 0
   }
-
   return 0
 }
 
 function normalizeRatio(value: unknown) {
   const number = toNumber(value)
-
-  if (number <= 1 && number > 0) {
-    return number * 100
-  }
-
+  if (number <= 1 && number > 0) return number * 100
   return number
 }
 
 function formatNumber(value: unknown) {
   const number = toNumber(value)
-
   if (!number) return '-'
-
   return number.toLocaleString()
 }
 
 function formatPercent(value: unknown) {
   const number = normalizeRatio(value)
-
   if (!number) return '-'
-
   return `${number.toFixed(1)}%`
 }
 

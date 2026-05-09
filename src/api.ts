@@ -45,6 +45,9 @@ export type Game = {
   total_reviews?: number
   price?: number | string
   owners?: string
+  header_image?: string
+  capsule_image?: string
+  image_url?: string
 }
 
 export type SentimentAnalysis = {

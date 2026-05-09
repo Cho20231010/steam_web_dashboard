@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import ReviewPage from './ReviewPage'
 import {
   getCorrelationAnalysis,
   getDashboardSummary,
@@ -36,6 +37,8 @@ type InsightView = {
 }
 
 function App() {
+  const [activePage, setActivePage] = useState<'home' | 'review'>('home')
+
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [games, setGames] = useState<Game[]>([])
   const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null)
@@ -133,13 +136,25 @@ function App() {
         </div>
 
         <nav className="sidebar-nav">
-          <button className="active">홈</button>
-          <button>리뷰</button>
-          <button>게임 순위</button>
-          <button>인기 그래프</button>
-          <button>이용객 분포</button>
-          <button>설정</button>
-        </nav>
+        <button
+          className={activePage === 'home' ? 'active' : ''}
+          onClick={() => setActivePage('home')}
+          >
+          홈
+        </button>
+
+        <button
+          className={activePage === 'review' ? 'active' : ''}
+          onClick={() => setActivePage('review')}
+        >     
+        리뷰
+        </button>
+
+        <button>게임 순위</button>
+        <button>인기 그래프</button>
+        <button>이용객 분포</button>
+        <button>설정</button>
+      </nav>
       </aside>
 
       <main className="main">

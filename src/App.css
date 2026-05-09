@@ -608,3 +608,399 @@ button {
     min-width: 680px;
   }
 }
+
+/* 리뷰 웹페이지 부분 */
+.review-page {
+  width: 100%;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 18px;
+}
+
+.review-card {
+  background: #ffffff;
+  border: 1px solid #e6eaf2;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.review-card h2 {
+  margin: 0 0 18px;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.review-chart-card {
+  min-height: 300px;
+}
+
+.review-donut-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 42px;
+  min-height: 210px;
+}
+
+.review-donut {
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.review-donut-hole {
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.review-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.review-legend-item {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.review-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  margin-top: 4px;
+}
+
+.review-dot.green {
+  background: var(--green);
+}
+
+.review-dot.gray {
+  background: var(--gray);
+}
+
+.review-dot.red {
+  background: var(--red);
+}
+
+.review-legend-item strong {
+  display: block;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.review-legend-item p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.selected-game-card {
+  min-height: 300px;
+}
+
+.game-select {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #dfe4ee;
+  border-radius: 10px;
+  padding: 0 14px;
+  color: #111827;
+  background: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  outline: none;
+}
+
+.selected-game-image {
+  width: 100%;
+  height: 180px;
+  margin-top: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #edf0f7;
+}
+
+.selected-game-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.selected-game-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+  background: var(--blue-soft);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.selected-game-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.selected-game-meta span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.selected-game-meta strong {
+  display: block;
+  margin-top: 6px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.selected-game-meta div:last-child {
+  text-align: right;
+}
+
+.game-sentiment-card {
+  min-height: 270px;
+}
+
+.game-sentiment-name {
+  margin-bottom: 12px;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.stacked-bar {
+  display: flex;
+  width: 100%;
+  height: 58px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #edf0f5;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.stacked-positive,
+.stacked-neutral,
+.stacked-negative {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.stacked-positive {
+  background: #66c97b;
+}
+
+.stacked-neutral {
+  background: #c9cbd1;
+  color: #374151;
+}
+
+.stacked-negative {
+  background: #f07d72;
+}
+
+.stacked-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sentiment-rate-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 22px;
+  gap: 12px;
+}
+
+.sentiment-rate-grid div {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f7f8fc;
+}
+
+.sentiment-rate-grid span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sentiment-rate-grid strong {
+  display: block;
+  margin-top: 5px;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.keyword-card {
+  min-height: 270px;
+}
+
+.keyword-cloud {
+  min-height: 190px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 8px 16px;
+  text-align: center;
+}
+
+.keyword-cloud span {
+  display: inline-block;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.keyword-size-5 {
+  color: #5d63f1;
+  font-size: 34px;
+}
+
+.keyword-size-4 {
+  color: #63b3ed;
+  font-size: 29px;
+}
+
+.keyword-size-3 {
+  color: #6ecf8d;
+  font-size: 24px;
+}
+
+.keyword-size-2 {
+  color: #65b78a;
+  font-size: 20px;
+}
+
+.keyword-size-1 {
+  color: #9ca3af;
+  font-size: 15px;
+}
+
+.ranking-card {
+  min-height: 240px;
+}
+
+.review-ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-ranking-item {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  color: #111827;
+}
+
+.review-ranking-item span {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.review-ranking-item strong {
+  overflow: hidden;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-ranking-item em {
+  color: #111827;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.review-status-card,
+.review-empty-text {
+  background: #ffffff;
+  border: 1px solid #e6eaf2;
+  border-radius: 18px;
+  padding: 18px;
+  color: #6b7280;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.review-status-card strong {
+  display: block;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.review-status-card p,
+.review-empty-text {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+
+.review-status-card.error {
+  background: #fff5f5;
+  border-color: #f2c7c7;
+}
+
+@media (max-width: 1200px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-donut-layout {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .review-donut-layout {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 22px;
+  }
+
+  .selected-game-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-game-meta div:last-child {
+    text-align: left;
+  }
+
+  .sentiment-rate-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

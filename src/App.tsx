@@ -686,35 +686,18 @@ function normalizeCorrelations(items: CorrelationResult[]): InsightView[] {
         item1,
         item2,
         correlation,
-        insight: createCorrelationInsight({
-          item1,
-          item2,
-          correlation,
-          reliability: item.reliability,
-          warning: item.warning,
-        }),
+        insight: createCorrelationInsight(item1, item2, correlation),
       }
     })
     .sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation))
 }
 
-function createCorrelationInsight({
-  item1,
-  item2,
-  correlation,
-  reliability,
-  warning,
-}: {
-  item1: string
-  item2: string
-  correlation: number
-  reliability?: string | number
-  warning?: string
-}) {
-  const relationText = getCorrelationRelationText(item1, item2, correlation)
-  const reliabilityText = warning ? ` ${formatReliability(reliability)}` : ''
-
-  return `${relationText}${reliabilityText}`
+function createCorrelationInsight(
+  item1: string,
+  item2: string,
+  correlation: number,
+) {
+  return getCorrelationRelationText(item1, item2, correlation)
 }
 
 function getCorrelationRelationText(
@@ -744,24 +727,6 @@ function getCorrelationStrength(correlation: number) {
   if (absValue >= 0.4) return '보통'
   if (absValue >= 0.2) return '약함'
   return '매우 약함'
-}
-
-function formatReliability(reliability: unknown) {
-  const value = String(reliability ?? '').toLowerCase()
-
-  if (value === 'low') {
-    return '단, 데이터 기준 신뢰도는 낮음으로 표시됩니다.'
-  }
-
-  if (value === 'medium') {
-    return '데이터 기준 신뢰도는 보통입니다.'
-  }
-
-  if (value === 'high') {
-    return '데이터 기준 신뢰도는 높음입니다.'
-  }
-
-  return '데이터 기준 신뢰도 확인이 필요합니다.'
 }
 
 function getCorrelationClassName(correlation: number) {

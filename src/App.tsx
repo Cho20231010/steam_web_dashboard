@@ -294,14 +294,9 @@ function App() {
                             <span className="insight-label">{item.item2}</span>
                           </td>
                           <td>
-                            <div className="correlation-cell">
-                              <span className={getCorrelationClassName(item.correlation)}>
-                                {item.correlation.toFixed(2)}
-                              </span>
-                              <span className="correlation-strength">
-                                {getCorrelationStrength(item.correlation)}
-                              </span>
-                            </div>
+                            <span className={getCorrelationClassName(item.correlation)}>
+                              {item.correlation.toFixed(2)}
+                            </span>
                           </td>
                           <td>
                             <span className="insight-desc">{item.insight}</span>
@@ -779,14 +774,14 @@ function createCorrelationInsight(item1: string, correlation: number) {
   const subject = withKoreanParticle(item1)
 
   if (correlation > 0) {
-    return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준으로 나타납니다. 결과적으로 해당 항목의 값이 높아질수록 감성 비율도 긍정적으로 나타나는 경향을 볼 수 있습니다.`
+    return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준입니다. ${item1}이 높아질수록 감성 비율도 긍정적으로 나타나는 경향이 있습니다.`
   }
 
   if (correlation < 0) {
-    return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준으로 나타납니다. 결과적으로 해당 항목의 값이 높아질수록 감성 비율은 낮아지는 경향을 볼 수 있습니다.`
+    return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준입니다. ${item1}이 높아질수록 감성 비율은 낮아지는 경향이 있습니다.`
   }
 
-  return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준으로 나타납니다. 두 항목 사이의 뚜렷한 관계는 확인되지 않습니다.`
+  return `${subject} 감성 비율 사이의 상관계수는 ${coefficientText}이며, 관련성은 ${strength} 수준입니다. 두 항목 사이의 뚜렷한 관계는 확인되지 않습니다.`
 }
 
 function getCorrelationStrength(correlation: number) {

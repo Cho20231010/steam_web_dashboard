@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   getDashboardSummary,
   getGameDetail,
+  getGameSentiment,
   getGames,
   getSentimentAnalysis,
   getTopicAnalysis,
@@ -17,11 +18,12 @@ type ReviewGameView = {
   name: string
   genre: string
   positiveReviews: number
+  neutralReviews: number
   negativeReviews: number
   totalReviews: number
   positiveRate: number
-  negativeRate: number
   neutralRate: number
+  negativeRate: number
   image?: string
 }
 
@@ -53,6 +55,8 @@ function ReviewPage() {
   const [selectedGameId, setSelectedGameId] = useState('')
   const [gameSearchKeyword, setGameSearchKeyword] = useState('')
   const [selectedGameDetail, setSelectedGameDetail] = useState<Game | null>(null)
+  const [selectedGameSentiment, setSelectedGameSentiment] =
+    useState<SentimentAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -109,7 +113,9 @@ function ReviewPage() {
   const filteredReviewGames = useMemo(() => {
     const keyword = gameSearchKeyword.trim().toLowerCase()
 
-    if (!keyword) return reviewGames
+    if (!keyword) {
+      return reviewGames
+    }
 
     return reviewGames.filter((game) =>
       game.name.toLowerCase().includes(keyword),
@@ -138,13 +144,22 @@ function ReviewPage() {
       try {
         setDetailLoading(true)
 
-        const detailResult = await Promise.allSettled([getGameDetail(selectedGameId)])
-        const detail = detailResult[0]
+        const [detailResult, sentimentResult] = await Promise.allSettled([
+          getGameDetail(selectedGameId),
+          getGameSentiment(selectedGameId),
+        ])
 
-        setSelectedGameDetail(detail.status === 'fulfilled' ? detail.value : null)
+        setSelectedGameDetail(
+          detailResult.status === 'fulfilled' ? detailResult.value : null,
+        )
+
+        setSelectedGameSentiment(
+          sentimentResult.status === 'fulfilled' ? sentimentResult.value : null,
+        )
       } catch (error) {
         console.error(error)
         setSelectedGameDetail(null)
+        setSelectedGameSentiment(null)
       } finally {
         setDetailLoading(false)
       }
@@ -164,7 +179,9 @@ function ReviewPage() {
       ? normalizeReviewGames([selectedGameDetail])[0]
       : undefined
 
-    if (!detailGame) return selectedGameFromList
+    if (!detailGame) {
+      return selectedGameFromList
+    }
 
     return detailGame.totalReviews > 0 ? detailGame : selectedGameFromList
   }, [selectedGameDetail, selectedGameFromList])
@@ -175,16 +192,26 @@ function ReviewPage() {
       'totalReviews',
       'review_count',
       'reviewCount',
+      'total',
     ]),
   )
 
   const overallValues = useMemo(() => {
-    return normalizeOverallSentiment(overallSentiment, overallReviewCount)
+    return normalizeSentiment(overallSentiment, overallReviewCount)
   }, [overallSentiment, overallReviewCount])
 
   const selectedValues = useMemo(() => {
+    const apiSentiment = normalizeSentiment(
+      selectedGameSentiment,
+      selectedGame?.totalReviews ?? 0,
+    )
+
+    if (apiSentiment.totalCount > 0) {
+      return apiSentiment
+    }
+
     return createGameSentiment(selectedGame)
-  }, [selectedGame])
+  }, [selectedGame, selectedGameSentiment])
 
   const topicKeywords = useMemo(() => {
     return normalizeTopicKeywords(globalTopics)
@@ -197,6 +224,7 @@ function ReviewPage() {
         if (b.positiveRate !== a.positiveRate) {
           return b.positiveRate - a.positiveRate
         }
+
         return b.totalReviews - a.totalReviews
       })
       .slice(0, 5)
@@ -209,6 +237,7 @@ function ReviewPage() {
         if (b.negativeRate !== a.negativeRate) {
           return b.negativeRate - a.negativeRate
         }
+
         return b.totalReviews - a.totalReviews
       })
       .slice(0, 5)
@@ -352,12 +381,14 @@ function ReviewPage() {
                 >
                   {selectedValues.positive >= 16 && '긍정'}
                 </div>
+
                 <div
                   className="stacked-neutral"
                   style={{ width: `${selectedValues.neutral}%` }}
                 >
-                  {selectedValues.neutral >= 10 && '중립'}
+                  {selectedValues.neutral >= 8 && '중립'}
                 </div>
+
                 <div
                   className="stacked-negative"
                   style={{ width: `${selectedValues.negative}%` }}
@@ -473,12 +504,24 @@ function ReviewRankingList({
 function normalizeReviewGames(games: Game[]): ReviewGameView[] {
   return games.map((game, index) => {
     const gameId = getGameId(game)
+
     const positiveReviews = toNumber(game.positive_reviews)
+    const neutralReviews = toNumber(game.neutral_reviews)
     const negativeReviews = toNumber(game.negative_reviews)
-    const totalReviews = positiveReviews + negativeReviews
+
+    const totalReviewsFromCounts =
+      positiveReviews + neutralReviews + negativeReviews
+
+    const fallbackTotal = positiveReviews + negativeReviews
+
+    const totalReviews =
+      totalReviewsFromCounts > 0 ? totalReviewsFromCounts : fallbackTotal
 
     const positiveRate =
       totalReviews > 0 ? (positiveReviews / totalReviews) * 100 : 0
+
+    const neutralRate =
+      totalReviews > 0 ? (neutralReviews / totalReviews) * 100 : 0
 
     const negativeRate =
       totalReviews > 0 ? (negativeReviews / totalReviews) * 100 : 0
@@ -489,11 +532,12 @@ function normalizeReviewGames(games: Game[]): ReviewGameView[] {
       name: getGameName(game),
       genre: getGameGenre(game),
       positiveReviews,
+      neutralReviews,
       negativeReviews,
       totalReviews,
       positiveRate,
+      neutralRate,
       negativeRate,
-      neutralRate: 0,
       image: gameId
         ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${gameId}/header.jpg`
         : undefined,
@@ -501,7 +545,7 @@ function normalizeReviewGames(games: Game[]): ReviewGameView[] {
   })
 }
 
-function normalizeOverallSentiment(
+function normalizeSentiment(
   sentiment: SentimentAnalysis | null,
   fallbackTotalCount = 0,
 ): NormalizedSentiment {
@@ -517,26 +561,99 @@ function normalizeOverallSentiment(
     }
   }
 
-  const positiveCount = toNumber(sentiment.positive)
-  const neutralCount = toNumber(sentiment.neutral)
-  const negativeCount = toNumber(sentiment.negative)
+  const record = toRecord(sentiment)
+
+  const positiveCount = toNumber(
+    readFirst(record, [
+      'positive',
+      'positive_count',
+      'positive_reviews',
+      'positiveReviewCount',
+    ]),
+  )
+
+  const neutralCount = toNumber(
+    readFirst(record, [
+      'neutral',
+      'neutral_count',
+      'neutral_reviews',
+      'neutralReviewCount',
+    ]),
+  )
+
+  const negativeCount = toNumber(
+    readFirst(record, [
+      'negative',
+      'negative_count',
+      'negative_reviews',
+      'negativeReviewCount',
+    ]),
+  )
+
   const totalFromCount = positiveCount + neutralCount + negativeCount
 
   if (totalFromCount > 0) {
+    const positive = (positiveCount / totalFromCount) * 100
+    const neutral = (neutralCount / totalFromCount) * 100
+    const negative = (negativeCount / totalFromCount) * 100
+
+    const displayTotal = toNumber(sentiment.total) || fallbackTotalCount || totalFromCount
+
     return {
-      positive: (positiveCount / totalFromCount) * 100,
-      neutral: (neutralCount / totalFromCount) * 100,
-      negative: (negativeCount / totalFromCount) * 100,
-      positiveCount,
-      neutralCount,
-      negativeCount,
-      totalCount: toNumber(sentiment.total) || totalFromCount,
+      positive,
+      neutral,
+      negative,
+      positiveCount: Math.round((positive / 100) * displayTotal),
+      neutralCount: Math.round((neutral / 100) * displayTotal),
+      negativeCount: Math.round((negative / 100) * displayTotal),
+      totalCount: displayTotal,
     }
   }
 
-  const positive = normalizeRatio(sentiment.positive_ratio)
-  const neutral = normalizeRatio(sentiment.neutral_ratio)
-  const negative = normalizeRatio(sentiment.negative_ratio)
+  const positiveRatio = normalizeRatio(
+    readFirst(record, [
+      'positive_ratio',
+      'positiveRate',
+      'positive_rate',
+      'sentiment_positive_ratio',
+    ]),
+  )
+
+  const neutralRatio = normalizeRatio(
+    readFirst(record, [
+      'neutral_ratio',
+      'neutralRate',
+      'neutral_rate',
+      'sentiment_neutral_ratio',
+    ]),
+  )
+
+  const negativeRatio = normalizeRatio(
+    readFirst(record, [
+      'negative_ratio',
+      'negativeRate',
+      'negative_rate',
+      'sentiment_negative_ratio',
+    ]),
+  )
+
+  const ratioTotal = positiveRatio + neutralRatio + negativeRatio
+
+  if (ratioTotal <= 0) {
+    return {
+      positive: 0,
+      neutral: 0,
+      negative: 0,
+      positiveCount: 0,
+      neutralCount: 0,
+      negativeCount: 0,
+      totalCount: 0,
+    }
+  }
+
+  const positive = (positiveRatio / ratioTotal) * 100
+  const neutral = (neutralRatio / ratioTotal) * 100
+  const negative = (negativeRatio / ratioTotal) * 100
   const totalCount = toNumber(sentiment.total) || fallbackTotalCount
 
   return {
@@ -565,10 +682,10 @@ function createGameSentiment(game?: ReviewGameView): NormalizedSentiment {
 
   return {
     positive: game.positiveRate,
-    neutral: 0,
+    neutral: game.neutralRate,
     negative: game.negativeRate,
     positiveCount: game.positiveReviews,
-    neutralCount: 0,
+    neutralCount: game.neutralReviews,
     negativeCount: game.negativeReviews,
     totalCount: game.totalReviews,
   }
@@ -657,7 +774,10 @@ function getGameGenre(game: Game) {
 function readFirst(record: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
     const value = record[key]
-    if (value !== undefined && value !== null && value !== '') return value
+
+    if (value !== undefined && value !== null && value !== '') {
+      return value
+    }
   }
 
   return undefined
@@ -684,7 +804,11 @@ function toNumber(value: unknown) {
 
 function normalizeRatio(value: unknown) {
   const number = toNumber(value)
-  if (number > 0 && number <= 1) return number * 100
+
+  if (number > 0 && number <= 1) {
+    return number * 100
+  }
+
   return number
 }
 

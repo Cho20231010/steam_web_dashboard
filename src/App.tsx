@@ -594,28 +594,38 @@ function readString(value: unknown, keys: string[]) {
 
 function toNumber(value: unknown) {
   if (typeof value === 'number') return value
+
   if (typeof value === 'string') {
     const parsed = Number(value.replaceAll(',', '').replace('%', ''))
     return Number.isFinite(parsed) ? parsed : 0
   }
+
   return 0
 }
 
 function normalizeRatio(value: unknown) {
   const number = toNumber(value)
-  if (number > 0 && number <= 1) return number * 100
+
+  if (number > 0 && number <= 1) {
+    return number * 100
+  }
+
   return number
 }
 
 function formatNumber(value: unknown) {
   const number = toNumber(value)
+
   if (!number) return '-'
+
   return number.toLocaleString()
 }
 
 function formatPercent(value: unknown) {
   const number = normalizeRatio(value)
+
   if (!number) return '-'
+
   return `${number.toFixed(1)}%`
 }
 

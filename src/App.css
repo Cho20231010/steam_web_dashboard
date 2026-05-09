@@ -20,10 +20,10 @@
   --red-soft: #fff0ee;
   --shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 
-  /* 로고/사이드바 크기 */
-  --sidebar-width: 240px;
-  --logo-width: 200px;
-  --logo-height: 86px;
+  /* 사이드바 / 로고 크기 */
+  --sidebar-width: 220px;
+  --logo-width: 178px;
+  --logo-max-height: 92px;
 }
 
 body {
@@ -61,17 +61,18 @@ button {
 
 .large-brand {
   width: 100%;
-  height: 92px;
+  min-height: 116px;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 6px 0;
+  margin-bottom: 22px;
+  padding: 8px 0;
 }
 
 .large-brand img {
   width: var(--logo-width);
-  height: var(--logo-height);
+  max-height: var(--logo-max-height);
+  height: auto;
   display: block;
   object-fit: contain;
 }
@@ -534,13 +535,14 @@ button {
   }
 
   .large-brand {
-    height: 78px;
+    min-height: 92px;
     margin-bottom: 14px;
   }
 
   .large-brand img {
-    width: 150px;
-    height: 64px;
+    width: 165px;
+    max-height: 80px;
+    height: auto;
   }
 
   .sidebar-nav {
@@ -568,12 +570,13 @@ button {
 
 @media (max-width: 520px) {
   .large-brand {
-    height: 70px;
+    min-height: 80px;
   }
 
   .large-brand img {
-    width: 130px;
-    height: 56px;
+    width: 145px;
+    max-height: 70px;
+    height: auto;
   }
 
   .top-item {

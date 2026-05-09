@@ -14,6 +14,8 @@ import {
   type TopicAnalysis,
 } from './api'
 
+type PageType = 'home' | 'review'
+
 type TopGameView = {
   rank: number
   id: string
@@ -37,7 +39,7 @@ type InsightView = {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState<'home' | 'review'>('home')
+  const [activePage, setActivePage] = useState<PageType>('home')
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [games, setGames] = useState<Game[]>([])
@@ -136,195 +138,207 @@ function App() {
         </div>
 
         <nav className="sidebar-nav">
-        <button
-          className={activePage === 'home' ? 'active' : ''}
-          onClick={() => setActivePage('home')}
+          <button
+            className={activePage === 'home' ? 'active' : ''}
+            onClick={() => setActivePage('home')}
           >
-          홈
-        </button>
+            홈
+          </button>
 
-        <button
-          className={activePage === 'review' ? 'active' : ''}
-          onClick={() => setActivePage('review')}
-        >     
-        리뷰
-        </button>
+          <button
+            className={activePage === 'review' ? 'active' : ''}
+            onClick={() => setActivePage('review')}
+          >
+            리뷰
+          </button>
 
-        <button>게임 순위</button>
-        <button>인기 그래프</button>
-        <button>이용객 분포</button>
-        <button>설정</button>
-      </nav>
+          <button>게임 순위</button>
+          <button>인기 그래프</button>
+          <button>이용객 분포</button>
+          <button>설정</button>
+        </nav>
       </aside>
 
       <main className="main">
-        {loading && (
-          <section className="status-card">
-            <strong>데이터를 불러오는 중입니다...</strong>
-            <p>백엔드 API에서 대시보드 데이터를 가져오고 있습니다.</p>
-          </section>
-        )}
-
-        {!loading && errorMessage && (
-          <section className="status-card error">
-            <strong>데이터 로드 실패</strong>
-            <p>{errorMessage}</p>
-          </section>
-        )}
-
-        {!loading && !errorMessage && (
+        {activePage === 'review' ? (
+          <ReviewPage />
+        ) : (
           <>
-            <section className="summary-grid">
-              <SummaryCard title="총 게임 수" value={totalGames} icon="🎮" />
-              <SummaryCard title="총 리뷰 수" value={totalReviews} icon="💬" />
-              <SummaryCard title="평균 긍정 비율" value={positiveRate} icon="📈" />
-              <SummaryCard title="대표 장르" value={topGenre} icon="🏆" />
-            </section>
+            {loading && (
+              <section className="status-card">
+                <strong>데이터를 불러오는 중입니다...</strong>
+                <p>백엔드 API에서 대시보드 데이터를 가져오고 있습니다.</p>
+              </section>
+            )}
 
-            <section className="content-grid">
-              <div className="card">
-                <h2>인기 게임 TOP 5</h2>
+            {!loading && errorMessage && (
+              <section className="status-card error">
+                <strong>데이터 로드 실패</strong>
+                <p>{errorMessage}</p>
+              </section>
+            )}
 
-                {topGames.length > 0 ? (
-                  <div className="top-list">
-                    {topGames.map((game) => (
-                      <div className="top-item" key={`${game.rank}-${game.id}`}>
-                        <div className="top-rank">{game.rank}</div>
+            {!loading && !errorMessage && (
+              <>
+                <section className="summary-grid">
+                  <SummaryCard title="총 게임 수" value={totalGames} icon="🎮" />
+                  <SummaryCard title="총 리뷰 수" value={totalReviews} icon="💬" />
+                  <SummaryCard
+                    title="평균 긍정 비율"
+                    value={positiveRate}
+                    icon="📈"
+                  />
+                  <SummaryCard title="대표 장르" value={topGenre} icon="🏆" />
+                </section>
 
-                        <GameThumbnail game={game} />
+                <section className="content-grid">
+                  <div className="card">
+                    <h2>인기 게임 TOP 5</h2>
 
-                        <div className="top-info">
-                          <strong>{game.name}</strong>
-                          <span>{game.genre}</span>
-                        </div>
+                    {topGames.length > 0 ? (
+                      <div className="top-list">
+                        {topGames.map((game) => (
+                          <div className="top-item" key={`${game.rank}-${game.id}`}>
+                            <div className="top-rank">{game.rank}</div>
 
-                        <div className="top-score">{game.score}</div>
+                            <GameThumbnail game={game} />
+
+                            <div className="top-info">
+                              <strong>{game.name}</strong>
+                              <span>{game.genre}</span>
+                            </div>
+
+                            <div className="top-score">{game.score}</div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyText text="게임 데이터가 없습니다." />
-                )}
-              </div>
-
-              <div className="card">
-                <h2>감성 요약</h2>
-
-                <div className="sentiment-wrap">
-                  <div
-                    className="donut-chart"
-                    style={{
-                      background: `conic-gradient(
-                        var(--green) 0% ${sentimentValues.positive}%,
-                        var(--gray) ${sentimentValues.positive}% ${
-                          sentimentValues.positive + sentimentValues.neutral
-                        }%,
-                        var(--red) ${
-                          sentimentValues.positive + sentimentValues.neutral
-                        }% 100%
-                      )`,
-                    }}
-                  >
-                    <div className="donut-inner">
-                      <strong>{sentimentValues.positive.toFixed(1)}%</strong>
-                      <span>긍정</span>
-                    </div>
+                    ) : (
+                      <EmptyText text="게임 데이터가 없습니다." />
+                    )}
                   </div>
 
-                  <div className="legend">
-                    <div>
-                      <span className="dot green" />
-                      <p>긍정</p>
-                      <strong>{sentimentValues.positive.toFixed(1)}%</strong>
-                    </div>
-                    <div>
-                      <span className="dot gray" />
-                      <p>중립</p>
-                      <strong>{sentimentValues.neutral.toFixed(1)}%</strong>
-                    </div>
-                    <div>
-                      <span className="dot red" />
-                      <p>부정</p>
-                      <strong>{sentimentValues.negative.toFixed(1)}%</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  <div className="card">
+                    <h2>감성 요약</h2>
 
-              <div className="card">
-                <h2>주요 토픽 TOP 5</h2>
-
-                {topicList.length > 0 ? (
-                  <div className="topic-list">
-                    {topicList.map((topic) => (
-                      <div className="topic-item" key={topic.label}>
-                        <div className="topic-header">
-                          <span>{topic.label}</span>
-                          <strong>{topic.value.toFixed(1)}%</strong>
-                        </div>
-                        <div className="topic-bar">
-                          <div
-                            className="topic-fill"
-                            style={{ width: `${Math.min(topic.value, 100)}%` }}
-                          />
+                    <div className="sentiment-wrap">
+                      <div
+                        className="donut-chart"
+                        style={{
+                          background: `conic-gradient(
+                            var(--green) 0% ${sentimentValues.positive}%,
+                            var(--gray) ${sentimentValues.positive}% ${
+                              sentimentValues.positive + sentimentValues.neutral
+                            }%,
+                            var(--red) ${
+                              sentimentValues.positive + sentimentValues.neutral
+                            }% 100%
+                          )`,
+                        }}
+                      >
+                        <div className="donut-inner">
+                          <strong>{sentimentValues.positive.toFixed(1)}%</strong>
+                          <span>긍정</span>
                         </div>
                       </div>
-                    ))}
+
+                      <div className="legend">
+                        <div>
+                          <span className="dot green" />
+                          <p>긍정</p>
+                          <strong>{sentimentValues.positive.toFixed(1)}%</strong>
+                        </div>
+                        <div>
+                          <span className="dot gray" />
+                          <p>중립</p>
+                          <strong>{sentimentValues.neutral.toFixed(1)}%</strong>
+                        </div>
+                        <div>
+                          <span className="dot red" />
+                          <p>부정</p>
+                          <strong>{sentimentValues.negative.toFixed(1)}%</strong>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <EmptyText text="토픽 데이터가 없습니다." />
-                )}
-              </div>
-            </section>
 
-            <section className="card insight-card">
-              <h2>상관관계 인사이트</h2>
+                  <div className="card">
+                    <h2>주요 토픽 TOP 5</h2>
 
-              {insightList.length > 0 ? (
-                <div className="insight-table-wrap">
-                  <table className="insight-table">
-                    <colgroup>
-                      <col className="col-item" />
-                      <col className="col-item" />
-                      <col className="col-correlation" />
-                      <col className="col-insight" />
-                    </colgroup>
+                    {topicList.length > 0 ? (
+                      <div className="topic-list">
+                        {topicList.map((topic) => (
+                          <div className="topic-item" key={topic.label}>
+                            <div className="topic-header">
+                              <span>{topic.label}</span>
+                              <strong>{topic.value.toFixed(1)}%</strong>
+                            </div>
+                            <div className="topic-bar">
+                              <div
+                                className="topic-fill"
+                                style={{ width: `${Math.min(topic.value, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyText text="토픽 데이터가 없습니다." />
+                    )}
+                  </div>
+                </section>
 
-                    <thead>
-                      <tr>
-                        <th>항목 1</th>
-                        <th>항목 2</th>
-                        <th>상관계수</th>
-                        <th>인사이트</th>
-                      </tr>
-                    </thead>
+                <section className="card insight-card">
+                  <h2>상관관계 인사이트</h2>
 
-                    <tbody>
-                      {insightList.map((item, index) => (
-                        <tr key={`${item.item1}-${item.item2}-${index}`}>
-                          <td>
-                            <span className="insight-label">{item.item1}</span>
-                          </td>
-                          <td>
-                            <span className="insight-label">{item.item2}</span>
-                          </td>
-                          <td>
-                            <span className={getCorrelationClassName(item.correlation)}>
-                              {item.correlation.toFixed(2)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="insight-desc">{item.insight}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <EmptyText text="상관관계 데이터가 없습니다." />
-              )}
-            </section>
+                  {insightList.length > 0 ? (
+                    <div className="insight-table-wrap">
+                      <table className="insight-table">
+                        <colgroup>
+                          <col className="col-item" />
+                          <col className="col-item" />
+                          <col className="col-correlation" />
+                          <col className="col-insight" />
+                        </colgroup>
+
+                        <thead>
+                          <tr>
+                            <th>항목 1</th>
+                            <th>항목 2</th>
+                            <th>상관계수</th>
+                            <th>인사이트</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {insightList.map((item, index) => (
+                            <tr key={`${item.item1}-${item.item2}-${index}`}>
+                              <td>
+                                <span className="insight-label">{item.item1}</span>
+                              </td>
+                              <td>
+                                <span className="insight-label">{item.item2}</span>
+                              </td>
+                              <td>
+                                <span
+                                  className={getCorrelationClassName(item.correlation)}
+                                >
+                                  {item.correlation.toFixed(2)}
+                                </span>
+                              </td>
+                              <td>
+                                <span className="insight-desc">{item.insight}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <EmptyText text="상관관계 데이터가 없습니다." />
+                  )}
+                </section>
+              </>
+            )}
           </>
         )}
       </main>
@@ -925,10 +939,10 @@ function findTopGenre(games: Game[]) {
       })
   })
 
-  const [topGenre] =
+  const [topGenreName] =
     [...genreCount.entries()].sort((a, b) => b[1] - a[1])[0] ?? []
 
-  return topGenre ?? '-'
+  return topGenreName ?? '-'
 }
 
 function toSteamAppId(value: unknown) {

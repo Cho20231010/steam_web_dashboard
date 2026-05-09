@@ -454,12 +454,12 @@ function ReviewPage() {
         </article>
 
         <article className="review-card ranking-card positive-ranking-card">
-          <h2>긍정 리뷰 수가 많은 게임 TOP 5</h2>
+          <h2>긍정 반응이 많은 게임 TOP 5</h2>
           <ReviewRankingList games={positiveTopGames} mode="positive" />
         </article>
 
         <article className="review-card ranking-card negative-ranking-card">
-          <h2>부정 리뷰 수가 많은 게임 TOP 5</h2>
+          <h2>부정 반응이 많은 게임 TOP 5</h2>
           <ReviewRankingList games={negativeTopGames} mode="negative" />
         </article>
       </section>
@@ -505,14 +505,14 @@ function ReviewRankingList({
   return (
     <div className="review-ranking-list">
       {games.map((game, index) => {
-        const reviewCount =
-          mode === 'positive' ? game.positiveReviews : game.negativeReviews
+        const reviewRate =
+          mode === 'positive' ? game.positiveRate : game.negativeRate
 
         return (
           <div className="review-ranking-item" key={`${game.id}-${mode}`}>
             <span>{index + 1}</span>
             <strong title={game.name}>{game.name}</strong>
-            <em>{formatNumber(reviewCount)}개</em>
+            <em>{reviewRate.toFixed(1)}%</em>
           </div>
         )
       })}

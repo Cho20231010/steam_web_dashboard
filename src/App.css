@@ -21,9 +21,9 @@
   --shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 
   /* 사이드바 / 로고 크기 */
-  --sidebar-width: 220px;
-  --logo-width: 178px;
-  --logo-max-height: 92px;
+  --sidebar-width: 230px;
+  --logo-width: 190px;
+  --logo-max-height: 100px;
 }
 
 body {

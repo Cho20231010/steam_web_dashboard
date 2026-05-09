@@ -33,6 +33,9 @@ export type Game = {
   id?: number | string
   appid?: number | string
   app_id?: number | string
+  appId?: number | string
+  steam_appid?: number | string
+  steamAppId?: number | string
   game_id?: number | string
   name?: string
   title?: string
@@ -45,9 +48,12 @@ export type Game = {
   total_reviews?: number
   price?: number | string
   owners?: string
+
+  // 이미지 관련 필드
   header_image?: string
   capsule_image?: string
   image_url?: string
+  image?: string
 }
 
 export type SentimentAnalysis = {

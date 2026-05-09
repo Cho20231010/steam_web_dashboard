@@ -16,6 +16,7 @@ import {
 type TopGameView = {
   rank: number
   id: string
+  steamAppId?: string
   name: string
   genre: string
   score: string
@@ -70,7 +71,9 @@ function App() {
         setCorrelations(Array.isArray(correlationData) ? correlationData : [])
       } catch (error) {
         console.error(error)
-        setErrorMessage('백엔드 데이터를 불러오지 못했습니다. API 주소 또는 CORS 설정을 확인해주세요.')
+        setErrorMessage(
+          '백엔드 데이터를 불러오지 못했습니다. API 주소 또는 CORS 설정을 확인해주세요.',
+        )
       } finally {
         setLoading(false)
       }
@@ -184,15 +187,7 @@ function App() {
                       <div className="top-item" key={`${game.rank}-${game.id}`}>
                         <div className="top-rank">{game.rank}</div>
 
-                        <div className="top-thumb">
-                          {game.image ? (
-                            <img src={game.image} alt={game.name} />
-                          ) : (
-                            <div className="thumb-fallback">
-                              {game.name.slice(0, 2).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
+                        <GameThumbnail game={game} />
 
                         <div className="top-info">
                           <strong>{game.name}</strong>
@@ -335,6 +330,46 @@ function SummaryCard({
   )
 }
 
+function GameThumbnail({ game }: { game: TopGameView }) {
+  const [imageSrc, setImageSrc] = useState(game.image ?? '')
+  const [isBroken, setIsBroken] = useState(!game.image)
+
+  useEffect(() => {
+    setImageSrc(game.image ?? '')
+    setIsBroken(!game.image)
+  }, [game.image])
+
+  if (!imageSrc || isBroken) {
+    return (
+      <div className="top-thumb" aria-label={`${game.name} 이미지 없음`}>
+        <div className="thumb-fallback">
+          {game.name.slice(0, 2).toUpperCase()}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="top-thumb">
+      <img
+        src={imageSrc}
+        alt={`${game.name} 썸네일`}
+        loading="lazy"
+        onError={() => {
+          const headerImage = getSteamHeaderImage(game.steamAppId)
+
+          if (headerImage && imageSrc !== headerImage) {
+            setImageSrc(headerImage)
+            return
+          }
+
+          setIsBroken(true)
+        }}
+      />
+    </div>
+  )
+}
+
 function EmptyText({ text }: { text: string }) {
   return <p className="empty-text">{text}</p>
 }
@@ -348,32 +383,41 @@ function normalizeTopGames(games: Game[]): TopGameView[] {
     })
     .map((game, index) => {
       const score = toNumber(game.positive_rate ?? game.positiveRate ?? game.score)
+
       const genre = Array.isArray(game.genres)
         ? game.genres.join(', ')
         : game.genre ?? game.genres ?? '장르 정보 없음'
 
+      const steamAppId = toSteamAppId(
+        game.steam_appid ??
+          game.steamAppId ??
+          game.app_id ??
+          game.appId ??
+          game.appid ??
+          game.game_id,
+      )
+
+      const providedImage =
+        game.image_url ??
+        game.image ??
+        game.capsule_image ??
+        game.header_image
+
       return {
         rank: index + 1,
-        id: String(game.id ?? game.appid ?? game.app_id ?? game.game_id ?? index),
+        id: String(
+          game.id ??
+            game.steam_appid ??
+            game.app_id ??
+            game.appid ??
+            game.game_id ??
+            index,
+        ),
+        steamAppId,
         name: game.name ?? game.title ?? '이름 없음',
         genre,
         score: score > 0 ? `${score.toFixed(1)}%` : '-',
-        image:
-          (game as Game & {
-            header_image?: string
-            capsule_image?: string
-            image_url?: string
-          }).header_image ??
-          (game as Game & {
-            header_image?: string
-            capsule_image?: string
-            image_url?: string
-          }).capsule_image ??
-          (game as Game & {
-            header_image?: string
-            capsule_image?: string
-            image_url?: string
-          }).image_url,
+        image: providedImage ?? getSteamCapsuleImage(steamAppId),
       }
     })
 }
@@ -470,9 +514,33 @@ function findTopGenre(games: Game[]) {
       })
   })
 
-  const [topGenre] = [...genreCount.entries()].sort((a, b) => b[1] - a[1])[0] ?? []
+  const [topGenre] =
+    [...genreCount.entries()].sort((a, b) => b[1] - a[1])[0] ?? []
 
   return topGenre ?? '-'
+}
+
+function toSteamAppId(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return /^\d+$/.test(trimmed) ? trimmed : undefined
+  }
+
+  return undefined
+}
+
+function getSteamCapsuleImage(appId?: string) {
+  if (!appId) return undefined
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/capsule_184x69.jpg`
+}
+
+function getSteamHeaderImage(appId?: string) {
+  if (!appId) return undefined
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`
 }
 
 function toNumber(value: unknown) {

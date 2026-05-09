@@ -199,7 +199,7 @@ button {
 
 .top-item {
   display: grid;
-  grid-template-columns: 34px 56px 1fr auto;
+  grid-template-columns: 34px 72px 1fr auto;
   gap: 10px;
   align-items: center;
   padding: 10px;
@@ -221,12 +221,13 @@ button {
 }
 
 .top-thumb {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 40px;
   border-radius: 10px;
   overflow: hidden;
   background: #e9edf7;
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(8, 26, 49, 0.06);
 }
 
 .top-thumb img {
@@ -488,5 +489,27 @@ button {
   .sentiment-wrap {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .top-item {
+    grid-template-columns: 30px 60px 1fr;
+  }
+
+  .top-rank {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+
+  .top-thumb {
+    width: 60px;
+    height: 34px;
+  }
+
+  .top-score {
+    grid-column: 3;
+    justify-self: start;
   }
 }

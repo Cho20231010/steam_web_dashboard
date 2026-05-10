@@ -947,7 +947,7 @@ button {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .ranking-filter-card,
@@ -955,18 +955,18 @@ button {
 .ranking-status-card {
   background: #ffffff;
   border: 1px solid #e6eaf2;
-  border-radius: 20px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  border-radius: 18px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
 }
 
 .ranking-filter-card {
-  padding: 18px;
+  padding: 14px 16px;
 }
 
 .ranking-filter-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.5fr;
-  gap: 14px;
+  grid-template-columns: 1fr 1fr 1fr 1.35fr;
+  gap: 12px;
   align-items: end;
 }
 
@@ -974,26 +974,26 @@ button {
 .ranking-filter-search {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ranking-filter-field label,
 .ranking-filter-search label {
   color: #6b7280;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .ranking-filter-field select,
 .ranking-filter-search input {
   width: 100%;
-  height: 52px;
+  height: 46px;
   border: 1px solid #dfe4ee;
-  border-radius: 12px;
-  padding: 0 16px;
+  border-radius: 11px;
+  padding: 0 14px;
   background: #ffffff;
   color: #111827;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   outline: none;
 }
@@ -1007,26 +1007,26 @@ button {
 .ranking-sort-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 18px;
+  gap: 10px;
+  margin-top: 14px;
   flex-wrap: wrap;
 }
 
 .ranking-sort-label {
   color: #6b7280;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
-  margin-right: 4px;
+  margin-right: 2px;
 }
 
 .ranking-sort-row button {
-  min-width: 120px;
-  height: 48px;
+  min-width: 105px;
+  height: 42px;
   border: 1px solid #dfe4ee;
-  border-radius: 12px;
+  border-radius: 11px;
   background: #ffffff;
   color: #374151;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
   transition: 0.2s ease;
@@ -1041,7 +1041,7 @@ button {
   background: #5d63f1;
   color: #ffffff;
   border-color: #5d63f1;
-  box-shadow: 0 8px 18px rgba(93, 99, 241, 0.22);
+  box-shadow: 0 7px 16px rgba(93, 99, 241, 0.2);
 }
 
 /* 게임 순위 테이블 */
@@ -1057,7 +1057,7 @@ button {
 
 .ranking-table {
   width: 100%;
-  min-width: 1180px;
+  min-width: 1040px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -1065,25 +1065,25 @@ button {
 .ranking-table thead th {
   background: #f7f8fc;
   color: #4b5563;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   text-align: center;
-  padding: 18px 14px;
+  padding: 14px 10px;
   border-bottom: 1px solid #e7eaf1;
-  line-height: 1.4;
+  line-height: 1.35;
   word-break: keep-all;
   white-space: normal;
 }
 
 .ranking-table tbody td {
-  padding: 18px 14px;
+  padding: 14px 10px;
   border-bottom: 1px solid #edf0f5;
   text-align: center;
-  font-size: 15px;
+  font-size: 14px;
   color: #374151;
   font-weight: 700;
   background: #ffffff;
-  line-height: 1.45;
+  line-height: 1.4;
   word-break: keep-all;
   white-space: normal;
 }
@@ -1092,54 +1092,53 @@ button {
   border-bottom: 0;
 }
 
-/* 각 칸 너비 */
 .ranking-table th:nth-child(1),
 .ranking-table td:nth-child(1) {
-  width: 70px;
+  width: 56px;
 }
 
 .ranking-table th:nth-child(2),
 .ranking-table td:nth-child(2) {
-  width: 300px;
+  width: 250px;
 }
 
 .ranking-table th:nth-child(3),
 .ranking-table td:nth-child(3) {
-  width: 120px;
+  width: 105px;
 }
 
 .ranking-table th:nth-child(4),
 .ranking-table td:nth-child(4) {
-  width: 130px;
+  width: 105px;
 }
 
 .ranking-table th:nth-child(5),
 .ranking-table td:nth-child(5) {
-  width: 130px;
+  width: 115px;
 }
 
 .ranking-table th:nth-child(6),
 .ranking-table td:nth-child(6) {
-  width: 150px;
+  width: 130px;
 }
 
 .ranking-table th:nth-child(7),
 .ranking-table td:nth-child(7) {
-  width: 150px;
+  width: 130px;
 }
 
 .ranking-table th:nth-child(8),
 .ranking-table td:nth-child(8) {
-  width: 110px;
+  width: 90px;
 }
 
-/* 게임명은 길면 최대 2줄 */
 .ranking-game-name {
-  font-weight: 800;
   color: #111827;
+  font-weight: 800;
   line-height: 1.35;
   word-break: keep-all;
   white-space: normal;
+  text-align: center;
 
   display: -webkit-box;
   line-clamp: 2;
@@ -1148,7 +1147,6 @@ button {
   overflow: hidden;
 }
 
-/* 숫자 칸은 한 줄 유지 */
 .ranking-table td:nth-child(4),
 .ranking-table td:nth-child(5),
 .ranking-table td:nth-child(6),
@@ -1157,12 +1155,11 @@ button {
   white-space: nowrap;
 }
 
-/* 리뷰 수와 긍정률은 오른쪽 정렬 */
 .ranking-table td:nth-child(6),
 .ranking-table td:nth-child(7),
 .ranking-table td:nth-child(8) {
   text-align: right;
-  padding-right: 20px;
+  padding-right: 14px;
 }
 
 .ranking-positive-rate {
@@ -1174,17 +1171,17 @@ button {
   text-align: center;
   color: #6b7280;
   font-weight: 700;
-  padding: 30px 14px !important;
+  padding: 26px 12px !important;
 }
 
 .ranking-status-card {
-  padding: 18px;
+  padding: 16px;
 }
 
 .ranking-status-card strong {
   display: block;
   color: #111827;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -1286,7 +1283,7 @@ button {
   }
 
   .ranking-table {
-    min-width: 1180px;
+    min-width: 1040px;
   }
 }
 

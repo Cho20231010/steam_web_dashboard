@@ -945,14 +945,18 @@ button {
 /* 게임 순위 페이지 */
 .ranking-page {
   width: 100%;
+  max-width: 1140px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  margin: 0;
+  overflow: hidden;
 }
 
 .ranking-filter-card,
 .ranking-table-card,
 .ranking-status-card {
+  width: 100%;
   background: #ffffff;
   border: 1px solid #e6eaf2;
   border-radius: 18px;
@@ -965,7 +969,7 @@ button {
 
 .ranking-filter-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.35fr;
+  grid-template-columns: 1fr 1fr 1fr 1.25fr;
   gap: 12px;
   align-items: end;
 }
@@ -987,10 +991,10 @@ button {
 .ranking-filter-field select,
 .ranking-filter-search input {
   width: 100%;
-  height: 46px;
+  height: 44px;
   border: 1px solid #dfe4ee;
   border-radius: 11px;
-  padding: 0 14px;
+  padding: 0 13px;
   background: #ffffff;
   color: #111827;
   font-size: 14px;
@@ -1020,8 +1024,8 @@ button {
 }
 
 .ranking-sort-row button {
-  min-width: 105px;
-  height: 42px;
+  min-width: 100px;
+  height: 40px;
   border: 1px solid #dfe4ee;
   border-radius: 11px;
   background: #ffffff;
@@ -1052,12 +1056,12 @@ button {
 
 .ranking-table-wrap {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .ranking-table {
   width: 100%;
-  min-width: 1040px;
+  min-width: 0;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -1068,7 +1072,7 @@ button {
   font-size: 13px;
   font-weight: 900;
   text-align: center;
-  padding: 14px 10px;
+  padding: 13px 8px;
   border-bottom: 1px solid #e7eaf1;
   line-height: 1.35;
   word-break: keep-all;
@@ -1076,10 +1080,10 @@ button {
 }
 
 .ranking-table tbody td {
-  padding: 14px 10px;
+  padding: 13px 8px;
   border-bottom: 1px solid #edf0f5;
   text-align: center;
-  font-size: 14px;
+  font-size: 13.5px;
   color: #374151;
   font-weight: 700;
   background: #ffffff;
@@ -1092,46 +1096,48 @@ button {
   border-bottom: 0;
 }
 
+/* 칸 너비: 검은 기준선을 넘지 않도록 조정 */
 .ranking-table th:nth-child(1),
 .ranking-table td:nth-child(1) {
-  width: 56px;
+  width: 5.5%;
 }
 
 .ranking-table th:nth-child(2),
 .ranking-table td:nth-child(2) {
-  width: 250px;
+  width: 23%;
 }
 
 .ranking-table th:nth-child(3),
 .ranking-table td:nth-child(3) {
-  width: 105px;
+  width: 10%;
 }
 
 .ranking-table th:nth-child(4),
 .ranking-table td:nth-child(4) {
-  width: 105px;
+  width: 9%;
 }
 
 .ranking-table th:nth-child(5),
 .ranking-table td:nth-child(5) {
-  width: 115px;
+  width: 11%;
 }
 
 .ranking-table th:nth-child(6),
 .ranking-table td:nth-child(6) {
-  width: 130px;
+  width: 13.5%;
 }
 
 .ranking-table th:nth-child(7),
 .ranking-table td:nth-child(7) {
-  width: 130px;
+  width: 13.5%;
 }
 
 .ranking-table th:nth-child(8),
 .ranking-table td:nth-child(8) {
-  width: 90px;
+  width: 8.5%;
 }
 
+/* 게임명은 길면 2줄로 표시 */
 .ranking-game-name {
   color: #111827;
   font-weight: 800;
@@ -1147,6 +1153,7 @@ button {
   overflow: hidden;
 }
 
+/* 숫자는 한 줄 유지 */
 .ranking-table td:nth-child(4),
 .ranking-table td:nth-child(5),
 .ranking-table td:nth-child(6),
@@ -1155,11 +1162,12 @@ button {
   white-space: nowrap;
 }
 
+/* 리뷰 수와 긍정률은 오른쪽 정렬 */
 .ranking-table td:nth-child(6),
 .ranking-table td:nth-child(7),
 .ranking-table td:nth-child(8) {
   text-align: right;
-  padding-right: 14px;
+  padding-right: 12px;
 }
 
 .ranking-positive-rate {
@@ -1283,7 +1291,11 @@ button {
   }
 
   .ranking-table {
-    min-width: 1040px;
+    min-width: 980px;
+  }
+
+  .ranking-table-wrap {
+    overflow-x: auto;
   }
 }
 

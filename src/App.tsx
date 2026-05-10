@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import ReviewPage from './ReviewPage'
+import RankingPage from './RankingPage'
 import {
   getCorrelationAnalysis,
   getDashboardSummary,
@@ -14,7 +15,7 @@ import {
   type TopicAnalysis,
 } from './api'
 
-type PageType = 'home' | 'review'
+type PageType = 'home' | 'review' | 'ranking'
 
 type HomeGameView = {
   rank: number
@@ -146,6 +147,7 @@ function App() {
           <button
             className={activePage === 'home' ? 'active' : ''}
             onClick={() => setActivePage('home')}
+            type="button"
           >
             홈
           </button>
@@ -153,21 +155,27 @@ function App() {
           <button
             className={activePage === 'review' ? 'active' : ''}
             onClick={() => setActivePage('review')}
+            type="button"
           >
             리뷰
           </button>
 
-          <button>게임 순위</button>
-          <button>인기 그래프</button>
-          <button>이용객 분포</button>
-          <button>설정</button>
+          <button
+            className={activePage === 'ranking' ? 'active' : ''}
+            onClick={() => setActivePage('ranking')}
+            type="button"
+          >
+            게임 순위
+          </button>
+
+          <button type="button">인기 그래프</button>
+          <button type="button">이용객 분포</button>
+          <button type="button">설정</button>
         </nav>
       </aside>
 
       <main className="main">
-        {activePage === 'review' ? (
-          <ReviewPage />
-        ) : (
+        {activePage === 'home' && (
           <>
             {loading && (
               <section className="status-card">
@@ -347,6 +355,10 @@ function App() {
             )}
           </>
         )}
+
+        {activePage === 'review' && <ReviewPage />}
+
+        {activePage === 'ranking' && <RankingPage />}
       </main>
     </div>
   )

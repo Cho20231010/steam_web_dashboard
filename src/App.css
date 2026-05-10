@@ -1048,7 +1048,6 @@ button {
   box-shadow: 0 7px 16px rgba(93, 99, 241, 0.2);
 }
 
-/* 게임 순위 테이블 */
 .ranking-table-card {
   padding: 0;
   overflow: hidden;
@@ -1090,13 +1089,13 @@ button {
   line-height: 1.4;
   word-break: keep-all;
   white-space: normal;
+  vertical-align: middle;
 }
 
 .ranking-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
-/* 칸 너비: 검은 기준선을 넘지 않도록 조정 */
 .ranking-table th:nth-child(1),
 .ranking-table td:nth-child(1) {
   width: 5.5%;
@@ -1137,8 +1136,14 @@ button {
   width: 8.5%;
 }
 
-/* 게임명은 길면 2줄로 표시 */
+.ranking-game-name-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
 .ranking-game-name {
+  width: 100%;
+  max-width: 100%;
   color: #111827;
   font-weight: 800;
   line-height: 1.35;
@@ -1153,7 +1158,6 @@ button {
   overflow: hidden;
 }
 
-/* 숫자는 한 줄 유지 */
 .ranking-table td:nth-child(4),
 .ranking-table td:nth-child(5),
 .ranking-table td:nth-child(6),
@@ -1162,7 +1166,6 @@ button {
   white-space: nowrap;
 }
 
-/* 리뷰 수와 긍정률은 오른쪽 정렬 */
 .ranking-table td:nth-child(6),
 .ranking-table td:nth-child(7),
 .ranking-table td:nth-child(8) {

@@ -58,15 +58,13 @@ function RankingPage() {
   }, [games])
 
   const genreOptions = useMemo(() => {
-    const values = Array.from(
+    return Array.from(
       new Set(
         normalizedGames
           .map((game) => game.genre)
           .filter((genre) => genre && genre !== '장르 없음'),
       ),
     ).sort((a, b) => a.localeCompare(b))
-
-    return values
   }, [normalizedGames])
 
   const filteredGames = useMemo(() => {
@@ -112,6 +110,7 @@ function RankingPage() {
         if (b.popularityValue !== a.popularityValue) {
           return b.popularityValue - a.popularityValue
         }
+
         return b.totalReviews - a.totalReviews
       }
 
@@ -119,6 +118,7 @@ function RankingPage() {
         if (b.positiveRate !== a.positiveRate) {
           return b.positiveRate - a.positiveRate
         }
+
         return b.totalReviews - a.totalReviews
       }
 
@@ -126,6 +126,7 @@ function RankingPage() {
         if (b.totalReviews !== a.totalReviews) {
           return b.totalReviews - a.totalReviews
         }
+
         return b.positiveRate - a.positiveRate
       }
 
@@ -133,6 +134,7 @@ function RankingPage() {
         if (b.averagePlaytime !== a.averagePlaytime) {
           return b.averagePlaytime - a.averagePlaytime
         }
+
         return b.totalReviews - a.totalReviews
       }
 
@@ -282,7 +284,13 @@ function RankingPage() {
                 visibleGames.map((game, index) => (
                   <tr key={game.id}>
                     <td>{index + 1}</td>
-                    <td className="ranking-game-name">{game.name}</td>
+
+                    <td className="ranking-game-name-cell">
+                      <span className="ranking-game-name" title={game.name}>
+                        {game.name}
+                      </span>
+                    </td>
+
                     <td>{game.genre}</td>
                     <td>{game.priceLabel}</td>
                     <td>{game.ownersLabel}</td>
@@ -309,69 +317,47 @@ function RankingPage() {
 }
 
 function normalizeRankingGame(game: Game, index: number): RankingGame {
-  const id = String(getGameId(game) ?? index)
-  const name = getGameName(game)
-  const genre = getPrimaryGenre(game)
+  const record = game as Record<string, unknown>
+
+  const id = String(getGameId(record) ?? index)
+  const name = getGameName(record)
+  const genre = getPrimaryGenre(record)
 
   const positiveReviews = toNumber(
-    readFirst(game as Record<string, unknown>, [
-      'positive_reviews',
-      'positiveReviewCount',
-      'positive',
-    ]),
+    readFirst(record, ['positive_reviews', 'positiveReviewCount', 'positive']),
   )
 
   const negativeReviews = toNumber(
-    readFirst(game as Record<string, unknown>, [
-      'negative_reviews',
-      'negativeReviewCount',
-      'negative',
-    ]),
+    readFirst(record, ['negative_reviews', 'negativeReviewCount', 'negative']),
   )
 
   const neutralReviews = toNumber(
-    readFirst(game as Record<string, unknown>, [
-      'neutral_reviews',
-      'neutralReviewCount',
-      'neutral',
-    ]),
+    readFirst(record, ['neutral_reviews', 'neutralReviewCount', 'neutral']),
   )
 
   const totalReviews =
     toNumber(
-      readFirst(game as Record<string, unknown>, [
-        'review_count',
-        'total_reviews',
-        'totalReviews',
-        'total',
-      ]),
-    ) || positiveReviews + negativeReviews + neutralReviews
+      readFirst(record, ['review_count', 'total_reviews', 'totalReviews', 'total']),
+    ) ||
+    positiveReviews + negativeReviews + neutralReviews
 
-  const priceValue = normalizePriceValue(game)
-  const isFree = getIsFree(game, priceValue)
+  const priceValue = normalizePriceValue(record)
+  const isFree = getIsFree(record, priceValue)
 
   const priceLabel = isFree ? '무료' : `₩ ${formatNumber(priceValue)}`
-  const ownersValue = extractOwnersValue(game)
-  const ownersLabel = extractOwnersLabel(game)
+  const ownersValue = extractOwnersValue(record)
+  const ownersLabel = extractOwnersLabel(record)
 
   const positiveRate =
     totalReviews > 0 ? (positiveReviews / totalReviews) * 100 : 0
 
   const averagePlaytime = toNumber(
-    readFirst(game as Record<string, unknown>, [
-      'average_playtime',
-      'avg_playtime',
-      'playtime_forever',
-    ]),
+    readFirst(record, ['average_playtime', 'avg_playtime', 'playtime_forever']),
   )
 
   const popularityValue =
     toNumber(
-      readFirst(game as Record<string, unknown>, [
-        'popularity_score',
-        'ccu',
-        'concurrent_users',
-      ]),
+      readFirst(record, ['popularity_score', 'ccu', 'concurrent_users']),
     ) ||
     ownersValue ||
     totalReviews
@@ -395,23 +381,17 @@ function normalizeRankingGame(game: Game, index: number): RankingGame {
   }
 }
 
-function getGameId(game: Game) {
-  return (
-    game.game_id ??
-    game.id ??
-    game.app_id ??
-    game.appid ??
-    game.steam_appid
-  )
+function getGameId(record: Record<string, unknown>) {
+  return readFirst(record, ['game_id', 'id', 'app_id', 'appid', 'steam_appid'])
 }
 
-function getGameName(game: Game) {
-  return String(game.name ?? game.title ?? '이름 없음')
+function getGameName(record: Record<string, unknown>) {
+  return String(readFirst(record, ['name', 'title']) ?? '이름 없음')
 }
 
-function getPrimaryGenre(game: Game) {
-  const rawGenres = (game as Record<string, unknown>).genres
-  const rawGenre = (game as Record<string, unknown>).genre
+function getPrimaryGenre(record: Record<string, unknown>) {
+  const rawGenres = record.genres
+  const rawGenre = record.genre
 
   if (Array.isArray(rawGenres) && rawGenres.length > 0) {
     return String(rawGenres[0])
@@ -428,28 +408,19 @@ function getPrimaryGenre(game: Game) {
   return '장르 없음'
 }
 
-function getIsFree(game: Game, priceValue: number) {
-  const raw = readFirst(game as Record<string, unknown>, [
-    'is_free',
-    'free',
-    'isFree',
-  ])
+function getIsFree(record: Record<string, unknown>, priceValue: number) {
+  const raw = readFirst(record, ['is_free', 'free', 'isFree'])
 
   if (typeof raw === 'boolean') return raw
   if (priceValue === 0) return true
 
-  const genre = getPrimaryGenre(game).toLowerCase()
+  const genre = getPrimaryGenre(record).toLowerCase()
   return genre.includes('free')
 }
 
-function normalizePriceValue(game: Game) {
+function normalizePriceValue(record: Record<string, unknown>) {
   const rawPrice = toNumber(
-    readFirst(game as Record<string, unknown>, [
-      'price',
-      'price_value',
-      'final_price',
-      'initial_price',
-    ]),
+    readFirst(record, ['price', 'price_value', 'final_price', 'initial_price']),
   )
 
   if (rawPrice <= 0) return 0
@@ -461,9 +432,7 @@ function normalizePriceValue(game: Game) {
   return Math.round(rawPrice)
 }
 
-function extractOwnersLabel(game: Game) {
-  const record = game as Record<string, unknown>
-
+function extractOwnersLabel(record: Record<string, unknown>) {
   const directText = readFirst(record, [
     'owners_text',
     'owners_range',
@@ -475,7 +444,7 @@ function extractOwnersLabel(game: Game) {
     return normalizeOwnersText(directText)
   }
 
-  const ownersValue = extractOwnersValue(game)
+  const ownersValue = extractOwnersValue(record)
   if (ownersValue <= 0) return '-'
 
   if (ownersValue >= 1_000_000) {
@@ -489,12 +458,11 @@ function extractOwnersLabel(game: Game) {
   return `${formatNumber(ownersValue)}+`
 }
 
-function extractOwnersValue(game: Game) {
-  const record = game as Record<string, unknown>
-
+function extractOwnersValue(record: Record<string, unknown>) {
   const numericValue = toNumber(
     readFirst(record, ['owners_value', 'owners_count']),
   )
+
   if (numericValue > 0) return numericValue
 
   const textValue = readFirst(record, [
@@ -550,10 +518,12 @@ function normalizeOwnersText(value: string) {
 function readFirst(record: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
     const value = record[key]
+
     if (value !== undefined && value !== null && value !== '') {
       return value
     }
   }
+
   return undefined
 }
 

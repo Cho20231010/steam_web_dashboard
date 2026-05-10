@@ -15,8 +15,21 @@ export type Game = {
   genre?: string | null
   genres?: string[] | string | null
 
-  price?: number | null
+  price?: number | string | null
+  price_value?: number | string | null
+  final_price?: number | string | null
+  initial_price?: number | string | null
+
+  is_free?: boolean
+  free?: boolean
+  isFree?: boolean
+
   owners?: string | null
+  owners_text?: string | null
+  owners_range?: string | null
+  estimated_owners?: string | null
+  owners_value?: number
+  owners_count?: number
 
   positive_reviews?: number
   neutral_reviews?: number
@@ -31,7 +44,17 @@ export type Game = {
   neutral_ratio?: number
   negative_ratio?: number
 
+  review_count?: number
+  total_reviews?: number
+  totalReviews?: number
+
   average_playtime?: number | null
+  avg_playtime?: number | null
+  playtime_forever?: number | null
+
+  popularity_score?: number
+  ccu?: number
+  concurrent_users?: number
 
   image_url?: string
   image?: string

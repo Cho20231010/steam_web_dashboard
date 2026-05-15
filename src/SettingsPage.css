@@ -5,19 +5,42 @@ html.theme-dark {
   --line: #334155;
   --text: #f9fafb;
   --sub: #cbd5e1;
-  --blue-soft: rgba(93, 99, 241, 0.18);
-  --green-soft: rgba(79, 195, 107, 0.16);
-  --red-soft: rgba(229, 111, 99, 0.16);
-  --shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  --navy-1: #020617;
+  --navy-2: #0f172a;
+  --blue: #818cf8;
+  --blue-soft: rgba(129, 140, 248, 0.18);
+  --green: #4ade80;
+  --green-soft: rgba(74, 222, 128, 0.16);
+  --gray: #94a3b8;
+  --red: #f87171;
+  --red-soft: rgba(248, 113, 113, 0.16);
+  --shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
 
+html.theme-dark,
 html.theme-dark body {
   background: #0f172a;
   color: #f9fafb;
 }
 
+html.theme-dark .app,
 html.theme-dark .main {
   background: #0f172a;
+  color: #f9fafb;
+}
+
+html.theme-dark .sidebar {
+  background: linear-gradient(180deg, #020617, #0f172a);
+}
+
+html.theme-dark .sidebar-nav button {
+  color: #cbd5e1;
+}
+
+html.theme-dark .sidebar-nav button:hover,
+html.theme-dark .sidebar-nav button.active {
+  background: rgba(129, 140, 248, 0.28);
+  color: #ffffff;
 }
 
 html.theme-dark .summary-card,
@@ -34,7 +57,23 @@ html.theme-dark .settings-footer {
   background: #111827;
   border-color: #334155;
   color: #f9fafb;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+html.theme-dark h1,
+html.theme-dark h2,
+html.theme-dark h3,
+html.theme-dark h4,
+html.theme-dark h5,
+html.theme-dark h6,
+html.theme-dark strong,
+html.theme-dark th,
+html.theme-dark td,
+html.theme-dark label,
+html.theme-dark p,
+html.theme-dark span,
+html.theme-dark em {
+  color: inherit;
 }
 
 html.theme-dark .card h2,
@@ -50,10 +89,17 @@ html.theme-dark .settings-status-row strong,
 html.theme-dark .settings-info-box strong,
 html.theme-dark .settings-toggle-row strong,
 html.theme-dark .ranking-table tbody td,
+html.theme-dark .ranking-table thead th,
 html.theme-dark .ranking-game-name,
 html.theme-dark .review-card h2,
-html.theme-dark .review-status-card strong {
-  color: #f9fafb;
+html.theme-dark .review-status-card strong,
+html.theme-dark .selected-game-meta strong,
+html.theme-dark .game-sentiment-name,
+html.theme-dark .sentiment-rate-grid strong,
+html.theme-dark .review-ranking-item strong,
+html.theme-dark .review-ranking-item em,
+html.theme-dark .insight-label {
+  color: #f9fafb !important;
 }
 
 html.theme-dark .summary-head span,
@@ -67,8 +113,11 @@ html.theme-dark .settings-status-row span,
 html.theme-dark .settings-info-box span,
 html.theme-dark .settings-toggle-row p,
 html.theme-dark .settings-footer p,
-html.theme-dark .review-empty-text {
-  color: #cbd5e1;
+html.theme-dark .review-empty-text,
+html.theme-dark .selected-game-meta span,
+html.theme-dark .stacked-labels,
+html.theme-dark .sentiment-rate-grid span {
+  color: #cbd5e1 !important;
 }
 
 html.theme-dark .top-item,
@@ -80,9 +129,22 @@ html.theme-dark .settings-toggle-row,
 html.theme-dark .sentiment-rate-grid div,
 html.theme-dark .review-ranking-item,
 html.theme-dark .ranking-table thead th,
-html.theme-dark .ranking-table tbody td {
+html.theme-dark .ranking-table tbody td,
+html.theme-dark .selected-game-image,
+html.theme-dark .selected-game-fallback {
   background: #1f2937;
   border-color: #334155;
+}
+
+html.theme-dark .top-rank,
+html.theme-dark .review-ranking-item span {
+  background: rgba(129, 140, 248, 0.18);
+  color: #a5b4fc;
+}
+
+html.theme-dark .thumb-fallback {
+  background: rgba(129, 140, 248, 0.18);
+  color: #a5b4fc;
 }
 
 html.theme-dark .donut-inner,
@@ -91,6 +153,7 @@ html.theme-dark .review-donut-hole {
 }
 
 html.theme-dark .insight-table-wrap,
+html.theme-dark .insight-table,
 html.theme-dark .insight-table td {
   background: #111827;
   border-color: #334155;
@@ -99,7 +162,11 @@ html.theme-dark .insight-table td {
 html.theme-dark .insight-table th {
   background: #1f2937;
   border-color: #334155;
-  color: #cbd5e1;
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .insight-table td {
+  color: #f9fafb !important;
 }
 
 html.theme-dark .settings-field-group select,
@@ -109,7 +176,7 @@ html.theme-dark .game-select,
 html.theme-dark .ranking-filter-field select,
 html.theme-dark .ranking-filter-search input {
   background: #0f172a;
-  border-color: #334155;
+  border-color: #475569;
   color: #f9fafb;
 }
 
@@ -120,24 +187,132 @@ html.theme-dark .ranking-filter-field select option {
   color: #f9fafb;
 }
 
+html.theme-dark .game-search-input::placeholder,
+html.theme-dark .ranking-filter-search input::placeholder {
+  color: #94a3b8;
+}
+
 html.theme-dark .settings-outline-button,
 html.theme-dark .theme-options button,
 html.theme-dark .ranking-sort-row button {
   background: #1f2937;
-  border-color: #334155;
+  border-color: #475569;
   color: #f9fafb;
 }
 
 html.theme-dark .settings-outline-button:hover,
-html.theme-dark .ranking-sort-row button:hover {
+html.theme-dark .ranking-sort-row button:hover,
+html.theme-dark .theme-options button:hover {
   background: #273449;
 }
 
+html.theme-dark .settings-primary-button,
 html.theme-dark .theme-options button.active,
 html.theme-dark .ranking-sort-row button.active {
-  background: #5d63f1;
-  border-color: #5d63f1;
+  background: #6366f1;
+  border-color: #6366f1;
   color: #ffffff;
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.3);
+}
+
+html.theme-dark .settings-toggle {
+  background: #475569;
+}
+
+html.theme-dark .settings-toggle.active {
+  background: #6366f1;
+}
+
+html.theme-dark .settings-badge.success {
+  color: #86efac !important;
+  background: rgba(34, 197, 94, 0.18);
+}
+
+html.theme-dark .settings-badge.error {
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.18);
+}
+
+html.theme-dark .settings-badge.checking {
+  color: #c4b5fd !important;
+  background: rgba(129, 140, 248, 0.18);
+}
+
+html.theme-dark .settings-badge.idle {
+  color: #cbd5e1 !important;
+  background: #334155;
+}
+
+html.theme-dark .correlation-value.positive {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.18);
+}
+
+html.theme-dark .correlation-value.negative {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.18);
+}
+
+html.theme-dark .correlation-value.neutral {
+  color: #cbd5e1;
+  background: #334155;
+}
+
+html.theme-dark .ranking-positive-rate {
+  color: #86efac !important;
+}
+
+html.theme-dark .top-score {
+  color: #86efac;
+}
+
+html.theme-dark .dot.green {
+  background: #4ade80;
+}
+
+html.theme-dark .dot.gray {
+  background: #94a3b8;
+}
+
+html.theme-dark .dot.red {
+  background: #f87171;
+}
+
+html.theme-dark .topic-fill {
+  background: linear-gradient(90deg, #4ade80, #86efac);
+}
+
+html.theme-dark .stacked-positive {
+  background: #22c55e;
+}
+
+html.theme-dark .stacked-neutral {
+  background: #64748b;
+  color: #f9fafb;
+}
+
+html.theme-dark .stacked-negative {
+  background: #ef4444;
+}
+
+html.theme-dark .keyword-size-5 {
+  color: #a5b4fc;
+}
+
+html.theme-dark .keyword-size-4 {
+  color: #93c5fd;
+}
+
+html.theme-dark .keyword-size-3 {
+  color: #86efac;
+}
+
+html.theme-dark .keyword-size-2 {
+  color: #67e8f9;
+}
+
+html.theme-dark .keyword-size-1 {
+  color: #cbd5e1;
 }
 
 html.theme-dark .status-card.error,

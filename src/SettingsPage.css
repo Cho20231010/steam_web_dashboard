@@ -1,3 +1,152 @@
+html.theme-dark {
+  --bg: #0f172a;
+  --panel: #111827;
+  --panel-soft: #1f2937;
+  --line: #334155;
+  --text: #f9fafb;
+  --sub: #cbd5e1;
+  --blue-soft: rgba(93, 99, 241, 0.18);
+  --green-soft: rgba(79, 195, 107, 0.16);
+  --red-soft: rgba(229, 111, 99, 0.16);
+  --shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+html.theme-dark body {
+  background: #0f172a;
+  color: #f9fafb;
+}
+
+html.theme-dark .main {
+  background: #0f172a;
+}
+
+html.theme-dark .summary-card,
+html.theme-dark .card,
+html.theme-dark .status-card,
+html.theme-dark .empty-text,
+html.theme-dark .review-card,
+html.theme-dark .review-status-card,
+html.theme-dark .ranking-filter-card,
+html.theme-dark .ranking-table-card,
+html.theme-dark .ranking-status-card,
+html.theme-dark .settings-card,
+html.theme-dark .settings-footer {
+  background: #111827;
+  border-color: #334155;
+  color: #f9fafb;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+html.theme-dark .card h2,
+html.theme-dark .summary-card strong,
+html.theme-dark .top-info strong,
+html.theme-dark .legend strong,
+html.theme-dark .topic-header span,
+html.theme-dark .topic-header strong,
+html.theme-dark .insight-card h2,
+html.theme-dark .settings-header h1,
+html.theme-dark .settings-card-title h2,
+html.theme-dark .settings-status-row strong,
+html.theme-dark .settings-info-box strong,
+html.theme-dark .settings-toggle-row strong,
+html.theme-dark .ranking-table tbody td,
+html.theme-dark .ranking-game-name,
+html.theme-dark .review-card h2,
+html.theme-dark .review-status-card strong {
+  color: #f9fafb;
+}
+
+html.theme-dark .summary-head span,
+html.theme-dark .top-info span,
+html.theme-dark .legend p,
+html.theme-dark .insight-desc,
+html.theme-dark .settings-header p,
+html.theme-dark .settings-card-title p,
+html.theme-dark .settings-field-group label,
+html.theme-dark .settings-status-row span,
+html.theme-dark .settings-info-box span,
+html.theme-dark .settings-toggle-row p,
+html.theme-dark .settings-footer p,
+html.theme-dark .review-empty-text {
+  color: #cbd5e1;
+}
+
+html.theme-dark .top-item,
+html.theme-dark .topic-bar,
+html.theme-dark .settings-url-box,
+html.theme-dark .settings-info-box,
+html.theme-dark .settings-status-row,
+html.theme-dark .settings-toggle-row,
+html.theme-dark .sentiment-rate-grid div,
+html.theme-dark .review-ranking-item,
+html.theme-dark .ranking-table thead th,
+html.theme-dark .ranking-table tbody td {
+  background: #1f2937;
+  border-color: #334155;
+}
+
+html.theme-dark .donut-inner,
+html.theme-dark .review-donut-hole {
+  background: #111827;
+}
+
+html.theme-dark .insight-table-wrap,
+html.theme-dark .insight-table td {
+  background: #111827;
+  border-color: #334155;
+}
+
+html.theme-dark .insight-table th {
+  background: #1f2937;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+html.theme-dark .settings-field-group select,
+html.theme-dark .settings-field-group input,
+html.theme-dark .game-search-input,
+html.theme-dark .game-select,
+html.theme-dark .ranking-filter-field select,
+html.theme-dark .ranking-filter-search input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f9fafb;
+}
+
+html.theme-dark .settings-field-group select option,
+html.theme-dark .game-select option,
+html.theme-dark .ranking-filter-field select option {
+  background: #111827;
+  color: #f9fafb;
+}
+
+html.theme-dark .settings-outline-button,
+html.theme-dark .theme-options button,
+html.theme-dark .ranking-sort-row button {
+  background: #1f2937;
+  border-color: #334155;
+  color: #f9fafb;
+}
+
+html.theme-dark .settings-outline-button:hover,
+html.theme-dark .ranking-sort-row button:hover {
+  background: #273449;
+}
+
+html.theme-dark .theme-options button.active,
+html.theme-dark .ranking-sort-row button.active {
+  background: #5d63f1;
+  border-color: #5d63f1;
+  color: #ffffff;
+}
+
+html.theme-dark .status-card.error,
+html.theme-dark .review-status-card.error,
+html.theme-dark .ranking-status-card.error {
+  background: #2a1111;
+  border-color: #7f1d1d;
+}
+
 .settings-page {
   width: 100%;
   display: flex;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './SettingsPage.css'
 
 const API_BASE_URL =
@@ -6,6 +6,7 @@ const API_BASE_URL =
   'https://steam-market-dashboard-production.up.railway.app'
 
 type ConnectionStatus = 'idle' | 'checking' | 'success' | 'error'
+type ThemeMode = '라이트 모드' | '다크 모드'
 
 function SettingsPage() {
   const [connectionStatus, setConnectionStatus] =
@@ -17,11 +18,23 @@ function SettingsPage() {
   const [defaultSort, setDefaultSort] = useState('인기순')
   const [defaultFilter, setDefaultFilter] = useState('전체 게임')
   const [currency, setCurrency] = useState('KRW (₩)')
-  const [theme, setTheme] = useState('라이트 모드')
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const savedTheme = localStorage.getItem('steam-dashboard-theme')
+
+    if (savedTheme === '다크 모드') {
+      return '다크 모드'
+    }
+
+    return '라이트 모드'
+  })
 
   const [notifyDataUpdate, setNotifyDataUpdate] = useState(true)
   const [notifyReviewIncrease, setNotifyReviewIncrease] = useState(true)
   const [notifyPriceChange, setNotifyPriceChange] = useState(false)
+
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
 
   const connectionLabel = useMemo(() => {
     if (connectionStatus === 'checking') return '확인 중'
@@ -56,6 +69,11 @@ function SettingsPage() {
     }
   }
 
+  function handleThemeChange(nextTheme: ThemeMode) {
+    setTheme(nextTheme)
+    applyTheme(nextTheme)
+  }
+
   function handleReset() {
     setRefreshCycle('수동 갱신')
     setDefaultPage('홈')
@@ -63,6 +81,7 @@ function SettingsPage() {
     setDefaultFilter('전체 게임')
     setCurrency('KRW (₩)')
     setTheme('라이트 모드')
+    applyTheme('라이트 모드')
     setNotifyDataUpdate(true)
     setNotifyReviewIncrease(true)
     setNotifyPriceChange(false)
@@ -71,6 +90,7 @@ function SettingsPage() {
   }
 
   function handleSave() {
+    localStorage.setItem('steam-dashboard-theme', theme)
     alert('설정이 저장되었습니다.')
   }
 
@@ -268,7 +288,7 @@ function SettingsPage() {
           <div className="theme-options">
             <button
               className={theme === '라이트 모드' ? 'active' : ''}
-              onClick={() => setTheme('라이트 모드')}
+              onClick={() => handleThemeChange('라이트 모드')}
               type="button"
             >
               라이트 모드
@@ -276,7 +296,7 @@ function SettingsPage() {
 
             <button
               className={theme === '다크 모드' ? 'active' : ''}
-              onClick={() => setTheme('다크 모드')}
+              onClick={() => handleThemeChange('다크 모드')}
               type="button"
             >
               다크 모드
@@ -338,6 +358,18 @@ function ToggleRow({
       </button>
     </div>
   )
+}
+
+function applyTheme(theme: ThemeMode) {
+  const root = document.documentElement
+
+  if (theme === '다크 모드') {
+    root.classList.add('theme-dark')
+  } else {
+    root.classList.remove('theme-dark')
+  }
+
+  localStorage.setItem('steam-dashboard-theme', theme)
 }
 
 function formatDateTime(date: Date) {

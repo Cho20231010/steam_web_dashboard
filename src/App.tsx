@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import ReviewPage from './ReviewPage'
 import RankingPage from './RankingPage'
+import SettingsPage from './SettingsPage'
 import {
   getCorrelationAnalysis,
   getDashboardSummary,
@@ -15,7 +16,7 @@ import {
   type TopicAnalysis,
 } from './api'
 
-type PageType = 'home' | 'review' | 'ranking'
+type PageType = 'home' | 'review' | 'ranking' | 'settings'
 
 type HomeGameView = {
   rank: number
@@ -169,8 +170,16 @@ function App() {
           </button>
 
           <button type="button">인기 그래프</button>
+
           <button type="button">이용객 분포</button>
-          <button type="button">설정</button>
+
+          <button
+            className={activePage === 'settings' ? 'active' : ''}
+            onClick={() => setActivePage('settings')}
+            type="button"
+          >
+            설정
+          </button>
         </nav>
       </aside>
 
@@ -359,6 +368,8 @@ function App() {
         {activePage === 'review' && <ReviewPage />}
 
         {activePage === 'ranking' && <RankingPage />}
+
+        {activePage === 'settings' && <SettingsPage />}
       </main>
     </div>
   )

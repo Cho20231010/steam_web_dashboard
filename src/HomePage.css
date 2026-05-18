@@ -33,20 +33,6 @@
   line-height: 1.55;
 }
 
-.home-v2-export-button {
-  flex-shrink: 0;
-  height: 42px;
-  padding: 0 18px;
-  border: 1px solid #dfe4ee;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #4d58df;
-  font-size: 14px;
-  font-weight: 900;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-  cursor: pointer;
-}
-
 .home-v2-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -567,7 +553,6 @@ html.theme-dark .home-v2-insight-item {
   border-color: #334155;
 }
 
-html.theme-dark .home-v2-export-button,
 html.theme-dark .home-v2-card-header select {
   background: #1f2937;
   border-color: #475569;
@@ -645,10 +630,6 @@ html.theme-dark .home-v2-insight-item p {
 @media (max-width: 720px) {
   .home-v2-header {
     flex-direction: column;
-  }
-
-  .home-v2-export-button {
-    width: 100%;
   }
 
   .home-v2-summary-grid,

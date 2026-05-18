@@ -175,10 +175,6 @@ function HomePage() {
           <h1>메인 트렌드 대시보드</h1>
           <p>시장 전체의 핵심 지표와 주요 트렌드를 한눈에 파악할 수 있는 메인 화면</p>
         </div>
-
-        <button className="home-v2-export-button" type="button">
-          내보내기
-        </button>
       </header>
 
       <section className="home-v2-summary-grid">

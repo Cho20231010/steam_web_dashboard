@@ -22,7 +22,7 @@ function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="sidebar-brand large-brand">
+        <div className="large-brand">
           <img src="/hidden-coders-logo.png" alt="Hidden Coders Logo" />
         </div>
 
@@ -108,9 +108,9 @@ function App() {
           <section className="status-card">
             <strong>게임 상세 분석 화면 준비 중</strong>
             <p>
-              다음 단계에서 /games/{'{game_id}'}, /games/{'{game_id}'}/history,
-              /games/{'{game_id}'}/review-trend, /games/{'{game_id}'}/topics API를
-              연결해서 구현할 예정입니다.
+              /games/{'{game_id}'}, /games/{'{game_id}'}/history,
+              /games/{'{game_id}'}/review-trend, /games/{'{game_id}'}/sentiment,
+              /games/{'{game_id}'}/topics API를 연결해서 개별 게임 분석 화면으로 구성할 수 있습니다.
             </p>
           </section>
         )}
@@ -122,7 +122,7 @@ function App() {
             <strong>트렌드 비교 화면 준비 중</strong>
             <p>
               /analysis/trends, /analysis/genre-trends, /analysis/price-trends API를
-              연결해서 기간별 비교 화면으로 구성할 수 있습니다.
+              연결해서 기간별 시장 변화를 비교하는 화면으로 구성할 수 있습니다.
             </p>
           </section>
         )}
@@ -131,8 +131,8 @@ function App() {
           <section className="status-card">
             <strong>토픽 분석 화면 준비 중</strong>
             <p>
-              /analysis/topics, /analysis/topics/clusters, /analysis/topics/sentiment
-              API를 연결해서 토픽별 감성 경향을 보여줄 수 있습니다.
+              /analysis/topics, /analysis/topics/clusters, /analysis/topics/sentiment,
+              /analysis/topics/by-genre API를 연결해서 토픽별 감성 경향을 보여줄 수 있습니다.
             </p>
           </section>
         )}
@@ -143,7 +143,7 @@ function App() {
             <p>
               /analysis/genre-stats, /analysis/price-band-stats,
               /analysis/platform-stats, /analysis/release-year-stats API를 연결해서
-              시장 분포 화면으로 구성할 수 있습니다.
+              장르·가격대·플랫폼·출시연도별 시장 분포를 보여줄 수 있습니다.
             </p>
           </section>
         )}
@@ -155,8 +155,8 @@ function App() {
             <strong>관심 게임 화면 준비 중</strong>
             <p>
               /users/me/wishlist, /users/me/wishlist/compare,
-              /users/me/notifications API를 X-Client-Id 헤더와 함께 연결하면 실제 관심
-              게임과 알림을 반영할 수 있습니다.
+              /users/me/notifications API를 X-Client-Id 헤더와 함께 연결하면 실제 관심 게임과
+              알림 데이터를 반영할 수 있습니다.
             </p>
           </section>
         )}

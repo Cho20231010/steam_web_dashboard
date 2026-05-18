@@ -14,38 +14,37 @@ import {
 } from './api'
 
 type HomeTopGame = {
-  rank: number
   id: string
+  rank: number
   name: string
-  image?: string
   genre: string
   price: string
   positiveRate: number
   reviewCount: number
+  image?: string
 }
 
 type GenreView = {
   name: string
-  ratio: number
   count: number
+  ratio: number
 }
 
-type BubblePoint = {
+type BubbleView = {
   id: string
   name: string
   price: number
   reviewCount: number
   positiveRate: number
-  size: number
   x: number
   y: number
+  size: number
 }
 
 type InsightView = {
   title: string
   description: string
   icon: string
-  tone: 'blue' | 'green' | 'purple' | 'teal'
 }
 
 function HomePage() {
@@ -111,45 +110,51 @@ function HomePage() {
     return normalizeTopGames(rankingGames).slice(0, 10)
   }, [rankingGames])
 
-  const normalizedGenres = useMemo(() => {
+  const genres = useMemo(() => {
     return normalizeGenres(genreStats, rankingGames).slice(0, 8)
   }, [genreStats, rankingGames])
 
-  const bubblePoints = useMemo(() => {
-    return normalizeBubblePoints(priceReview, rankingGames).slice(0, 35)
+  const bubbles = useMemo(() => {
+    return normalizeBubbles(priceReview, rankingGames).slice(0, 26)
   }, [priceReview, rankingGames])
 
   const totalGames =
-    readNumber(summary, ['total_games', 'game_count']) || rankingGames.length
+    readNumber(summary, ['total_games', 'totalGames', 'game_count']) ||
+    rankingGames.length
 
   const totalReviews =
-    readNumber(summary, ['total_reviews', 'review_count']) ||
+    readNumber(summary, ['total_reviews', 'totalReviews', 'review_count']) ||
     rankingGames.reduce((sum, game) => sum + getReliableReviewCount(game), 0)
 
   const averagePositiveRate =
     normalizeRatio(
-      readNumber(summary, ['average_positive_rate', 'positive_rate']),
+      readNumber(summary, [
+        'average_positive_rate',
+        'positive_rate',
+        'positiveRate',
+      ]),
     ) || calculateAveragePositiveRate(rankingGames)
 
   const averagePrice =
-    normalizePrice(readNumber(summary, ['average_price', 'average_price_usd'])) ||
-    calculateAveragePrice(rankingGames)
+    normalizePrice(
+      readNumber(summary, ['average_price', 'average_price_usd']),
+    ) || calculateAveragePrice(rankingGames)
 
-  const insightList = useMemo(() => {
-    return createInsightList({
+  const insights = useMemo(() => {
+    return createInsights({
       totalReviews,
       averagePositiveRate,
       averagePrice,
-      genres: normalizedGenres,
+      genres,
       correlations,
     })
-  }, [totalReviews, averagePositiveRate, averagePrice, normalizedGenres, correlations])
+  }, [totalReviews, averagePositiveRate, averagePrice, genres, correlations])
 
   if (loading) {
     return (
       <section className="status-card">
         <strong>홈 화면 데이터를 불러오는 중입니다...</strong>
-        <p>백엔드 API에서 메인 트렌드 데이터를 가져오고 있습니다.</p>
+        <p>백엔드 API에서 메인 대시보드 데이터를 가져오고 있습니다.</p>
       </section>
     )
   }
@@ -164,114 +169,119 @@ function HomePage() {
   }
 
   return (
-    <div className="home-page">
-      <header className="home-header">
+    <div className="home-page-v2">
+      <header className="home-v2-header">
         <div>
           <h1>메인 트렌드 대시보드</h1>
           <p>시장 전체의 핵심 지표와 주요 트렌드를 한눈에 파악할 수 있는 메인 화면</p>
         </div>
 
-        <button className="home-export-button" type="button">
+        <button className="home-v2-export-button" type="button">
           내보내기
         </button>
       </header>
 
-      <section className="home-summary-grid">
+      <section className="home-v2-summary-grid">
         <MetricCard
           title="전체 분석 게임 수"
           value={formatNumber(totalGames)}
-          change="전체 게임 데이터 기준"
+          description="전체 게임 데이터 기준"
           icon="🎮"
-          trend="up"
         />
 
         <MetricCard
           title="전체 리뷰 수"
           value={formatNumber(totalReviews)}
-          change="긍정/부정 리뷰 합산"
+          description="긍정/부정 리뷰 합산"
           icon="💬"
-          trend="up"
         />
 
         <MetricCard
           title="평균 긍정비율"
           value={`${averagePositiveRate.toFixed(1)}%`}
-          change="게임별 긍정 비율 평균"
+          description="게임별 긍정 비율 평균"
           icon="👍"
-          trend="up"
         />
 
         <MetricCard
           title="평균 가격(USD)"
           value={`$${averagePrice.toFixed(2)}`}
-          change="무료 게임 제외 평균"
+          description="무료 게임 제외 평균"
           icon="🏷️"
-          trend="down"
         />
       </section>
 
-      <section className="home-dashboard-grid">
-        <article className="home-card home-top-card">
-          <div className="home-card-header">
+      <section className="home-v2-main-grid">
+        <article className="home-v2-card top-games-card">
+          <div className="home-v2-card-header">
             <div>
               <h2>인기 게임 TOP 10</h2>
               <p>리뷰 수와 긍정 비율을 기준으로 상위 게임을 확인합니다.</p>
             </div>
+
             <button type="button">더보기 →</button>
           </div>
 
-          <div className="home-top-table">
-            <div className="home-top-table-head">
+          <div className="home-v2-table">
+            <div className="home-v2-table-head">
               <span>순위</span>
               <span>게임</span>
               <span>가격</span>
               <span>긍정 비율</span>
             </div>
 
-            {topGames.map((game) => (
-              <div className="home-top-row" key={game.id}>
-                <span className="home-top-rank">{game.rank}</span>
+            {topGames.length > 0 ? (
+              topGames.map((game) => (
+                <div className="home-v2-table-row" key={game.id}>
+                  <span className="home-v2-rank">{game.rank}</span>
 
-                <div className="home-top-game">
-                  {game.image ? (
-                    <img src={game.image} alt={`${game.name} 이미지`} />
-                  ) : (
-                    <div className="home-image-fallback">
-                      {game.name.slice(0, 2)}
+                  <div className="home-v2-game-cell">
+                    <div className="home-v2-game-thumb">
+                      {game.image ? (
+                        <img src={game.image} alt={`${game.name} 이미지`} />
+                      ) : (
+                        <span>{game.name.slice(0, 2)}</span>
+                      )}
                     </div>
-                  )}
 
-                  <div>
-                    <strong>{game.name}</strong>
-                    <p>{game.genre}</p>
+                    <div className="home-v2-game-text">
+                      <strong>{game.name}</strong>
+                      <p>{game.genre}</p>
+                    </div>
+                  </div>
+
+                  <span className="home-v2-price">{game.price}</span>
+
+                  <div className="home-v2-rate-cell">
+                    <strong>{game.positiveRate.toFixed(1)}%</strong>
+                    <div>
+                      <span
+                        style={{
+                          width: `${Math.min(game.positiveRate, 100)}%`,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-
-                <span className="home-price">{game.price}</span>
-
-                <div className="home-rate-cell">
-                  <strong>{game.positiveRate.toFixed(1)}%</strong>
-                  <div className="home-rate-bar">
-                    <span style={{ width: `${Math.min(game.positiveRate, 100)}%` }} />
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="home-v2-empty">표시할 게임 데이터가 없습니다.</p>
+            )}
           </div>
         </article>
 
-        <article className="home-card home-genre-card">
-          <div className="home-card-header">
+        <article className="home-v2-card genre-card">
+          <div className="home-v2-card-header compact">
             <div>
               <h2>장르별 비중</h2>
               <p>시장 내 주요 장르 분포를 확인합니다.</p>
             </div>
           </div>
 
-          <div className="home-genre-content">
+          <div className="home-v2-genre-layout">
             <div
-              className="home-genre-donut"
-              style={{ background: createGenreGradient(normalizedGenres) }}
+              className="home-v2-donut"
+              style={{ background: createGenreGradient(genres) }}
             >
               <div>
                 <span>전체</span>
@@ -280,20 +290,24 @@ function HomePage() {
               </div>
             </div>
 
-            <div className="home-genre-list">
-              {normalizedGenres.map((genre, index) => (
-                <div className="home-genre-row" key={genre.name}>
-                  <span className={`home-genre-dot genre-color-${index + 1}`} />
-                  <p>{genre.name}</p>
-                  <strong>{genre.ratio.toFixed(1)}%</strong>
-                </div>
-              ))}
+            <div className="home-v2-genre-list">
+              {genres.length > 0 ? (
+                genres.map((genre, index) => (
+                  <div className="home-v2-genre-row" key={genre.name}>
+                    <span className={`genre-dot-${index + 1}`} />
+                    <p>{genre.name}</p>
+                    <strong>{genre.ratio.toFixed(1)}%</strong>
+                  </div>
+                ))
+              ) : (
+                <p className="home-v2-empty">장르 데이터가 없습니다.</p>
+              )}
             </div>
           </div>
         </article>
 
-        <article className="home-card home-bubble-card">
-          <div className="home-card-header">
+        <article className="home-v2-card bubble-card">
+          <div className="home-v2-card-header">
             <div>
               <h2>가격 vs 인기</h2>
               <p>가격과 리뷰 수, 긍정 비율의 관계를 비교합니다.</p>
@@ -305,46 +319,47 @@ function HomePage() {
             </select>
           </div>
 
-          <div className="home-bubble-chart">
-            <div className="home-bubble-y-label">긍정 비율</div>
+          <div className="home-v2-bubble-chart">
+            <span className="bubble-label-y">긍정 비율</span>
+            <span className="bubble-label-x">가격(USD)</span>
 
-            {bubblePoints.map((point) => (
-              <span
-                key={point.id}
-                className="home-bubble-point"
-                title={`${point.name} / $${point.price.toFixed(
-                  2,
-                )} / ${point.positiveRate.toFixed(1)}%`}
-                style={{
-                  left: `${point.x}%`,
-                  bottom: `${point.y}%`,
-                  width: `${point.size}px`,
-                  height: `${point.size}px`,
-                }}
-              />
-            ))}
-
-            <div className="home-bubble-grid-line line-25" />
-            <div className="home-bubble-grid-line line-50" />
-            <div className="home-bubble-grid-line line-75" />
-
-            <div className="home-bubble-x-label">가격(USD)</div>
+            {bubbles.length > 0 ? (
+              bubbles.map((bubble) => (
+                <span
+                  className="home-v2-bubble"
+                  key={bubble.id}
+                  title={`${bubble.name} / $${bubble.price.toFixed(
+                    2,
+                  )} / ${bubble.positiveRate.toFixed(1)}%`}
+                  style={{
+                    left: `${bubble.x}%`,
+                    bottom: `${bubble.y}%`,
+                    width: `${bubble.size}px`,
+                    height: `${bubble.size}px`,
+                  }}
+                />
+              ))
+            ) : (
+              <p className="home-v2-empty chart-empty">
+                가격-리뷰 데이터가 없습니다.
+              </p>
+            )}
           </div>
         </article>
       </section>
 
-      <section className="home-insight-card">
-        <div className="home-card-header">
+      <section className="home-v2-insight-card">
+        <div className="home-v2-card-header">
           <div>
             <h2>핵심 인사이트</h2>
             <p>현재 API 데이터에서 확인할 수 있는 주요 해석입니다.</p>
           </div>
         </div>
 
-        <div className="home-insight-grid">
-          {insightList.map((insight) => (
-            <div className={`home-insight-item ${insight.tone}`} key={insight.title}>
-              <div className="home-insight-icon">{insight.icon}</div>
+        <div className="home-v2-insight-grid">
+          {insights.map((insight) => (
+            <div className="home-v2-insight-item" key={insight.title}>
+              <div className="home-v2-insight-icon">{insight.icon}</div>
               <div>
                 <strong>{insight.title}</strong>
                 <p>{insight.description}</p>
@@ -360,23 +375,22 @@ function HomePage() {
 function MetricCard({
   title,
   value,
-  change,
+  description,
   icon,
-  trend,
 }: {
   title: string
   value: string
-  change: string
+  description: string
   icon: string
-  trend: 'up' | 'down'
 }) {
   return (
-    <article className="home-metric-card">
+    <article className="home-v2-metric-card">
       <div>
         <span>{title}</span>
         <strong>{value}</strong>
-        <p className={trend === 'up' ? 'metric-up' : 'metric-down'}>{change}</p>
+        <p>{description}</p>
       </div>
+
       <em>{icon}</em>
     </article>
   )
@@ -391,14 +405,14 @@ function normalizeTopGames(games: Game[]): HomeTopGame[] {
       const price = getPrice(game)
 
       return {
-        rank: index + 1,
         id,
+        rank: index + 1,
         name: getGameName(game),
-        image: getGameImage(game),
         genre: getPrimaryGenre(game),
         price: game.is_free || price <= 0 ? '무료' : `$${price.toFixed(2)}`,
         positiveRate: getPositiveRate(game),
         reviewCount: getReliableReviewCount(game),
+        image: getGameImage(game),
       }
     })
 }
@@ -430,7 +444,11 @@ function normalizeGenres(genreStats: GenreStat[], games: Game[]): GenreView[] {
 
   games.forEach((game) => {
     const genre = getPrimaryGenre(game)
-    if (!genre || genre === '장르 없음') return
+
+    if (!genre || genre === '장르 없음') {
+      return
+    }
+
     map.set(genre, (map.get(genre) ?? 0) + 1)
   })
 
@@ -445,25 +463,29 @@ function normalizeGenres(genreStats: GenreStat[], games: Game[]): GenreView[] {
     .sort((a, b) => b.ratio - a.ratio)
 }
 
-function normalizeBubblePoints(
+function normalizeBubbles(
   priceReview: PriceReviewPoint[],
-  rankingGames: Game[],
-): BubblePoint[] {
+  games: Game[],
+): BubbleView[] {
   const source =
     priceReview.length > 0
-      ? priceReview.map((item) => ({
-          id: String(item.game_id ?? item.name ?? item.game_name),
-          name: String(item.name ?? item.game_name ?? '게임'),
-          price: normalizePrice(item.price ?? item.price_usd),
-          reviewCount: toNumber(item.review_count ?? item.total_reviews),
-          positiveRate:
+      ? priceReview.map((item, index) => {
+          const positiveRate =
             normalizeRatio(item.positive_ratio) ||
             calculatePositiveRateFromCounts(
               item.positive_reviews,
               item.negative_reviews,
-            ),
-        }))
-      : rankingGames.map((game) => ({
+            )
+
+          return {
+            id: String(item.game_id ?? item.name ?? item.game_name ?? index),
+            name: String(item.name ?? item.game_name ?? '게임'),
+            price: normalizePrice(item.price ?? item.price_usd),
+            reviewCount: toNumber(item.review_count ?? item.total_reviews),
+            positiveRate,
+          }
+        })
+      : games.map((game) => ({
           id: String(getGameId(game)),
           name: getGameName(game),
           price: getPrice(game),
@@ -472,20 +494,19 @@ function normalizeBubblePoints(
         }))
 
   const filtered = source.filter((item) => item.reviewCount > 0)
-
   const maxPrice = Math.max(...filtered.map((item) => item.price), 1)
-  const maxReviewCount = Math.max(...filtered.map((item) => item.reviewCount), 1)
+  const maxReview = Math.max(...filtered.map((item) => item.reviewCount), 1)
 
   return filtered.map((item, index) => ({
     ...item,
-    x: Math.min(88, Math.max(6, (item.price / maxPrice) * 86)),
-    y: Math.min(88, Math.max(8, item.positiveRate * 0.82)),
-    size: Math.min(38, Math.max(10, 10 + (item.reviewCount / maxReviewCount) * 28)),
     id: item.id || String(index),
+    x: Math.min(92, Math.max(8, (item.price / maxPrice) * 88)),
+    y: Math.min(90, Math.max(8, item.positiveRate * 0.86)),
+    size: Math.min(34, Math.max(10, 10 + (item.reviewCount / maxReview) * 24)),
   }))
 }
 
-function createInsightList({
+function createInsights({
   totalReviews,
   averagePositiveRate,
   averagePrice,
@@ -509,7 +530,6 @@ function createInsightList({
         totalReviews,
       )}건으로, 시장 반응을 비교하기에 충분한 규모입니다.`,
       icon: '📈',
-      tone: 'blue',
     },
     {
       title: '긍정 비율 흐름',
@@ -517,7 +537,6 @@ function createInsightList({
         1,
       )}%로, 전반적인 사용자 만족도를 핵심 지표로 활용할 수 있습니다.`,
       icon: '👍',
-      tone: 'green',
     },
     {
       title: `${topGenre} 장르 강세`,
@@ -525,7 +544,6 @@ function createInsightList({
         1,
       )}%를 차지해 주요 분석 축으로 활용하기 좋습니다.`,
       icon: '🎮',
-      tone: 'purple',
     },
     {
       title: '가격 대비 인기도',
@@ -535,7 +553,6 @@ function createInsightList({
             2,
           )}이며, 가격대별 리뷰 반응을 비교할 수 있습니다.`,
       icon: '🏷️',
-      tone: 'teal',
     },
   ]
 }
@@ -568,13 +585,13 @@ function createGenreGradient(genres: GenreView[]) {
   }
 
   const colors = [
-    '#536dfe',
-    '#32a8e8',
-    '#45c486',
-    '#8b5cf6',
-    '#f97316',
-    '#f43f5e',
-    '#94a3b8',
+    '#6068f6',
+    '#66a9e8',
+    '#6fc486',
+    '#8b63e8',
+    '#f28b3c',
+    '#df5d69',
+    '#9ca3af',
     '#d1d5db',
   ]
 
@@ -582,8 +599,7 @@ function createGenreGradient(genres: GenreView[]) {
 
   const parts = genres.map((genre, index) => {
     const end = start + genre.ratio
-    const color = colors[index % colors.length]
-    const part = `${color} ${start}% ${end}%`
+    const part = `${colors[index % colors.length]} ${start}% ${end}%`
     start = end
     return part
   })
@@ -642,6 +658,18 @@ function getGameName(game: Game) {
   return String(game.name ?? game.title ?? '이름 없음')
 }
 
+function getPrimaryGenre(game: Game) {
+  const rawGenre = Array.isArray(game.genres)
+    ? game.genres.join(',')
+    : String(game.genre ?? game.genres ?? '')
+
+  if (!rawGenre.trim()) {
+    return '장르 없음'
+  }
+
+  return rawGenre.split(',')[0].trim()
+}
+
 function getGameImage(game: Game) {
   if (typeof game.capsule_image === 'string' && game.capsule_image) {
     return game.capsule_image
@@ -651,6 +679,10 @@ function getGameImage(game: Game) {
     return game.header_image
   }
 
+  if (typeof game.image === 'string' && game.image) {
+    return game.image
+  }
+
   const gameId = getGameId(game)
 
   if (!gameId) {
@@ -658,18 +690,6 @@ function getGameImage(game: Game) {
   }
 
   return `https://cdn.cloudflare.steamstatic.com/steam/apps/${gameId}/capsule_184x69.jpg`
-}
-
-function getPrimaryGenre(game: Game) {
-  const raw = Array.isArray(game.genres)
-    ? game.genres.join(',')
-    : String(game.genre ?? game.genres ?? '')
-
-  if (!raw.trim()) {
-    return '장르 없음'
-  }
-
-  return raw.split(',')[0].trim()
 }
 
 function getReliableReviewCount(game: Game) {
@@ -724,6 +744,16 @@ function readNumber(value: unknown, keys: string[]) {
   return 0
 }
 
+function normalizeRatio(value: unknown) {
+  const number = toNumber(value)
+
+  if (number > 0 && number <= 1) {
+    return number * 100
+  }
+
+  return number
+}
+
 function toNumber(value: unknown) {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : 0
@@ -738,16 +768,6 @@ function toNumber(value: unknown) {
   }
 
   return 0
-}
-
-function normalizeRatio(value: unknown) {
-  const number = toNumber(value)
-
-  if (number > 0 && number <= 1) {
-    return number * 100
-  }
-
-  return number
 }
 
 function formatNumber(value: number) {
@@ -767,6 +787,7 @@ function formatMetricName(value: unknown) {
     positive_ratio: '긍정 비율',
     sentiment_positive_ratio: '긍정 리뷰 비율',
     sentiment_negative_ratio: '부정 리뷰 비율',
+    sentiment_compound_mean: '종합 감성 점수',
   }
 
   if (map[lower]) {

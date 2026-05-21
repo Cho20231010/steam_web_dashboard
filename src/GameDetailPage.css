@@ -281,6 +281,7 @@
   font-weight: 950;
   letter-spacing: -0.04em;
   line-height: 1.2;
+  word-break: keep-all;
 }
 
 .game-detail-title-row em {
@@ -358,8 +359,11 @@
   display: block;
   margin: 10px 0 18px;
   color: #071426;
-  font-size: 23px;
+  font-size: 21px;
   font-weight: 950;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .game-detail-action-card button {
@@ -406,14 +410,17 @@
   color: #3157ff;
 }
 
+/* 요약 카드 */
 .game-detail-summary-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
   gap: 14px;
 }
 
 .game-detail-summary-card {
-  min-height: 124px;
+  min-height: 132px;
+  height: 100%;
   padding: 18px;
   border-radius: 18px;
 }
@@ -427,19 +434,21 @@
 
 .game-detail-summary-card strong {
   display: block;
-  margin-top: 14px;
-  overflow: hidden;
+  margin-top: 12px;
   color: #071426;
-  font-size: 25px;
+  font-size: 22px;
   font-weight: 950;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .game-detail-summary-card p {
   margin: 8px 0 0;
   font-size: 12px;
   font-weight: 850;
+  line-height: 1.45;
 }
 
 .game-detail-summary-card.positive p {
@@ -454,11 +463,13 @@
 .game-detail-chart-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) 330px;
+  align-items: stretch;
   gap: 16px;
 }
 
 .game-detail-card {
   min-width: 0;
+  height: 100%;
   padding: 18px;
   border-radius: 20px;
 }
@@ -671,13 +682,23 @@
   text-align: right;
 }
 
+/* 하단 카드 높이 정렬 */
 .game-detail-bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.05fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
   gap: 16px;
 }
 
+.game-detail-bottom-grid .game-detail-card {
+  min-height: 270px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .game-detail-topic-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -688,6 +709,7 @@
   grid-template-columns: 28px minmax(0, 1fr) 58px 72px;
   align-items: center;
   gap: 8px;
+  min-height: 38px;
   padding: 10px;
   border-radius: 12px;
   background: #f8f9fc;
@@ -730,12 +752,14 @@
 }
 
 .game-detail-keyword-cloud {
+  flex: 1;
   min-height: 190px;
   display: flex;
   flex-wrap: wrap;
   align-content: center;
   justify-content: center;
   gap: 12px;
+  padding: 8px 0;
 }
 
 .game-detail-keyword-cloud span {
@@ -749,6 +773,7 @@
 }
 
 .quick-summary-card ul {
+  flex: 1;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -762,6 +787,11 @@
   font-size: 13px;
   font-weight: 750;
   line-height: 1.55;
+  word-break: keep-all;
+}
+
+.quick-summary-card li:last-child {
+  margin-bottom: 0;
 }
 
 .quick-summary-card li::before {
@@ -888,6 +918,10 @@ html.theme-dark .game-detail-action-card button.secondary {
   .game-detail-bottom-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .game-detail-bottom-grid .game-detail-card {
+    min-height: 250px;
+  }
 }
 
 @media (max-width: 1120px) {
@@ -937,5 +971,9 @@ html.theme-dark .game-detail-action-card button.secondary {
   .game-detail-topic-row em,
   .game-detail-topic-row small {
     display: none;
+  }
+
+  .game-detail-bottom-grid .game-detail-card {
+    min-height: auto;
   }
 }

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './GameDetailPage.css'
+import { formatGenreList } from './utils/genre'
+import { formatPriceLabel } from './utils/price'
 
 type ApiRecord = Record<string, unknown>
 
@@ -464,7 +466,7 @@ function GameDetailPage() {
             <SummaryCard
               title="현재 가격"
               value={selectedGame.priceLabel}
-              description="Steam 가격 기준"
+              description="원화 환산 + 달러 기준"
               type="neutral"
             />
           </section>
@@ -490,7 +492,10 @@ function GameDetailPage() {
                       left: `${(index / Math.max(trendPoints.length - 1, 1)) * 100}%`,
                       bottom: `${Math.max(8, Math.min(90, point.price * 1.3))}%`,
                     }}
-                    title={`${point.label} / $${point.price.toFixed(2)}`}
+                    title={`${point.label} / ${formatPriceLabel(
+                      point.price,
+                      point.price <= 0,
+                    )}`}
                   />
                 ))}
 
@@ -636,7 +641,10 @@ function GameDetailPage() {
                   {selectedGame.name}의 현재 긍정 비율은{' '}
                   {sentiment.positive.toFixed(1)}%입니다.
                 </li>
-                <li>선택 게임 기준으로 분석 결과가 동적으로 변경됩니다.</li>
+                <li>
+                  현재 가격은 {selectedGame.priceLabel}이며, 선택 게임 기준으로 분석 결과가
+                  동적으로 변경됩니다.
+                </li>
               </ul>
             </article>
           </section>
@@ -794,7 +802,7 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
     genre: genres[0] ?? '장르 없음',
     genres,
     price,
-    priceLabel: isFree ? '무료' : `$${price.toFixed(2)}`,
+    priceLabel: formatPriceLabel(price, isFree),
     owners: getOwners(game),
     positiveReviews,
     negativeReviews,
@@ -1020,18 +1028,7 @@ function getGameName(game: ApiRecord) {
 }
 
 function getGenres(game: ApiRecord) {
-  if (Array.isArray(game.genres)) {
-    return game.genres.map((genre) => String(genre).trim()).filter(Boolean)
-  }
-
-  const raw = String(game.genre ?? game.genres ?? '')
-
-  const result = raw
-    .split(',')
-    .map((genre) => genre.trim())
-    .filter(Boolean)
-
-  return result.length > 0 ? result : ['장르 없음']
+  return formatGenreList(game.genres ?? game.genre)
 }
 
 function getOwners(game: ApiRecord) {

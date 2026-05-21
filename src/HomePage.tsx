@@ -12,6 +12,8 @@ import {
   type GenreStat,
   type PriceReviewPoint,
 } from './api'
+import { formatGenreLabel, formatGenreList } from './utils/genre'
+import { formatPriceLabel } from './utils/price'
 
 type HomeTopGame = {
   id: string
@@ -193,9 +195,9 @@ function HomePage() {
         />
 
         <MetricCard
-          title="평균 가격(USD)"
-          value={`$${averagePrice.toFixed(2)}`}
-          description="무료 게임 제외 평균"
+          title="평균 가격"
+          value={formatPriceLabel(averagePrice, averagePrice <= 0)}
+          description="원화 환산 + 달러 기준"
           icon="🏷️"
         />
       </section>
@@ -317,8 +319,9 @@ function HomePage() {
                 <span
                   className="home-v2-bubble"
                   key={bubble.id}
-                  title={`${bubble.name} / $${bubble.price.toFixed(
-                    2,
+                  title={`${bubble.name} / ${formatPriceLabel(
+                    bubble.price,
+                    bubble.price <= 0,
                   )} / ${bubble.positiveRate.toFixed(1)}%`}
                   style={{
                     left: `${bubble.x}%`,
@@ -392,13 +395,14 @@ function normalizeTopGames(games: Game[]): HomeTopGame[] {
     .map((game, index) => {
       const id = String(getGameId(game) ?? index)
       const price = getPrice(game)
+      const isFree = getBoolean(game, ['is_free', 'free', 'isFree']) || price <= 0
 
       return {
         id,
         rank: index + 1,
         name: getGameName(game),
         genre: getPrimaryGenre(game),
-        price: game.is_free || price <= 0 ? '무료' : `$${price.toFixed(2)}`,
+        price: formatPriceLabel(price, isFree),
         positiveRate: getPositiveRate(game),
         reviewCount: getReliableReviewCount(game),
         image: getGameImage(game),
@@ -409,18 +413,19 @@ function normalizeTopGames(games: Game[]): HomeTopGame[] {
 function normalizeGenres(genreStats: GenreStat[], games: Game[]): GenreView[] {
   if (genreStats.length > 0) {
     const totalCount = genreStats.reduce((sum, item) => {
-      return sum + toNumber(item.count ?? item.game_count)
+      return sum + toNumber(readField(item, ['count', 'game_count']))
     }, 0)
 
     return genreStats
       .map((item) => {
-        const count = toNumber(item.count ?? item.game_count)
+        const rawName = String(readField(item, ['genre', 'name']) ?? '기타')
+        const count = toNumber(readField(item, ['count', 'game_count']))
         const ratio =
-          normalizeRatio(item.ratio ?? item.percent ?? item.percentage) ||
+          normalizeRatio(readField(item, ['ratio', 'percent', 'percentage'])) ||
           (totalCount > 0 ? (count / totalCount) * 100 : 0)
 
         return {
-          name: String(item.genre ?? item.name ?? '기타'),
+          name: formatGenreLabel(rawName),
           count,
           ratio,
         }
@@ -460,17 +465,23 @@ function normalizeBubbles(
     priceReview.length > 0
       ? priceReview.map((item, index) => {
           const positiveRate =
-            normalizeRatio(item.positive_ratio) ||
+            normalizeRatio(readField(item, ['positive_ratio'])) ||
             calculatePositiveRateFromCounts(
-              item.positive_reviews,
-              item.negative_reviews,
+              readField(item, ['positive_reviews']),
+              readField(item, ['negative_reviews']),
             )
 
           return {
-            id: String(item.game_id ?? item.name ?? item.game_name ?? index),
-            name: String(item.name ?? item.game_name ?? '게임'),
-            price: normalizePrice(item.price ?? item.price_usd),
-            reviewCount: toNumber(item.review_count ?? item.total_reviews),
+            id: String(
+              readField(item, ['game_id', 'id']) ??
+                readField(item, ['name', 'game_name']) ??
+                index,
+            ),
+            name: String(readField(item, ['name', 'game_name']) ?? '게임'),
+            price: normalizePrice(readField(item, ['price', 'price_usd'])),
+            reviewCount: toNumber(
+              readField(item, ['review_count', 'total_reviews']),
+            ),
             positiveRate,
           }
         })
@@ -528,7 +539,7 @@ function createInsights({
       icon: '👍',
     },
     {
-      title: `${topGenre} 장르 강세`,
+      title: `${topGenre} 강세`,
       description: `${topGenre} 장르가 전체의 ${topGenreRatio.toFixed(
         1,
       )}%를 차지해 주요 분석 축으로 활용하기 좋습니다.`,
@@ -538,8 +549,9 @@ function createInsights({
       title: '가격 대비 인기도',
       description: correlation
         ? `${correlation.item1}와 ${correlation.item2}의 관계를 통해 가격과 사용자 반응의 연결성을 해석할 수 있습니다.`
-        : `평균 가격은 $${averagePrice.toFixed(
-            2,
+        : `평균 가격은 ${formatPriceLabel(
+            averagePrice,
+            averagePrice <= 0,
           )}이며, 가격대별 리뷰 반응을 비교할 수 있습니다.`,
       icon: '🏷️',
     },
@@ -550,17 +562,19 @@ function normalizeCorrelation(items: CorrelationResult[]) {
   return items
     .map((item) => {
       const item1 = formatMetricName(
-        item.feature_x ?? item.item1 ?? item.x ?? item.variable_1,
+        readField(item, ['feature_x', 'item1', 'x', 'variable_1']),
       )
       const item2 = formatMetricName(
-        item.feature_y ?? item.item2 ?? item.y ?? item.variable_2,
+        readField(item, ['feature_y', 'item2', 'y', 'variable_2']),
       )
       const value = toNumber(
-        item.correlation ??
-          item.correlation_value ??
-          item.correlation_coefficient ??
-          item.coefficient ??
-          item.value,
+        readField(item, [
+          'correlation',
+          'correlation_value',
+          'correlation_coefficient',
+          'coefficient',
+          'value',
+        ]),
       )
 
       return { item1, item2, value }
@@ -640,36 +654,33 @@ function calculatePositiveRateFromCounts(
 }
 
 function getGameId(game: Game) {
-  return game.game_id ?? game.id ?? game.app_id ?? game.appid ?? game.steam_appid
+  return readField(game, ['game_id', 'id', 'app_id', 'appid', 'steam_appid'])
 }
 
 function getGameName(game: Game) {
-  return String(game.name ?? game.title ?? '이름 없음')
+  return String(readField(game, ['name', 'title']) ?? '이름 없음')
 }
 
 function getPrimaryGenre(game: Game) {
-  const rawGenre = Array.isArray(game.genres)
-    ? game.genres.join(',')
-    : String(game.genre ?? game.genres ?? '')
-
-  if (!rawGenre.trim()) {
-    return '장르 없음'
-  }
-
-  return rawGenre.split(',')[0].trim()
+  const genres = formatGenreList(readField(game, ['genres', 'genre']))
+  return genres[0] ?? '장르 없음'
 }
 
 function getGameImage(game: Game) {
-  if (typeof game.capsule_image === 'string' && game.capsule_image) {
-    return game.capsule_image
+  const capsuleImage = readField(game, ['capsule_image'])
+  const headerImage = readField(game, ['header_image'])
+  const image = readField(game, ['image'])
+
+  if (typeof capsuleImage === 'string' && capsuleImage) {
+    return capsuleImage
   }
 
-  if (typeof game.header_image === 'string' && game.header_image) {
-    return game.header_image
+  if (typeof headerImage === 'string' && headerImage) {
+    return headerImage
   }
 
-  if (typeof game.image === 'string' && game.image) {
-    return game.image
+  if (typeof image === 'string' && image) {
+    return image
   }
 
   const gameId = getGameId(game)
@@ -682,27 +693,32 @@ function getGameImage(game: Game) {
 }
 
 function getReliableReviewCount(game: Game) {
-  const positive = toNumber(game.positive_reviews)
-  const negative = toNumber(game.negative_reviews)
-  const fallback = toNumber(game.total_reviews ?? game.review_count)
+  const positive = toNumber(readField(game, ['positive_reviews']))
+  const negative = toNumber(readField(game, ['negative_reviews']))
+  const fallback = toNumber(readField(game, ['total_reviews', 'review_count']))
 
   return positive + negative || fallback
 }
 
 function getPositiveRate(game: Game) {
-  const positive = toNumber(game.positive_reviews)
-  const negative = toNumber(game.negative_reviews)
+  const positive = toNumber(readField(game, ['positive_reviews']))
+  const negative = toNumber(readField(game, ['negative_reviews']))
   const total = positive + negative
 
   if (total > 0) {
     return (positive / total) * 100
   }
 
-  return normalizeRatio(game.positive_ratio)
+  return normalizeRatio(readField(game, ['positive_ratio', 'positive_rate']))
 }
 
 function getPrice(game: Game) {
-  return normalizePrice(game.price ?? game.price_usd)
+  return normalizePrice(readField(game, ['price', 'price_usd']))
+}
+
+function getBoolean(value: unknown, keys: string[]) {
+  const field = readField(value, keys)
+  return Boolean(field)
 }
 
 function normalizePrice(value: unknown) {
@@ -716,21 +732,24 @@ function normalizePrice(value: unknown) {
 }
 
 function readNumber(value: unknown, keys: string[]) {
+  const number = toNumber(readField(value, keys))
+  return number > 0 ? number : 0
+}
+
+function readField(value: unknown, keys: string[]) {
   if (!value || typeof value !== 'object') {
-    return 0
+    return undefined
   }
 
   const record = value as Record<string, unknown>
 
   for (const key of keys) {
-    const number = toNumber(record[key])
-
-    if (number > 0) {
-      return number
+    if (record[key] !== undefined && record[key] !== null) {
+      return record[key]
     }
   }
 
-  return 0
+  return undefined
 }
 
 function normalizeRatio(value: unknown) {
@@ -784,7 +803,7 @@ function formatMetricName(value: unknown) {
   }
 
   if (lower.startsWith('genre::')) {
-    return `${raw.replace(/^genre::/i, '')} 장르`
+    return `${formatGenreLabel(raw.replace(/^genre::/i, ''))} 장르`
   }
 
   return raw || '항목'

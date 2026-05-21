@@ -129,6 +129,13 @@ function GameDetailPage() {
       try {
         setDetailLoading(true)
 
+        setGameDetail(null)
+        setSentimentData(null)
+        setTopicData([])
+        setHistoryData([])
+        setReviewTrendData([])
+        setReviewInsightData(null)
+
         const [
           detailResult,
           sentimentResult,
@@ -158,32 +165,22 @@ function GameDetailPage() {
 
         if (sentimentResult.status === 'fulfilled') {
           setSentimentData(extractObject(sentimentResult.value))
-        } else {
-          setSentimentData(null)
         }
 
         if (topicResult.status === 'fulfilled') {
           setTopicData(extractArray(topicResult.value))
-        } else {
-          setTopicData([])
         }
 
         if (historyResult.status === 'fulfilled') {
           setHistoryData(extractArray(historyResult.value))
-        } else {
-          setHistoryData([])
         }
 
         if (reviewTrendResult.status === 'fulfilled') {
           setReviewTrendData(extractArray(reviewTrendResult.value))
-        } else {
-          setReviewTrendData([])
         }
 
         if (reviewInsightResult.status === 'fulfilled') {
           setReviewInsightData(reviewInsightResult.value)
-        } else {
-          setReviewInsightData(null)
         }
       } catch (error) {
         console.error(error)
@@ -695,18 +692,6 @@ function GameDetailPage() {
               </ul>
             </article>
 
-            <article className="game-detail-card keyword-card positive">
-              <div className="game-detail-card-head">
-                <h3>긍정 리뷰 키워드</h3>
-              </div>
-
-              <div className="game-detail-keyword-cloud">
-                {getPositiveKeywords(topics).map((keyword) => (
-                  <span key={keyword}>{keyword}</span>
-                ))}
-              </div>
-            </article>
-
             <article className="game-detail-card keyword-card negative">
               <div className="game-detail-card-head">
                 <h3>부정 리뷰 키워드</h3>
@@ -714,6 +699,18 @@ function GameDetailPage() {
 
               <div className="game-detail-keyword-cloud">
                 {getNegativeKeywords().map((keyword) => (
+                  <span key={keyword}>{keyword}</span>
+                ))}
+              </div>
+            </article>
+
+            <article className="game-detail-card keyword-card positive">
+              <div className="game-detail-card-head">
+                <h3>긍정 리뷰 키워드</h3>
+              </div>
+
+              <div className="game-detail-keyword-cloud">
+                {getPositiveKeywords(topics).map((keyword) => (
                   <span key={keyword}>{keyword}</span>
                 ))}
               </div>
@@ -784,7 +781,9 @@ function SentimentRow({
 }
 
 async function requestApi(path: string) {
-  const response = await fetch(`${API_BASE_URL}${path}`)
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    cache: 'no-store',
+  })
 
   if (!response.ok) {
     throw new Error(`${path} API 요청 실패: ${response.status}`)
@@ -875,10 +874,12 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
     genre: genres[0] ?? '장르 없음',
     genres,
     price,
-    priceLabel: isFree ? '무료' : formatSteamPrice(price),
+    priceLabel: isFree
+      ? '무료'
+      : `${formatSteamPrice(price)} (${formatEstimatedKrw(price)})`,
     priceSubLabel: isFree
-      ? '(무료 게임)'
-      : `(${formatEstimatedKrw(price)} · 원화 환산 추정 값)`,
+      ? 'Steam 기준 무료 게임'
+      : 'Steam 기준 금액, 원화 환산 추정 값',
     owners: formatOwners(getOwners(game)),
     positiveReviews,
     negativeReviews,

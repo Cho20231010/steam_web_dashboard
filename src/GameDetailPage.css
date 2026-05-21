@@ -22,32 +22,22 @@
 
 .game-detail-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: flex-end;
+  align-items: center;
   gap: 18px;
+  min-height: 96px;
   padding: 20px;
   border-radius: 20px;
 }
 
-.game-detail-header h1 {
-  margin: 0;
-  color: #071426;
-  font-size: 28px;
-  font-weight: 950;
-  letter-spacing: -0.04em;
-}
-
+.game-detail-header h1,
 .game-detail-header p {
-  margin: 8px 0 0;
-  color: #617089;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.55;
+  display: none;
 }
 
 .game-detail-search-box {
   position: relative;
-  width: 420px;
+  width: min(640px, 100%);
   max-width: 100%;
   flex-shrink: 0;
 }
@@ -72,14 +62,16 @@
 
 .game-detail-search-dropdown {
   position: absolute;
-  top: 54px;
+  top: 56px;
   left: 0;
   right: 0;
   z-index: 40;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 14px;
   border: 1px solid #dfe4ee;
   border-radius: 14px;
   background: #ffffff;
@@ -90,6 +82,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
   border: 0;
   border-radius: 11px;
   padding: 9px;
@@ -108,6 +101,51 @@
   color: #617089;
   font-size: 13px;
   font-weight: 800;
+}
+
+.game-detail-dropdown-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-detail-dropdown-section-title {
+  padding: 4px 4px 0;
+  color: #617089;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.game-detail-dropdown-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.game-detail-search-dropdown .chip-button {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dfe4ee;
+  border-radius: 999px;
+  background: #f5f7ff;
+  color: #3157ff;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.game-detail-search-dropdown .chip-button:hover {
+  border-color: #3157ff;
+  background: #edf0ff;
+}
+
+.game-detail-dropdown-game-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .game-detail-search-thumb,
@@ -140,59 +178,32 @@
   object-fit: cover;
 }
 
+.game-detail-search-dropdown button span:last-child {
+  min-width: 0;
+}
+
 .game-detail-search-dropdown strong,
 .game-detail-result-text strong {
   display: block;
+  overflow: hidden;
   color: #071426;
   font-size: 13px;
   font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-detail-search-dropdown em,
 .game-detail-result-text em {
   display: block;
+  overflow: hidden;
   margin-top: 4px;
   color: #617089;
   font-size: 12px;
   font-style: normal;
   font-weight: 750;
-}
-
-.game-detail-suggestion-box {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.game-detail-suggestion-box strong {
-  display: block;
-  margin-bottom: 5px;
-  color: #617089;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.game-detail-suggestion-box div div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.game-detail-suggestion-box button {
-  border: 1px solid #dfe4ee;
-  border-radius: 999px;
-  background: #f5f7ff;
-  color: #3157ff;
-  padding: 5px 9px;
-  font-size: 11px;
-  font-weight: 850;
-  cursor: pointer;
-}
-
-.game-detail-suggestion-box button:hover {
-  border-color: #3157ff;
-  background: #edf0ff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-detail-layout {
@@ -254,12 +265,6 @@
 
 .game-detail-result-text {
   min-width: 0;
-}
-
-.game-detail-result-text strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .game-detail-main-area {
@@ -899,6 +904,7 @@
   word-break: keep-all;
 }
 
+/* 다크모드 */
 html.theme-dark .game-detail-header,
 html.theme-dark .game-detail-result-panel,
 html.theme-dark .game-detail-hero-card,
@@ -907,6 +913,14 @@ html.theme-dark .game-detail-summary-card,
 html.theme-dark .game-detail-card {
   background: #111827;
   border-color: #334155;
+}
+
+html.theme-dark .game-detail-search-box input,
+html.theme-dark .game-detail-search-dropdown,
+html.theme-dark .game-detail-card-head button {
+  background: #1f2937;
+  border-color: #475569;
+  color: #f9fafb;
 }
 
 html.theme-dark .game-detail-header h1,
@@ -928,6 +942,7 @@ html.theme-dark .game-detail-no-trend strong {
   color: #f9fafb;
 }
 
+html.theme-dark .game-detail-dropdown-section-title,
 html.theme-dark .game-detail-header p,
 html.theme-dark .game-detail-panel-title span,
 html.theme-dark .game-detail-search-dropdown em,
@@ -938,17 +953,8 @@ html.theme-dark .game-detail-donut span,
 html.theme-dark .game-detail-sentiment-row em,
 html.theme-dark .quick-summary-card li,
 html.theme-dark .game-detail-empty,
-html.theme-dark .game-detail-no-trend p,
-html.theme-dark .game-detail-suggestion-box strong {
+html.theme-dark .game-detail-no-trend p {
   color: #cbd5e1;
-}
-
-html.theme-dark .game-detail-search-box input,
-html.theme-dark .game-detail-search-dropdown,
-html.theme-dark .game-detail-card-head button {
-  background: #1f2937;
-  border-color: #475569;
-  color: #f9fafb;
 }
 
 html.theme-dark .game-detail-search-dropdown button:hover,
@@ -965,7 +971,7 @@ html.theme-dark .game-detail-tab-card button.active {
   background: #263354;
 }
 
-html.theme-dark .game-detail-suggestion-box button {
+html.theme-dark .game-detail-search-dropdown .chip-button {
   background: #1f2937;
   border-color: #475569;
   color: #93c5fd;
@@ -989,6 +995,7 @@ html.theme-dark .game-detail-action-card button.secondary {
   border-color: #475569;
 }
 
+/* 반응형 */
 @media (max-width: 1500px) {
   .game-detail-page {
     max-width: 1180px;
@@ -1031,7 +1038,8 @@ html.theme-dark .game-detail-action-card button.secondary {
 
 @media (max-width: 1120px) {
   .game-detail-header {
-    flex-direction: column;
+    justify-content: stretch;
+    min-height: auto;
   }
 
   .game-detail-search-box {
@@ -1069,6 +1077,10 @@ html.theme-dark .game-detail-action-card button.secondary {
   .game-detail-meta-grid,
   .game-detail-summary-grid,
   .game-detail-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-detail-dropdown-game-list {
     grid-template-columns: 1fr;
   }
 

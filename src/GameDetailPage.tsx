@@ -85,6 +85,7 @@ function GameDetailPage() {
   const [games, setGames] = useState<ApiRecord[]>([])
   const [selectedGameId, setSelectedGameId] = useState<string>('')
   const [searchText, setSearchText] = useState('')
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [selectedTab, setSelectedTab] = useState<
     'overview' | 'price' | 'sentiment' | 'topic'
   >('overview')
@@ -214,8 +215,8 @@ function GameDetailPage() {
     })
 
     return {
-      genres: Array.from(genreSet).slice(0, 12),
-      games: gameSummaries.slice(0, 10).map((game) => game.name),
+      genres: Array.from(genreSet).sort((a, b) => a.localeCompare(b)),
+      games: gameSummaries.slice(0, 12),
     }
   }, [gameSummaries])
 
@@ -236,6 +237,8 @@ function GameDetailPage() {
       })
       .slice(0, 8)
   }, [gameSummaries, searchText])
+
+  const showSearchPanel = isSearchFocused
 
   const selectedGame = useMemo(() => {
     const fallback = games.find((game, index) => {
@@ -278,8 +281,14 @@ function GameDetailPage() {
     setSelectedTab('overview')
   }
 
-  function handleSuggestionClick(value: string) {
+  function handleGenreSuggestionClick(value: string) {
     setSearchText(value)
+    setIsSearchFocused(true)
+  }
+
+  function handleGameSuggestionClick(gameId: string | number) {
+    handleSelectGame(gameId)
+    setIsSearchFocused(false)
   }
 
   if (loading) {
@@ -311,80 +320,110 @@ function GameDetailPage() {
 
   return (
     <div className="game-detail-page">
-      <section className="game-detail-header">
-        <div>
-          <h1>게임 상세 분석</h1>
-          <p>게임을 검색하고 선택하면 해당 게임의 분석 결과가 자동으로 변경됩니다.</p>
-        </div>
-
+      <section className="game-detail-header compact-search-header">
         <div className="game-detail-search-box">
           <input
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => {
+              window.setTimeout(() => {
+                setIsSearchFocused(false)
+              }, 150)
+            }}
             placeholder="게임명, 장르로 검색"
             type="text"
           />
 
-          {searchText.trim() && (
-            <div className="game-detail-search-dropdown">
-              {filteredGames.length > 0 ? (
-                filteredGames.map((game) => (
-                  <button
-                    key={game.id}
-                    onClick={() => handleSelectGame(game.gameId)}
-                    type="button"
-                  >
-                    <span className="game-detail-search-thumb">
-                      {game.image ? (
-                        <img src={game.image} alt={`${game.name} 이미지`} />
-                      ) : (
-                        game.name.slice(0, 2)
-                      )}
-                    </span>
+          {showSearchPanel && (
+            <div className="game-detail-search-dropdown expanded">
+              {searchText.trim() ? (
+                <>
+                  <div className="game-detail-dropdown-section-title">
+                    검색 결과
+                  </div>
 
-                    <span>
-                      <strong>{game.name}</strong>
-                      <em>{game.genre}</em>
-                    </span>
-                  </button>
-                ))
+                  {filteredGames.length > 0 ? (
+                    filteredGames.map((game) => (
+                      <button
+                        key={game.id}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handleGameSuggestionClick(game.gameId)}
+                        type="button"
+                      >
+                        <span className="game-detail-search-thumb">
+                          {game.image ? (
+                            <img src={game.image} alt={`${game.name} 이미지`} />
+                          ) : (
+                            game.name.slice(0, 2)
+                          )}
+                        </span>
+
+                        <span>
+                          <strong>{game.name}</strong>
+                          <em>{game.genre}</em>
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p>검색 결과가 없습니다.</p>
+                  )}
+                </>
               ) : (
-                <p>검색 결과가 없습니다.</p>
+                <>
+                  <div className="game-detail-dropdown-section">
+                    <div className="game-detail-dropdown-section-title">
+                      검색 가능한 장르
+                    </div>
+
+                    <div className="game-detail-dropdown-chip-list">
+                      {searchSuggestions.genres.map((genre) => (
+                        <button
+                          className="chip-button"
+                          key={genre}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => handleGenreSuggestionClick(genre)}
+                          type="button"
+                        >
+                          {genre}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="game-detail-dropdown-section">
+                    <div className="game-detail-dropdown-section-title">
+                      추천 게임명
+                    </div>
+
+                    <div className="game-detail-dropdown-game-list">
+                      {searchSuggestions.games.map((game) => (
+                        <button
+                          key={game.id}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => handleGameSuggestionClick(game.gameId)}
+                          type="button"
+                        >
+                          <span className="game-detail-search-thumb">
+                            {game.image ? (
+                              <img src={game.image} alt={`${game.name} 이미지`} />
+                            ) : (
+                              game.name.slice(0, 2)
+                            )}
+                          </span>
+
+                          <span>
+                            <strong>{game.name}</strong>
+                            <em>{game.genre}</em>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}
-
-          <div className="game-detail-suggestion-box">
-            <div>
-              <strong>검색 가능한 장르</strong>
-              <div>
-                {searchSuggestions.genres.map((genre) => (
-                  <button
-                    key={genre}
-                    onClick={() => handleSuggestionClick(genre)}
-                    type="button"
-                  >
-                    {genre}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <strong>추천 게임명</strong>
-              <div>
-                {searchSuggestions.games.map((gameName) => (
-                  <button
-                    key={gameName}
-                    onClick={() => handleSuggestionClick(gameName)}
-                    type="button"
-                  >
-                    {gameName}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -909,6 +948,7 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
     const rawKeywords = getKeywords(topic)
     const translatedKeywords = rawKeywords.map((keyword) => translateKeyword(keyword))
     const backendTitle = getBackendTopicTitle(topic)
+
     const title =
       backendTitle && !isGenericTopicName(backendTitle)
         ? translateTopicTitle(backendTitle)

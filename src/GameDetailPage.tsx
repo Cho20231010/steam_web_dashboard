@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './GameDetailPage.css'
 import { formatGenreList } from './utils/genre'
-import { formatPriceLabel } from './utils/price'
 
 type ApiRecord = Record<string, unknown>
 
@@ -10,6 +9,7 @@ type GameSummary = {
   gameId: string | number
   name: string
   genre: string
+  genres: string[]
   image?: string
 }
 
@@ -21,6 +21,7 @@ type GameDetailView = {
   genres: string[]
   price: number
   priceLabel: string
+  priceSubLabel: string
   owners: string
   positiveReviews: number
   negativeReviews: number
@@ -65,15 +66,13 @@ type TrendPoint = {
 type ReviewInsight = {
   positiveSummary: string
   negativeSummary: string
-  quickFacts: {
-    label: string
-    value: string
-  }[]
 }
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   'https://steam-market-dashboard-production.up.railway.app'
+
+const USD_TO_KRW = 1350
 
 function GameDetailPage() {
   const [games, setGames] = useState<ApiRecord[]>([])
@@ -200,6 +199,23 @@ function GameDetailPage() {
     return games.map((game, index) => normalizeGameSummary(game, index))
   }, [games])
 
+  const searchSuggestions = useMemo(() => {
+    const genreSet = new Set<string>()
+
+    gameSummaries.forEach((game) => {
+      game.genres.forEach((genre) => {
+        if (genre && genre !== '장르 없음') {
+          genreSet.add(genre)
+        }
+      })
+    })
+
+    return {
+      genres: Array.from(genreSet).slice(0, 12),
+      games: gameSummaries.slice(0, 10).map((game) => game.name),
+    }
+  }, [gameSummaries])
+
   const filteredGames = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -211,7 +227,8 @@ function GameDetailPage() {
       .filter((game) => {
         return (
           game.name.toLowerCase().includes(keyword) ||
-          game.genre.toLowerCase().includes(keyword)
+          game.genre.toLowerCase().includes(keyword) ||
+          game.genres.some((genre) => genre.toLowerCase().includes(keyword))
         )
       })
       .slice(0, 8)
@@ -241,17 +258,21 @@ function GameDetailPage() {
   }, [topicData])
 
   const trendPoints = useMemo(() => {
-    return normalizeTrendPoints(historyData, reviewTrendData, selectedGame)
-  }, [historyData, reviewTrendData, selectedGame])
+    return normalizeTrendPoints(historyData, reviewTrendData)
+  }, [historyData, reviewTrendData])
 
   const reviewInsight = useMemo(() => {
-    return normalizeReviewInsight(reviewInsightData, selectedGame, sentiment, topics)
-  }, [reviewInsightData, selectedGame, sentiment, topics])
+    return normalizeReviewInsight(reviewInsightData)
+  }, [reviewInsightData])
 
   function handleSelectGame(gameId: string | number) {
     setSelectedGameId(String(gameId))
     setSearchText('')
     setSelectedTab('overview')
+  }
+
+  function handleSuggestionClick(value: string) {
+    setSearchText(value)
   }
 
   if (loading) {
@@ -325,6 +346,38 @@ function GameDetailPage() {
               )}
             </div>
           )}
+
+          <div className="game-detail-suggestion-box">
+            <div>
+              <strong>검색 가능한 장르</strong>
+              <div>
+                {searchSuggestions.genres.map((genre) => (
+                  <button
+                    key={genre}
+                    onClick={() => handleSuggestionClick(genre)}
+                    type="button"
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <strong>추천 게임명</strong>
+              <div>
+                {searchSuggestions.games.map((gameName) => (
+                  <button
+                    key={gameName}
+                    onClick={() => handleSuggestionClick(gameName)}
+                    type="button"
+                  >
+                    {gameName}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -400,6 +453,7 @@ function GameDetailPage() {
             <div className="game-detail-action-card">
               <span>현재 가격</span>
               <strong>{selectedGame.priceLabel}</strong>
+              <p>{selectedGame.priceSubLabel}</p>
               <button type="button">Steam 상점 이동</button>
               <button className="secondary" type="button">
                 관심 게임 추가
@@ -466,7 +520,7 @@ function GameDetailPage() {
             <SummaryCard
               title="현재 가격"
               value={selectedGame.priceLabel}
-              description="원화 환산 + 달러 기준"
+              description={selectedGame.priceSubLabel}
               type="neutral"
             />
           </section>
@@ -484,27 +538,34 @@ function GameDetailPage() {
                 </div>
               </div>
 
-              <div className="game-detail-line-chart">
-                {trendPoints.map((point, index) => (
-                  <span
-                    key={`${point.label}-${index}`}
-                    style={{
-                      left: `${(index / Math.max(trendPoints.length - 1, 1)) * 100}%`,
-                      bottom: `${Math.max(8, Math.min(90, point.price * 1.3))}%`,
-                    }}
-                    title={`${point.label} / ${formatPriceLabel(
-                      point.price,
-                      point.price <= 0,
-                    )}`}
-                  />
-                ))}
-
-                <div className="game-detail-chart-labels">
-                  {trendPoints.map((point) => (
-                    <em key={point.label}>{point.label}</em>
+              {trendPoints.length > 0 ? (
+                <div className="game-detail-line-chart">
+                  {trendPoints.map((point, index) => (
+                    <span
+                      key={`${point.label}-${index}`}
+                      style={{
+                        left: `${(index / Math.max(trendPoints.length - 1, 1)) * 100}%`,
+                        bottom: `${Math.max(8, Math.min(90, point.price * 1.3))}%`,
+                      }}
+                      title={`${point.label} / ${formatSteamPrice(point.price)}`}
+                    />
                   ))}
+
+                  <div className="game-detail-chart-labels">
+                    {trendPoints.map((point) => (
+                      <em key={point.label}>{point.label}</em>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="game-detail-no-trend">
+                  <strong>가격 변동 데이터 없음</strong>
+                  <p>
+                    현재 API에서 이 게임의 가격 이력 데이터를 제공하지 않아 추이 그래프를
+                    표시하지 않습니다.
+                  </p>
+                </div>
+              )}
             </article>
 
             <article className="game-detail-card">
@@ -519,18 +580,28 @@ function GameDetailPage() {
                 </div>
               </div>
 
-              <div className="game-detail-bar-chart">
-                {trendPoints.map((point) => (
-                  <div key={point.label}>
-                    <span
-                      style={{
-                        height: `${Math.max(12, Math.min(92, point.positiveRate))}%`,
-                      }}
-                    />
-                    <em>{point.label}</em>
-                  </div>
-                ))}
-              </div>
+              {trendPoints.length > 0 ? (
+                <div className="game-detail-bar-chart">
+                  {trendPoints.map((point) => (
+                    <div key={point.label}>
+                      <span
+                        style={{
+                          height: `${Math.max(12, Math.min(92, point.positiveRate))}%`,
+                        }}
+                      />
+                      <em>{point.label}</em>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="game-detail-no-trend">
+                  <strong>리뷰 추이 데이터 없음</strong>
+                  <p>
+                    현재 API에서 이 게임의 기간별 리뷰 수 또는 긍정 비율 변화를 제공하지
+                    않습니다.
+                  </p>
+                </div>
+              )}
             </article>
 
             <article className="game-detail-card sentiment-card">
@@ -584,7 +655,7 @@ function GameDetailPage() {
           </section>
 
           <section className="game-detail-bottom-grid">
-            <article className="game-detail-card">
+            <article className="game-detail-card topic-card">
               <div className="game-detail-card-head">
                 <h3>주요 토픽 TOP 5</h3>
               </div>
@@ -603,6 +674,25 @@ function GameDetailPage() {
               ) : (
                 <p className="game-detail-empty">토픽 데이터가 없습니다.</p>
               )}
+            </article>
+
+            <article className="game-detail-card quick-summary-card">
+              <div className="game-detail-card-head">
+                <h3>빠른 요약</h3>
+              </div>
+
+              <ul>
+                <li>{reviewInsight.positiveSummary}</li>
+                <li>{reviewInsight.negativeSummary}</li>
+                <li>
+                  {selectedGame.name}의 현재 긍정 비율은{' '}
+                  {sentiment.positive.toFixed(1)}%입니다.
+                </li>
+                <li>
+                  현재 가격은 Steam 기준 {selectedGame.priceLabel}이며, 원화는 참고용 환산
+                  값입니다.
+                </li>
+              </ul>
             </article>
 
             <article className="game-detail-card keyword-card positive">
@@ -627,25 +717,6 @@ function GameDetailPage() {
                   <span key={keyword}>{keyword}</span>
                 ))}
               </div>
-            </article>
-
-            <article className="game-detail-card quick-summary-card">
-              <div className="game-detail-card-head">
-                <h3>빠른 요약</h3>
-              </div>
-
-              <ul>
-                <li>{reviewInsight.positiveSummary}</li>
-                <li>{reviewInsight.negativeSummary}</li>
-                <li>
-                  {selectedGame.name}의 현재 긍정 비율은{' '}
-                  {sentiment.positive.toFixed(1)}%입니다.
-                </li>
-                <li>
-                  현재 가격은 {selectedGame.priceLabel}이며, 선택 게임 기준으로 분석 결과가
-                  동적으로 변경됩니다.
-                </li>
-              </ul>
             </article>
           </section>
         </div>
@@ -772,13 +843,15 @@ function isRecord(value: unknown): value is ApiRecord {
 
 function normalizeGameSummary(game: ApiRecord, index: number): GameSummary {
   const gameId = toSafeGameId(getGameId(game), index)
-  const genre = getGenres(game)[0] ?? '장르 없음'
+  const genres = getGenres(game)
+  const genre = genres[0] ?? '장르 없음'
 
   return {
     id: String(gameId),
     gameId,
     name: getGameName(game),
     genre,
+    genres,
     image: getGameImage(game),
   }
 }
@@ -802,8 +875,11 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
     genre: genres[0] ?? '장르 없음',
     genres,
     price,
-    priceLabel: formatPriceLabel(price, isFree),
-    owners: getOwners(game),
+    priceLabel: isFree ? '무료' : formatSteamPrice(price),
+    priceSubLabel: isFree
+      ? '(무료 게임)'
+      : `(${formatEstimatedKrw(price)} · 원화 환산 추정 값)`,
+    owners: formatOwners(getOwners(game)),
     positiveReviews,
     negativeReviews,
     totalReviews,
@@ -931,83 +1007,45 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
 function normalizeTrendPoints(
   historyData: ApiRecord[],
   reviewTrendData: ApiRecord[],
-  selectedGame: GameDetailView | null,
 ): TrendPoint[] {
   const source = reviewTrendData.length > 0 ? reviewTrendData : historyData
 
-  if (source.length > 0) {
-    return source.slice(-6).map((item, index) => {
-      const label = String(item.date ?? item.month ?? item.period ?? item.label ?? index + 1)
-
-      return {
-        label: label.length > 7 ? label.slice(5, 10) : label,
-        price: normalizePrice(item.price ?? item.price_usd ?? item.current_price),
-        positiveRate:
-          normalizeRatio(item.positive_ratio ?? item.positive_rate) ||
-          selectedGame?.positiveRate ||
-          0,
-        reviewCount: toNumber(item.review_count ?? item.total_reviews ?? item.reviews),
-      }
-    })
+  if (source.length === 0) {
+    return []
   }
 
-  const baseRate = selectedGame?.positiveRate ?? 0
-  const basePrice = selectedGame?.price ?? 0
-  const baseReviews = selectedGame?.totalReviews ?? 0
+  return source.slice(-6).map((item, index) => {
+    const label = String(item.date ?? item.month ?? item.period ?? item.label ?? index + 1)
 
-  return ['05.16', '05.21', '05.26', '05.31', '06.05', '06.10'].map(
-    (label, index) => ({
-      label,
-      price: Math.max(0, basePrice - index * 0.7),
-      positiveRate: Math.max(0, Math.min(100, baseRate - 4 + index * 1.2)),
-      reviewCount: Math.round(baseReviews * (0.62 + index * 0.07)),
-    }),
-  )
+    return {
+      label: label.length > 7 ? label.slice(5, 10) : label,
+      price: normalizePrice(item.price ?? item.price_usd ?? item.current_price),
+      positiveRate: normalizeRatio(item.positive_ratio ?? item.positive_rate),
+      reviewCount: toNumber(item.review_count ?? item.total_reviews ?? item.reviews),
+    }
+  })
 }
 
-function normalizeReviewInsight(
-  reviewInsightData: unknown,
-  selectedGame: GameDetailView | null,
-  sentiment: SentimentView,
-  topics: TopicView[],
-): ReviewInsight {
+function normalizeReviewInsight(reviewInsightData: unknown): ReviewInsight {
   const record = isRecord(reviewInsightData) ? reviewInsightData : {}
 
   const positiveSummary = String(
     record.positive_summary ??
       record.positiveSummary ??
       record.positive_review ??
-      '뛰어난 게임성, 몰입감, 전투 경험, 세계관에 대한 만족도가 높게 나타납니다.',
+      '긍정 리뷰에서는 게임성, 몰입감, 전투 경험, 세계관에 대한 만족도가 높게 나타날 수 있습니다.',
   )
 
   const negativeSummary = String(
     record.negative_summary ??
       record.negativeSummary ??
       record.negative_review ??
-      '난이도, 최적화, 가격, 반복 콘텐츠와 관련된 불만 요소가 일부 나타날 수 있습니다.',
+      '부정 리뷰에서는 난이도, 최적화, 가격, 반복 콘텐츠와 관련된 불만 요소가 일부 나타날 수 있습니다.',
   )
 
   return {
     positiveSummary,
     negativeSummary,
-    quickFacts: [
-      {
-        label: '긍정 비율',
-        value: `${sentiment.positive.toFixed(1)}%`,
-      },
-      {
-        label: '대표 토픽',
-        value: topics[0]?.title ?? '토픽 없음',
-      },
-      {
-        label: '리뷰 규모',
-        value: formatNumber(selectedGame?.totalReviews ?? 0),
-      },
-      {
-        label: '가격',
-        value: selectedGame?.priceLabel ?? '정보 없음',
-      },
-    ],
   }
 }
 
@@ -1040,6 +1078,13 @@ function getOwners(game: ApiRecord) {
       game.owners_value ??
       '정보 없음',
   )
+}
+
+function formatOwners(value: string) {
+  return value
+    .replace(/\s*\.\.\s*/g, ' ~ ')
+    .replace(/\s*-\s*/g, ' ~ ')
+    .trim()
 }
 
 function getPlatforms(game: ApiRecord) {
@@ -1168,6 +1213,15 @@ function translateKeyword(keyword: string) {
   }
 
   return dictionary[normalized] ?? keyword
+}
+
+function formatSteamPrice(price: number) {
+  return `$${price.toFixed(2)}`
+}
+
+function formatEstimatedKrw(price: number) {
+  const krw = Math.round(price * USD_TO_KRW)
+  return `약 ₩${krw.toLocaleString('ko-KR')}`
 }
 
 function normalizePrice(value: unknown) {

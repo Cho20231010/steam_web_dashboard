@@ -986,3 +986,150 @@ html.theme-dark .game-detail-action-card button.secondary {
     min-height: auto;
   }
 }
+
+/* 검색 가능 장르/게임명 추천 영역 */
+.game-detail-suggestion-box {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-detail-suggestion-box strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #617089;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.game-detail-suggestion-box div div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.game-detail-suggestion-box button {
+  border: 1px solid #dfe4ee;
+  border-radius: 999px;
+  background: #f5f7ff;
+  color: #3157ff;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.game-detail-suggestion-box button:hover {
+  border-color: #3157ff;
+  background: #edf0ff;
+}
+
+/* 현재 가격: 달러 크게, 원화 추정은 파란 작은 글씨 */
+.game-detail-action-card p {
+  margin: -10px 0 14px;
+  color: #3157ff;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.game-detail-summary-card:nth-child(5) p {
+  color: #3157ff;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* 보유자 추정 값은 API의 '..'를 코드에서 '~'로 변환해서 표시 */
+.game-detail-summary-card:nth-child(4) strong {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 추이 데이터가 없을 때 안내 박스 */
+.game-detail-no-trend {
+  min-height: 235px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  border: 1px dashed #dfe4ee;
+  border-radius: 16px;
+  background: #f8f9fc;
+  padding: 24px;
+}
+
+.game-detail-no-trend strong {
+  display: block;
+  color: #071426;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.game-detail-no-trend p {
+  margin: 8px 0 0;
+  color: #617089;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+/* 주요 토픽 TOP5와 빠른 요약 카드가 좁아지지 않도록 2열 중심 배치 */
+.game-detail-bottom-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.game-detail-bottom-grid .game-detail-card {
+  min-height: 280px;
+}
+
+.topic-card,
+.quick-summary-card {
+  min-height: 280px;
+}
+
+.quick-summary-card li {
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.game-detail-topic-row {
+  grid-template-columns: 28px minmax(0, 1fr) 70px 86px;
+}
+
+.game-detail-topic-row strong {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 다크모드 추가 대응 */
+html.theme-dark .game-detail-suggestion-box strong,
+html.theme-dark .game-detail-no-trend p {
+  color: #cbd5e1;
+}
+
+html.theme-dark .game-detail-suggestion-box button {
+  background: #1f2937;
+  border-color: #475569;
+  color: #93c5fd;
+}
+
+html.theme-dark .game-detail-no-trend {
+  background: #1f2937;
+  border-color: #475569;
+}
+
+html.theme-dark .game-detail-no-trend strong {
+  color: #f9fafb;
+}
+
+@media (max-width: 1120px) {
+  .game-detail-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}

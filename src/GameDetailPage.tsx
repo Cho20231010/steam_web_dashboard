@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import './GameDetailPage.css'
 import { formatGenreList } from './utils/genre'
-
-type ApiRecord = Record<string, unknown>
+import {
+  getGameDetail,
+  getGameHistory,
+  getGameList,
+  getGameReviewInsights,
+  getGameReviewTrend,
+  getGameSentiment,
+  getGameTopics,
+  isRecord,
+  type ApiRecord,
+} from './api/gameDetailApi'
 
 type GameSummary = {
   id: string
@@ -21,7 +30,9 @@ type GameDetailView = {
   genres: string[]
   price: number
   priceLabel: string
-  priceSubLabel: string
+  priceKrwLabel: string
+  priceSubLabelLine1: string
+  priceSubLabelLine2: string
   owners: string
   positiveReviews: number
   negativeReviews: number
@@ -68,10 +79,6 @@ type ReviewInsight = {
   negativeSummary: string
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  'https://steam-market-dashboard-production.up.railway.app'
-
 const USD_TO_KRW = 1350
 
 function GameDetailPage() {
@@ -99,8 +106,7 @@ function GameDetailPage() {
         setLoading(true)
         setErrorMessage('')
 
-        const data = await requestApi('/games')
-        const gameList = extractArray(data)
+        const gameList = await getGameList()
 
         setGames(gameList)
 
@@ -144,16 +150,16 @@ function GameDetailPage() {
           reviewTrendResult,
           reviewInsightResult,
         ] = await Promise.allSettled([
-          requestApi(`/games/${selectedGameId}`),
-          requestApi(`/games/${selectedGameId}/sentiment`),
-          requestApi(`/games/${selectedGameId}/topics`),
-          requestApi(`/games/${selectedGameId}/history`),
-          requestApi(`/games/${selectedGameId}/review-trend`),
-          requestApi(`/games/${selectedGameId}/reviews/insights`),
+          getGameDetail(selectedGameId),
+          getGameSentiment(selectedGameId),
+          getGameTopics(selectedGameId),
+          getGameHistory(selectedGameId),
+          getGameReviewTrend(selectedGameId),
+          getGameReviewInsights(selectedGameId),
         ])
 
         if (detailResult.status === 'fulfilled') {
-          setGameDetail(extractObject(detailResult.value))
+          setGameDetail(detailResult.value)
         } else {
           const fallback = games.find((game, index) => {
             const gameId = toSafeGameId(getGameId(game), index)
@@ -164,19 +170,19 @@ function GameDetailPage() {
         }
 
         if (sentimentResult.status === 'fulfilled') {
-          setSentimentData(extractObject(sentimentResult.value))
+          setSentimentData(sentimentResult.value)
         }
 
         if (topicResult.status === 'fulfilled') {
-          setTopicData(extractArray(topicResult.value))
+          setTopicData(topicResult.value)
         }
 
         if (historyResult.status === 'fulfilled') {
-          setHistoryData(extractArray(historyResult.value))
+          setHistoryData(historyResult.value)
         }
 
         if (reviewTrendResult.status === 'fulfilled') {
-          setReviewTrendData(extractArray(reviewTrendResult.value))
+          setReviewTrendData(reviewTrendResult.value)
         }
 
         if (reviewInsightResult.status === 'fulfilled') {
@@ -261,6 +267,10 @@ function GameDetailPage() {
   const reviewInsight = useMemo(() => {
     return normalizeReviewInsight(reviewInsightData)
   }, [reviewInsightData])
+
+  const quickSummaryItems = useMemo(() => {
+    return createQuickSummaryItems(selectedGame, sentiment, topics, reviewInsight)
+  }, [selectedGame, sentiment, topics, reviewInsight])
 
   function handleSelectGame(gameId: string | number) {
     setSelectedGameId(String(gameId))
@@ -450,7 +460,12 @@ function GameDetailPage() {
             <div className="game-detail-action-card">
               <span>현재 가격</span>
               <strong>{selectedGame.priceLabel}</strong>
-              <p>{selectedGame.priceSubLabel}</p>
+              <b>{selectedGame.priceKrwLabel}</b>
+              <p>
+                {selectedGame.priceSubLabelLine1}
+                <br />
+                {selectedGame.priceSubLabelLine2}
+              </p>
               <button type="button">Steam 상점 이동</button>
               <button className="secondary" type="button">
                 관심 게임 추가
@@ -517,7 +532,7 @@ function GameDetailPage() {
             <SummaryCard
               title="현재 가격"
               value={selectedGame.priceLabel}
-              description={selectedGame.priceSubLabel}
+              description={selectedGame.priceKrwLabel}
               type="neutral"
             />
           </section>
@@ -664,7 +679,6 @@ function GameDetailPage() {
                       <span>{index + 1}</span>
                       <strong>{topic.title}</strong>
                       <em>{topic.mentionRate.toFixed(1)}%</em>
-                      <small>{topic.sentimentLabel}</small>
                     </div>
                   ))}
                 </div>
@@ -679,16 +693,9 @@ function GameDetailPage() {
               </div>
 
               <ul>
-                <li>{reviewInsight.positiveSummary}</li>
-                <li>{reviewInsight.negativeSummary}</li>
-                <li>
-                  {selectedGame.name}의 현재 긍정 비율은{' '}
-                  {sentiment.positive.toFixed(1)}%입니다.
-                </li>
-                <li>
-                  현재 가격은 Steam 기준 {selectedGame.priceLabel}이며, 원화는 참고용 환산
-                  값입니다.
-                </li>
+                {quickSummaryItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
             </article>
 
@@ -699,18 +706,6 @@ function GameDetailPage() {
 
               <div className="game-detail-keyword-cloud">
                 {getNegativeKeywords().map((keyword) => (
-                  <span key={keyword}>{keyword}</span>
-                ))}
-              </div>
-            </article>
-
-            <article className="game-detail-card keyword-card positive">
-              <div className="game-detail-card-head">
-                <h3>긍정 리뷰 키워드</h3>
-              </div>
-
-              <div className="game-detail-keyword-cloud">
-                {getPositiveKeywords(topics).map((keyword) => (
                   <span key={keyword}>{keyword}</span>
                 ))}
               </div>
@@ -780,66 +775,6 @@ function SentimentRow({
   )
 }
 
-async function requestApi(path: string) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    throw new Error(`${path} API 요청 실패: ${response.status}`)
-  }
-
-  return response.json()
-}
-
-function extractArray(data: unknown): ApiRecord[] {
-  if (Array.isArray(data)) {
-    return data.filter(isRecord)
-  }
-
-  if (isRecord(data)) {
-    const candidates = [
-      data.items,
-      data.data,
-      data.results,
-      data.games,
-      data.rankings,
-      data.topics,
-      data.history,
-      data.trend,
-      data.review_trend,
-    ]
-
-    for (const candidate of candidates) {
-      if (Array.isArray(candidate)) {
-        return candidate.filter(isRecord)
-      }
-    }
-  }
-
-  return []
-}
-
-function extractObject(data: unknown): ApiRecord | null {
-  if (isRecord(data)) {
-    const candidates = [data.data, data.game, data.result, data.detail]
-
-    for (const candidate of candidates) {
-      if (isRecord(candidate)) {
-        return candidate
-      }
-    }
-
-    return data
-  }
-
-  return null
-}
-
-function isRecord(value: unknown): value is ApiRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function normalizeGameSummary(game: ApiRecord, index: number): GameSummary {
   const gameId = toSafeGameId(getGameId(game), index)
   const genres = getGenres(game)
@@ -874,12 +809,10 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
     genre: genres[0] ?? '장르 없음',
     genres,
     price,
-    priceLabel: isFree
-      ? '무료'
-      : `${formatSteamPrice(price)} (${formatEstimatedKrw(price)})`,
-    priceSubLabel: isFree
-      ? 'Steam 기준 무료 게임'
-      : 'Steam 기준 금액, 원화 환산 추정 값',
+    priceLabel: isFree ? '무료' : formatSteamPrice(price),
+    priceKrwLabel: isFree ? '(약 ₩0)' : `(${formatEstimatedKrw(price)})`,
+    priceSubLabelLine1: 'Steam 기준 금액,',
+    priceSubLabelLine2: '원화 환산 추정 값',
     owners: formatOwners(getOwners(game)),
     positiveReviews,
     negativeReviews,
@@ -973,7 +906,13 @@ function normalizeSentiment(
 
 function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
   return topicData.map((topic, index) => {
-    const keywords = getKeywords(topic).map((keyword) => translateKeyword(keyword))
+    const rawKeywords = getKeywords(topic)
+    const translatedKeywords = rawKeywords.map((keyword) => translateKeyword(keyword))
+    const backendTitle = getBackendTopicTitle(topic)
+    const title =
+      backendTitle && !isGenericTopicName(backendTitle)
+        ? translateTopicTitle(backendTitle)
+        : createTopicTitle(translatedKeywords, backendTitle, index)
 
     const mentionRate =
       normalizeRatio(
@@ -989,8 +928,8 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
 
     return {
       id: String(topic.topic_id ?? topic.id ?? index),
-      title: String(topic.topic ?? topic.name ?? keywords[0] ?? `토픽 ${index + 1}`),
-      keywords: keywords.length > 0 ? keywords : ['키워드 없음'],
+      title,
+      keywords: translatedKeywords.length > 0 ? translatedKeywords : ['키워드 없음'],
       mentionRate,
       positiveRate,
       sentimentLabel:
@@ -1003,6 +942,127 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
               : '분석 중',
     }
   })
+}
+
+function getBackendTopicTitle(topic: ApiRecord) {
+  return String(
+    topic.title ??
+      topic.topic_title ??
+      topic.topic_name ??
+      topic.topic ??
+      topic.name ??
+      '',
+  ).trim()
+}
+
+function isGenericTopicName(value: string) {
+  const normalized = value.toLowerCase().trim()
+
+  return (
+    normalized === '' ||
+    normalized === 'topic' ||
+    normalized.startsWith('topic_') ||
+    normalized.startsWith('topic ') ||
+    normalized.startsWith('토픽 ')
+  )
+}
+
+function translateTopicTitle(value: string) {
+  const normalized = value.toLowerCase().trim()
+
+  const map: Record<string, string> = {
+    gameplay: '게임플레이',
+    combat: '전투',
+    story: '스토리',
+    graphics: '그래픽',
+    graphic: '그래픽',
+    sound: '사운드',
+    music: '음악',
+    optimization: '최적화',
+    performance: '성능',
+    price: '가격',
+    content: '콘텐츠',
+    difficulty: '난이도',
+    multiplayer: '멀티플레이',
+    coop: '협동',
+  }
+
+  return map[normalized] ?? value
+}
+
+function createTopicTitle(keywords: string[], backendTitle: string, index: number) {
+  const source = `${keywords.join(' ')} ${backendTitle}`.toLowerCase()
+
+  if (source.includes('전투') || source.includes('combat') || source.includes('boss')) {
+    return '게임플레이/전투'
+  }
+
+  if (
+    source.includes('스토리') ||
+    source.includes('story') ||
+    source.includes('세계관') ||
+    source.includes('world') ||
+    source.includes('캐릭터') ||
+    source.includes('character')
+  ) {
+    return '스토리/세계관'
+  }
+
+  if (
+    source.includes('그래픽') ||
+    source.includes('graphic') ||
+    source.includes('사운드') ||
+    source.includes('sound') ||
+    source.includes('음악') ||
+    source.includes('music')
+  ) {
+    return '그래픽/사운드'
+  }
+
+  if (
+    source.includes('최적화') ||
+    source.includes('optimization') ||
+    source.includes('성능') ||
+    source.includes('performance') ||
+    source.includes('버그') ||
+    source.includes('bug') ||
+    source.includes('server')
+  ) {
+    return '최적화/성능'
+  }
+
+  if (
+    source.includes('가격') ||
+    source.includes('price') ||
+    source.includes('dlc') ||
+    source.includes('콘텐츠') ||
+    source.includes('content')
+  ) {
+    return '가격/콘텐츠'
+  }
+
+  if (
+    source.includes('난이도') ||
+    source.includes('difficulty') ||
+    source.includes('challenge')
+  ) {
+    return '난이도/도전성'
+  }
+
+  if (
+    source.includes('멀티') ||
+    source.includes('협동') ||
+    source.includes('coop') ||
+    source.includes('friends')
+  ) {
+    return '멀티플레이/협동'
+  }
+
+  if (keywords.length > 0 && keywords[0] !== '키워드 없음') {
+    return `${keywords[0]} 관련 반응`
+  }
+
+  return `리뷰 토픽 ${index + 1}`
 }
 
 function normalizeTrendPoints(
@@ -1034,20 +1094,58 @@ function normalizeReviewInsight(reviewInsightData: unknown): ReviewInsight {
     record.positive_summary ??
       record.positiveSummary ??
       record.positive_review ??
-      '긍정 리뷰에서는 게임성, 몰입감, 전투 경험, 세계관에 대한 만족도가 높게 나타날 수 있습니다.',
+      '긍정 리뷰에서는 게임성, 몰입감, 전투 경험에 대한 만족이 나타납니다.',
   )
 
   const negativeSummary = String(
     record.negative_summary ??
       record.negativeSummary ??
       record.negative_review ??
-      '부정 리뷰에서는 난이도, 최적화, 가격, 반복 콘텐츠와 관련된 불만 요소가 일부 나타날 수 있습니다.',
+      '부정 리뷰에서는 난이도, 최적화, 가격 관련 불만이 나타날 수 있습니다.',
   )
 
   return {
     positiveSummary,
     negativeSummary,
   }
+}
+
+function createQuickSummaryItems(
+  selectedGame: GameDetailView | null,
+  sentiment: SentimentView,
+  topics: TopicView[],
+  reviewInsight: ReviewInsight,
+) {
+  if (!selectedGame) {
+    return ['선택된 게임 데이터가 없습니다.']
+  }
+
+  const mainTopic = topics[0]?.title ?? '주요 토픽 없음'
+  const satisfaction =
+    sentiment.positive >= 85
+      ? '매우 긍정적인 평가 흐름입니다.'
+      : sentiment.positive >= 70
+        ? '전반적으로 긍정적인 평가입니다.'
+        : sentiment.positive >= 50
+          ? '긍정과 부정 반응이 함께 나타납니다.'
+          : '개선 이슈가 비교적 크게 나타납니다.'
+
+  return [
+    `긍정 비율은 ${sentiment.positive.toFixed(1)}%로 ${satisfaction}`,
+    `주요 토픽은 ${mainTopic} 중심으로 나타납니다.`,
+    compactSentence(reviewInsight.negativeSummary),
+    `현재 가격은 ${selectedGame.priceLabel} 기준입니다.`,
+  ]
+}
+
+function compactSentence(text: string) {
+  const cleaned = text.replace(/\s+/g, ' ').trim()
+
+  if (cleaned.length <= 42) {
+    return cleaned
+  }
+
+  return `${cleaned.slice(0, 42)}...`
 }
 
 function getGameId(game: ApiRecord) {
@@ -1170,16 +1268,6 @@ function getKeywords(topic: ApiRecord) {
   return []
 }
 
-function getPositiveKeywords(topics: TopicView[]) {
-  const keywords = topics.flatMap((topic) => topic.keywords)
-
-  if (keywords.length > 0) {
-    return keywords.slice(0, 12)
-  }
-
-  return ['재미있다', '그래픽', '탐험', '몰입감', '전투', '스토리', '자유도']
-}
-
 function getNegativeKeywords() {
   return ['어렵다', '버그', '불편하다', '난이도', '반복적', '카메라', '가이드 부족']
 }
@@ -1211,6 +1299,8 @@ function translateKeyword(keyword: string) {
     fun: '재미',
     coop: '협동',
     friends: '협동',
+    content: '콘텐츠',
+    challenge: '도전성',
   }
 
   return dictionary[normalized] ?? keyword

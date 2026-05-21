@@ -394,13 +394,22 @@
 
 .game-detail-action-card strong {
   display: block;
-  margin: 10px 0 6px;
+  margin: 10px 0 3px;
   color: #071426;
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 950;
-  line-height: 1.28;
+  line-height: 1.18;
   white-space: normal;
   word-break: keep-all;
+}
+
+.game-detail-action-card b {
+  display: block;
+  margin-bottom: 8px;
+  color: #071426;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.25;
 }
 
 .game-detail-action-card p {
@@ -408,7 +417,7 @@
   color: #3157ff;
   font-size: 12px;
   font-weight: 850;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .game-detail-action-card button {
@@ -765,13 +774,13 @@
 
 .game-detail-bottom-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
   align-items: stretch;
   gap: 16px;
 }
 
 .game-detail-bottom-grid .game-detail-card {
-  min-height: 290px;
+  min-height: 280px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -825,13 +834,9 @@
   text-align: right;
 }
 
-.game-detail-topic-row small {
-  display: none;
-}
-
 .game-detail-keyword-cloud {
   flex: 1;
-  min-height: 200px;
+  min-height: 190px;
   display: flex;
   flex-wrap: wrap;
   align-content: center;
@@ -861,12 +866,12 @@
 
 .quick-summary-card li {
   position: relative;
-  margin-bottom: 14px;
-  padding-left: 20px;
+  margin-bottom: 12px;
+  padding-left: 19px;
   color: #334155;
   font-size: 13px;
   font-weight: 750;
-  line-height: 1.6;
+  line-height: 1.55;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -911,6 +916,7 @@ html.theme-dark .game-detail-result-text strong,
 html.theme-dark .game-detail-title-row h2,
 html.theme-dark .game-detail-meta-item strong,
 html.theme-dark .game-detail-action-card strong,
+html.theme-dark .game-detail-action-card b,
 html.theme-dark .game-detail-summary-card strong,
 html.theme-dark .game-detail-card-head h3,
 html.theme-dark .game-detail-donut strong,
@@ -1005,21 +1011,21 @@ html.theme-dark .game-detail-action-card button.secondary {
   }
 
   .game-detail-bottom-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(230px, 1fr));
   }
 }
 
 @media (max-width: 1280px) {
   .game-detail-summary-grid {
-    grid-template-columns: repeat(5, minmax(150px, 1fr));
+    grid-template-columns: repeat(5, minmax(145px, 1fr));
   }
 
   .game-detail-summary-card {
-    padding: 16px;
+    padding: 15px;
   }
 
   .game-detail-summary-card strong {
-    font-size: 18px;
+    font-size: 17px;
   }
 }
 

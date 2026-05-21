@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import HomePage from './HomePage'
+import GameDetailPage from './GameDetailPage'
 import ReviewPage from './ReviewPage'
 import RankingPage from './RankingPage'
 import SettingsPage from './SettingsPage'
@@ -104,16 +105,7 @@ function App() {
       <main className="main">
         {activePage === 'home' && <HomePage />}
 
-        {activePage === 'gameDetail' && (
-          <section className="status-card">
-            <strong>게임 상세 분석 화면 준비 중</strong>
-            <p>
-              /games/{'{game_id}'}, /games/{'{game_id}'}/history,
-              /games/{'{game_id}'}/review-trend, /games/{'{game_id}'}/sentiment,
-              /games/{'{game_id}'}/topics API를 연결해서 개별 게임 분석 화면으로 구성할 수 있습니다.
-            </p>
-          </section>
-        )}
+        {activePage === 'gameDetail' && <GameDetailPage />}
 
         {activePage === 'reviewInsight' && <ReviewPage />}
 

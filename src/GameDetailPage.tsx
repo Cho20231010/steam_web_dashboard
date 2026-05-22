@@ -141,6 +141,23 @@ function GameDetailPage() {
     return games.map((game, index) => normalizeGameSummary(game, index))
   }, [games])
 
+  const searchSuggestions = useMemo(() => {
+    const genreSet = new Set<string>()
+
+    gameSummaries.forEach((game) => {
+      game.genres.forEach((genre) => {
+        if (genre && genre !== '장르 없음') {
+          genreSet.add(genre)
+        }
+      })
+    })
+
+    return {
+      genres: Array.from(genreSet).sort((a, b) => a.localeCompare(b)),
+      games: gameSummaries.slice(0, 12),
+    }
+  }, [gameSummaries])
+
   const filteredGames = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -248,23 +265,6 @@ function GameDetailPage() {
 
     loadSelectedGame()
   }, [games, selectedGameId])
-
-  const searchSuggestions = useMemo(() => {
-    const genreSet = new Set<string>()
-
-    gameSummaries.forEach((game) => {
-      game.genres.forEach((genre) => {
-        if (genre && genre !== '장르 없음') {
-          genreSet.add(genre)
-        }
-      })
-    })
-
-    return {
-      genres: Array.from(genreSet).sort((a, b) => a.localeCompare(b)),
-      games: gameSummaries.slice(0, 12),
-    }
-  }, [gameSummaries])
 
   const selectedGame = useMemo(() => {
     const fallback = games.find((game, index) => {

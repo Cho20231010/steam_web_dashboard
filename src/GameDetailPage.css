@@ -560,6 +560,7 @@
   font-weight: 950;
   letter-spacing: -0.035em;
   line-height: 1.35;
+  word-break: keep-all;
 }
 
 .game-detail-card-head div {
@@ -695,7 +696,6 @@
   line-height: 1.55;
 }
 
-/* 리뷰 감성 분석도 첫 번째 줄 세 번째 카드로 배치 */
 .sentiment-card {
   grid-column: auto;
 }
@@ -703,13 +703,13 @@
 .game-detail-sentiment-content {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   min-height: 235px;
 }
 
 .game-detail-donut {
-  width: 140px;
-  height: 140px;
+  width: 120px;
+  height: 120px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -717,8 +717,8 @@
 }
 
 .game-detail-donut div {
-  width: 78px;
-  height: 78px;
+  width: 70px;
+  height: 70px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -734,7 +734,7 @@
 
 .game-detail-donut strong {
   color: #071426;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 950;
 }
 
@@ -748,9 +748,9 @@
 
 .game-detail-sentiment-row {
   display: grid;
-  grid-template-columns: 10px 38px 50px minmax(0, 1fr);
+  grid-template-columns: 10px 38px 48px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .game-detail-sentiment-row i {
@@ -793,7 +793,7 @@
 .game-detail-bottom-grid-fixed {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
 }
@@ -1087,26 +1087,23 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     font-size: 17px;
   }
 
-  .game-detail-chart-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
+  .game-detail-chart-grid,
   .game-detail-bottom-grid-fixed {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .game-detail-donut {
-    width: 120px;
-    height: 120px;
+    width: 110px;
+    height: 110px;
   }
 
   .game-detail-donut div {
-    width: 70px;
-    height: 70px;
+    width: 66px;
+    height: 66px;
   }
 
   .game-detail-sentiment-content {
-    gap: 12px;
+    gap: 10px;
   }
 
   .game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
@@ -1133,14 +1130,8 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     order: 2;
   }
 
-  .game-detail-hero-card,
-  .game-detail-chart-grid,
-  .game-detail-bottom-grid-fixed {
+  .game-detail-hero-card {
     grid-template-columns: 1fr;
-  }
-
-  .sentiment-card {
-    grid-column: auto;
   }
 
   .game-detail-meta-grid {
@@ -1151,8 +1142,9 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .game-detail-bottom-grid-fixed .game-detail-card {
-    min-height: auto;
+  .game-detail-chart-grid,
+  .game-detail-bottom-grid-fixed {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .game-detail-sentiment-content {
@@ -1160,9 +1152,21 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
   }
 }
 
+@media (max-width: 900px) {
+  .game-detail-chart-grid,
+  .game-detail-bottom-grid-fixed {
+    grid-template-columns: 1fr;
+  }
+
+  .game-detail-bottom-grid-fixed .game-detail-card {
+    min-height: auto;
+  }
+}
+
 @media (max-width: 760px) {
   .game-detail-meta-grid,
   .game-detail-summary-grid,
+  .game-detail-chart-grid,
   .game-detail-bottom-grid-fixed {
     grid-template-columns: 1fr;
   }

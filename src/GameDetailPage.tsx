@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './GameDetailPage.css'
-import { formatGenreList } from './utils/genre'
+import { formatGenreDisplay, formatGenreList, getGenreSearchText } from './utils/genre'
 import {
   isFavoriteGame,
   readFavoriteGames,
@@ -24,7 +24,7 @@ type GameSummary = {
   gameId: string | number
   name: string
   genre: string
-  rawGenre: string
+  genreSearchText: string
   genres: string[]
   image?: string
 }
@@ -34,7 +34,7 @@ type GameDetailView = {
   gameId: string | number
   name: string
   genre: string
-  rawGenre: string
+  genreSearchText: string
   genres: string[]
   priceLabel: string
   priceKrwLabel: string
@@ -170,7 +170,7 @@ function GameDetailPage() {
         return (
           game.name.toLowerCase().includes(keyword) ||
           game.genre.toLowerCase().includes(keyword) ||
-          game.rawGenre.toLowerCase().includes(keyword) ||
+          game.genreSearchText.includes(keyword) ||
           game.genres.some((genre) => genre.toLowerCase().includes(keyword))
         )
       })
@@ -323,7 +323,7 @@ function GameDetailPage() {
     const matchedGame = gameSummaries.find((game) => {
       return (
         game.genre.toLowerCase().includes(keyword) ||
-        game.rawGenre.toLowerCase().includes(keyword) ||
+        game.genreSearchText.includes(keyword) ||
         game.genres.some((genre) => genre.toLowerCase().includes(keyword))
       )
     })
@@ -542,8 +542,9 @@ function GameDetailPage() {
               <div className="game-detail-title-row">
                 <div>
                   <h2>{selectedGame.name}</h2>
+
                   <div className="game-detail-tags">
-                    {selectedGame.genres.slice(0, 5).map((genre) => (
+                    {selectedGame.genres.slice(0, 6).map((genre) => (
                       <span key={genre}>{genre}</span>
                     ))}
                   </div>
@@ -890,16 +891,16 @@ function SentimentRow({
 
 function normalizeGameSummary(game: ApiRecord, index: number): GameSummary {
   const gameId = toSafeGameId(getGameId(game), index)
-  const genres = getGenres(game)
-  const genre = genres[0] ?? '장르 없음'
-  const rawGenre = getRawGenre(game)
+  const genreSource = getMergedGenreSource(game)
+  const genres = formatGenreList(genreSource)
+  const genre = formatGenreDisplay(genreSource)
 
   return {
     id: String(gameId),
     gameId,
     name: getGameName(game),
     genre,
-    rawGenre,
+    genreSearchText: getGenreSearchText(genreSource),
     genres,
     image: getGameImage(game),
   }
@@ -915,15 +916,15 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
 
   const price = normalizePrice(game.price ?? game.price_usd ?? game.current_price)
   const isFree = Boolean(game.is_free ?? game.free ?? game.isFree) || price <= 0
-  const genres = getGenres(game)
-  const rawGenre = getRawGenre(game)
+  const genreSource = getMergedGenreSource(game)
+  const genres = formatGenreList(genreSource)
 
   return {
     id: String(gameId),
     gameId,
     name: getGameName(game),
-    genre: genres[0] ?? '장르 없음',
-    rawGenre,
+    genre: formatGenreDisplay(genreSource),
+    genreSearchText: getGenreSearchText(genreSource),
     genres,
     priceLabel: isFree ? '무료' : formatSteamPrice(price),
     priceKrwLabel: isFree ? '(약 ₩0)' : `(${formatEstimatedKrw(price)})`,
@@ -1280,22 +1281,8 @@ function getGameName(game: ApiRecord) {
   return String(game.name ?? game.title ?? '이름 없음')
 }
 
-function getRawGenre(game: ApiRecord) {
-  const rawGenre = game.genre ?? game.genres
-
-  if (Array.isArray(rawGenre)) {
-    return rawGenre.map((item) => String(item)).join(', ')
-  }
-
-  if (typeof rawGenre === 'string') {
-    return rawGenre
-  }
-
-  return ''
-}
-
-function getGenres(game: ApiRecord) {
-  return formatGenreList(game.genres ?? game.genre)
+function getMergedGenreSource(game: ApiRecord) {
+  return [game.genre, game.genres]
 }
 
 function getOwners(game: ApiRecord) {

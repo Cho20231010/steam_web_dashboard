@@ -532,21 +532,12 @@
   color: #3157ff;
 }
 
-.game-detail-analysis-grid {
-  width: 100%;
+/* 첫 번째 분석 행: 가격 변동 추이 / 리뷰 수 & 긍정 비율 추이 / 리뷰 감성 분석 */
+.game-detail-chart-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
-}
-
-.game-detail-analysis-grid > .game-detail-card {
-  width: 100%;
-  min-width: 0;
-  min-height: 260px;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
 }
 
 .game-detail-card {
@@ -569,7 +560,6 @@
   font-weight: 950;
   letter-spacing: -0.035em;
   line-height: 1.35;
-  word-break: keep-all;
 }
 
 .game-detail-card-head div {
@@ -705,6 +695,7 @@
   line-height: 1.55;
 }
 
+/* 리뷰 감성 분석도 첫 번째 줄 세 번째 카드로 배치 */
 .sentiment-card {
   grid-column: auto;
 }
@@ -712,13 +703,13 @@
 .game-detail-sentiment-content {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
   min-height: 235px;
 }
 
 .game-detail-donut {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -726,8 +717,8 @@
 }
 
 .game-detail-donut div {
-  width: 70px;
-  height: 70px;
+  width: 78px;
+  height: 78px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -743,7 +734,7 @@
 
 .game-detail-donut strong {
   color: #071426;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 950;
 }
 
@@ -757,9 +748,9 @@
 
 .game-detail-sentiment-row {
   display: grid;
-  grid-template-columns: 10px 38px 48px minmax(0, 1fr);
+  grid-template-columns: 10px 38px 50px minmax(0, 1fr);
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .game-detail-sentiment-row i {
@@ -798,14 +789,45 @@
   white-space: nowrap;
 }
 
-.game-detail-topic-list {
+/* 두 번째 분석 행: 주요 토픽 TOP5 / 빠른 요약 / 부정 리뷰 키워드 */
+.game-detail-bottom-grid-fixed {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.game-detail-bottom-grid-fixed .game-detail-card {
+  min-width: 0;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.game-detail-bottom-grid-fixed .game-detail-card-head {
+  margin-bottom: 16px;
+}
+
+.game-detail-bottom-grid-fixed .game-detail-card-head h3 {
+  margin: 0;
+  color: #071426;
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.35;
+  letter-spacing: -0.03em;
+  word-break: keep-all;
+}
+
+.game-detail-bottom-grid-fixed .game-detail-topic-list {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.game-detail-topic-row {
+.game-detail-bottom-grid-fixed .game-detail-topic-row {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 58px;
   align-items: center;
@@ -817,7 +839,7 @@
   box-sizing: border-box;
 }
 
-.game-detail-topic-row > span {
+.game-detail-bottom-grid-fixed .game-detail-topic-row > span {
   width: 24px;
   height: 24px;
   display: grid;
@@ -829,7 +851,7 @@
   font-weight: 950;
 }
 
-.game-detail-topic-row strong {
+.game-detail-bottom-grid-fixed .game-detail-topic-row strong {
   min-width: 0;
   color: #071426;
   font-size: 13px;
@@ -841,7 +863,7 @@
   writing-mode: horizontal-tb;
 }
 
-.game-detail-topic-row em {
+.game-detail-bottom-grid-fixed .game-detail-topic-row em {
   color: #071426;
   font-size: 12px;
   font-style: normal;
@@ -850,7 +872,7 @@
   writing-mode: horizontal-tb;
 }
 
-.game-detail-empty {
+.game-detail-bottom-grid-fixed .game-detail-empty {
   flex: 1;
   display: grid;
   place-items: center;
@@ -863,14 +885,14 @@
   word-break: keep-all;
 }
 
-.quick-summary-card ul {
+.game-detail-bottom-grid-fixed .quick-summary-card ul {
   flex: 1;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.quick-summary-card li {
+.game-detail-bottom-grid-fixed .quick-summary-card li {
   position: relative;
   margin-bottom: 12px;
   padding-left: 20px;
@@ -884,11 +906,11 @@
   writing-mode: horizontal-tb;
 }
 
-.quick-summary-card li:last-child {
+.game-detail-bottom-grid-fixed .quick-summary-card li:last-child {
   margin-bottom: 0;
 }
 
-.quick-summary-card li::before {
+.game-detail-bottom-grid-fixed .quick-summary-card li::before {
   content: '●';
   position: absolute;
   left: 0;
@@ -897,11 +919,11 @@
   font-size: 13px;
 }
 
-.keyword-card.negative {
+.game-detail-bottom-grid-fixed .keyword-card.negative {
   min-width: 0;
 }
 
-.keyword-card.negative .game-detail-keyword-cloud {
+.game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -914,7 +936,7 @@
   padding-top: 4px;
 }
 
-.keyword-card.negative .game-detail-keyword-cloud span {
+.game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
   display: inline-flex;
   flex: 0 1 auto;
   align-items: center;
@@ -1003,7 +1025,11 @@ html.theme-dark .game-detail-search-dropdown .chip-button {
   color: #93c5fd;
 }
 
-html.theme-dark .keyword-card.negative .game-detail-keyword-cloud span {
+html.theme-dark
+  .game-detail-bottom-grid-fixed
+  .keyword-card.negative
+  .game-detail-keyword-cloud
+  span {
   background: rgba(239, 91, 91, 0.14);
   color: #fca5a5;
 }
@@ -1061,25 +1087,29 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     font-size: 17px;
   }
 
-  .game-detail-analysis-grid {
+  .game-detail-chart-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .game-detail-bottom-grid-fixed {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .game-detail-donut {
-    width: 110px;
-    height: 110px;
+    width: 120px;
+    height: 120px;
   }
 
   .game-detail-donut div {
-    width: 66px;
-    height: 66px;
+    width: 70px;
+    height: 70px;
   }
 
   .game-detail-sentiment-content {
-    gap: 10px;
+    gap: 12px;
   }
 
-  .keyword-card.negative .game-detail-keyword-cloud span {
+  .game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
     font-size: 12px;
     padding: 7px 10px;
   }
@@ -1104,8 +1134,13 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
   }
 
   .game-detail-hero-card,
-  .game-detail-analysis-grid {
+  .game-detail-chart-grid,
+  .game-detail-bottom-grid-fixed {
     grid-template-columns: 1fr;
+  }
+
+  .sentiment-card {
+    grid-column: auto;
   }
 
   .game-detail-meta-grid {
@@ -1116,7 +1151,7 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .game-detail-analysis-grid > .game-detail-card {
+  .game-detail-bottom-grid-fixed .game-detail-card {
     min-height: auto;
   }
 
@@ -1128,7 +1163,7 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
 @media (max-width: 760px) {
   .game-detail-meta-grid,
   .game-detail-summary-grid,
-  .game-detail-analysis-grid {
+  .game-detail-bottom-grid-fixed {
     grid-template-columns: 1fr;
   }
 
@@ -1141,11 +1176,11 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     align-items: flex-start;
   }
 
-  .game-detail-topic-row {
+  .game-detail-bottom-grid-fixed .game-detail-topic-row {
     grid-template-columns: 28px minmax(0, 1fr);
   }
 
-  .game-detail-topic-row em {
+  .game-detail-bottom-grid-fixed .game-detail-topic-row em {
     display: none;
   }
 }

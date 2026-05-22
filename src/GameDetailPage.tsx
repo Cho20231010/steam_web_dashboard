@@ -24,7 +24,6 @@ type GameSummary = {
   gameId: string | number
   name: string
   genre: string
-  rawGenre: string
   genres: string[]
   image?: string
 }
@@ -34,7 +33,6 @@ type GameDetailView = {
   gameId: string | number
   name: string
   genre: string
-  rawGenre: string
   genres: string[]
   priceLabel: string
   priceKrwLabel: string
@@ -137,46 +135,6 @@ function GameDetailPage() {
     loadGames()
   }, [])
 
-  const gameSummaries = useMemo(() => {
-    return games.map((game, index) => normalizeGameSummary(game, index))
-  }, [games])
-
-  const filteredGames = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase()
-
-    if (!keyword) {
-      return gameSummaries.slice(0, 8)
-    }
-
-    return gameSummaries
-      .filter((game) => {
-        return (
-          game.name.toLowerCase().includes(keyword) ||
-          game.genre.toLowerCase().includes(keyword) ||
-          game.rawGenre.toLowerCase().includes(keyword) ||
-          game.genres.some((genre) => genre.toLowerCase().includes(keyword))
-        )
-      })
-      .slice(0, 8)
-  }, [gameSummaries, searchText])
-
-  useEffect(() => {
-    const keyword = searchText.trim()
-
-    if (!keyword || filteredGames.length === 0) {
-      return
-    }
-
-    const selectedGameIsVisible = filteredGames.some(
-      (game) => String(game.gameId) === selectedGameId,
-    )
-
-    if (!selectedGameIsVisible) {
-      setSelectedGameId(String(filteredGames[0].gameId))
-      setSelectedTab('overview')
-    }
-  }, [filteredGames, searchText, selectedGameId])
-
   useEffect(() => {
     async function loadSelectedGame() {
       if (!selectedGameId) {
@@ -249,6 +207,10 @@ function GameDetailPage() {
     loadSelectedGame()
   }, [games, selectedGameId])
 
+  const gameSummaries = useMemo(() => {
+    return games.map((game, index) => normalizeGameSummary(game, index))
+  }, [games])
+
   const searchSuggestions = useMemo(() => {
     const genreSet = new Set<string>()
 
@@ -265,6 +227,24 @@ function GameDetailPage() {
       games: gameSummaries.slice(0, 12),
     }
   }, [gameSummaries])
+
+  const filteredGames = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+
+    if (!keyword) {
+      return gameSummaries.slice(0, 8)
+    }
+
+    return gameSummaries
+      .filter((game) => {
+        return (
+          game.name.toLowerCase().includes(keyword) ||
+          game.genre.toLowerCase().includes(keyword) ||
+          game.genres.some((genre) => genre.toLowerCase().includes(keyword))
+        )
+      })
+      .slice(0, 8)
+  }, [gameSummaries, searchText])
 
   const selectedGame = useMemo(() => {
     const fallback = games.find((game, index) => {
@@ -317,22 +297,6 @@ function GameDetailPage() {
 
   function handleGenreSuggestionClick(value: string) {
     setSearchText(value)
-
-    const matchedGame = gameSummaries.find((game) => {
-      const keyword = value.toLowerCase()
-
-      return (
-        game.genre.toLowerCase().includes(keyword) ||
-        game.rawGenre.toLowerCase().includes(keyword) ||
-        game.genres.some((genre) => genre.toLowerCase().includes(keyword))
-      )
-    })
-
-    if (matchedGame) {
-      setSelectedGameId(String(matchedGame.gameId))
-      setSelectedTab('overview')
-    }
-
     setIsSearchFocused(true)
   }
 
@@ -650,7 +614,7 @@ function GameDetailPage() {
             />
           </section>
 
-          <section className="game-detail-analysis-grid">
+          <section className="game-detail-chart-grid">
             <article className="game-detail-card">
               <div className="game-detail-card-head">
                 <h3>가격 변동 추이</h3>
@@ -777,7 +741,9 @@ function GameDetailPage() {
                 </div>
               </div>
             </article>
+          </section>
 
+          <section className="game-detail-bottom-grid-fixed">
             <article className="game-detail-card topic-card">
               <div className="game-detail-card-head">
                 <h3>주요 토픽 TOP 5</h3>
@@ -890,14 +856,12 @@ function normalizeGameSummary(game: ApiRecord, index: number): GameSummary {
   const gameId = toSafeGameId(getGameId(game), index)
   const genres = getGenres(game)
   const genre = genres[0] ?? '장르 없음'
-  const rawGenre = getRawGenre(game)
 
   return {
     id: String(gameId),
     gameId,
     name: getGameName(game),
     genre,
-    rawGenre,
     genres,
     image: getGameImage(game),
   }
@@ -914,14 +878,12 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
   const price = normalizePrice(game.price ?? game.price_usd ?? game.current_price)
   const isFree = Boolean(game.is_free ?? game.free ?? game.isFree) || price <= 0
   const genres = getGenres(game)
-  const rawGenre = getRawGenre(game)
 
   return {
     id: String(gameId),
     gameId,
     name: getGameName(game),
     genre: genres[0] ?? '장르 없음',
-    rawGenre,
     genres,
     priceLabel: isFree ? '무료' : formatSteamPrice(price),
     priceKrwLabel: isFree ? '(약 ₩0)' : `(${formatEstimatedKrw(price)})`,
@@ -1276,20 +1238,6 @@ function toSafeGameId(value: unknown, fallback: string | number): string | numbe
 
 function getGameName(game: ApiRecord) {
   return String(game.name ?? game.title ?? '이름 없음')
-}
-
-function getRawGenre(game: ApiRecord) {
-  const rawGenre = game.genre ?? game.genres
-
-  if (Array.isArray(rawGenre)) {
-    return rawGenre.map((item) => String(item)).join(', ')
-  }
-
-  if (typeof rawGenre === 'string') {
-    return rawGenre
-  }
-
-  return ''
 }
 
 function getGenres(game: ApiRecord) {

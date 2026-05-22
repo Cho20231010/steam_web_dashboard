@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import './GameDetailPage.css'
 import { formatGenreList } from './utils/genre'
 import {
+  isFavoriteGame,
+  readFavoriteGames,
+  saveFavoriteGame,
+  type FavoriteGame,
+} from './utils/favoriteGames'
+import {
   getGameDetail,
   getGameHistory,
   getGameList,
@@ -28,7 +34,6 @@ type GameDetailView = {
   name: string
   genre: string
   genres: string[]
-  price: number
   priceLabel: string
   priceKrwLabel: string
   priceSubLabelLine1: string
@@ -44,7 +49,6 @@ type GameDetailView = {
   developer: string
   publisher: string
   metacriticScore: string
-  platforms: string[]
   image?: string
 }
 
@@ -86,6 +90,7 @@ function GameDetailPage() {
   const [selectedGameId, setSelectedGameId] = useState<string>('')
   const [searchText, setSearchText] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [favoriteGames, setFavoriteGames] = useState<FavoriteGame[]>([])
   const [selectedTab, setSelectedTab] = useState<
     'overview' | 'price' | 'sentiment' | 'topic'
   >('overview')
@@ -102,13 +107,16 @@ function GameDetailPage() {
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
+    setFavoriteGames(readFavoriteGames())
+  }, [])
+
+  useEffect(() => {
     async function loadGames() {
       try {
         setLoading(true)
         setErrorMessage('')
 
         const gameList = await getGameList()
-
         setGames(gameList)
 
         const firstGame = gameList.find((game) => getGameId(game) !== undefined)
@@ -238,8 +246,6 @@ function GameDetailPage() {
       .slice(0, 8)
   }, [gameSummaries, searchText])
 
-  const showSearchPanel = isSearchFocused
-
   const selectedGame = useMemo(() => {
     const fallback = games.find((game, index) => {
       const gameId = toSafeGameId(getGameId(game), index)
@@ -254,6 +260,14 @@ function GameDetailPage() {
 
     return normalizeGameDetail(targetGame)
   }, [gameDetail, games, selectedGameId])
+
+  const isSelectedGameFavorite = useMemo(() => {
+    if (!selectedGame) {
+      return false
+    }
+
+    return favoriteGames.some((game) => String(game.gameId) === String(selectedGame.gameId))
+  }, [favoriteGames, selectedGame])
 
   const sentiment = useMemo(() => {
     return normalizeSentiment(sentimentData, selectedGame)
@@ -291,6 +305,27 @@ function GameDetailPage() {
     setIsSearchFocused(false)
   }
 
+  function handleAddFavoriteGame() {
+    if (!selectedGame) {
+      return
+    }
+
+    if (isFavoriteGame(selectedGame.gameId)) {
+      setFavoriteGames(readFavoriteGames())
+      return
+    }
+
+    const nextFavoriteGames = saveFavoriteGame({
+      gameId: selectedGame.gameId,
+      name: selectedGame.name,
+      genre: selectedGame.genre,
+      priceLabel: selectedGame.priceLabel,
+      image: selectedGame.image,
+    })
+
+    setFavoriteGames(nextFavoriteGames)
+  }
+
   if (loading) {
     return (
       <section className="status-card">
@@ -320,7 +355,7 @@ function GameDetailPage() {
 
   return (
     <div className="game-detail-page">
-      <section className="game-detail-header compact-search-header">
+      <section className="game-detail-header">
         <div className="game-detail-search-box">
           <input
             value={searchText}
@@ -335,13 +370,11 @@ function GameDetailPage() {
             type="text"
           />
 
-          {showSearchPanel && (
-            <div className="game-detail-search-dropdown expanded">
+          {isSearchFocused && (
+            <div className="game-detail-search-dropdown">
               {searchText.trim() ? (
                 <>
-                  <div className="game-detail-dropdown-section-title">
-                    검색 결과
-                  </div>
+                  <div className="game-detail-dropdown-section-title">검색 결과</div>
 
                   {filteredGames.length > 0 ? (
                     filteredGames.map((game) => (
@@ -505,9 +538,14 @@ function GameDetailPage() {
                 <br />
                 {selectedGame.priceSubLabelLine2}
               </p>
-              <button type="button">Steam 상점 이동</button>
-              <button className="secondary" type="button">
-                관심 게임 추가
+
+              <button
+                className={isSelectedGameFavorite ? 'secondary added' : 'secondary'}
+                disabled={isSelectedGameFavorite}
+                onClick={handleAddFavoriteGame}
+                type="button"
+              >
+                {isSelectedGameFavorite ? '관심 게임에 추가됨' : '관심 게임 추가'}
               </button>
             </div>
           </section>
@@ -847,7 +885,6 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
     name: getGameName(game),
     genre: genres[0] ?? '장르 없음',
     genres,
-    price,
     priceLabel: isFree ? '무료' : formatSteamPrice(price),
     priceKrwLabel: isFree ? '(약 ₩0)' : `(${formatEstimatedKrw(price)})`,
     priceSubLabelLine1: 'Steam 기준 금액,',
@@ -866,7 +903,6 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
       game.metacritic_score === null || game.metacritic_score === undefined
         ? '정보 없음'
         : String(game.metacritic_score),
-    platforms: getPlatforms(game),
     image: getGameImage(game),
   }
 }
@@ -1224,24 +1260,6 @@ function formatOwners(value: string) {
     .replace(/\s*\.\.\s*/g, ' ~ ')
     .replace(/\s*-\s*/g, ' ~ ')
     .trim()
-}
-
-function getPlatforms(game: ApiRecord) {
-  const platforms = []
-
-  if (game.is_windows || game.windows) {
-    platforms.push('Windows')
-  }
-
-  if (game.is_mac || game.mac) {
-    platforms.push('Mac')
-  }
-
-  if (game.is_linux || game.linux) {
-    platforms.push('Linux')
-  }
-
-  return platforms.length > 0 ? platforms : ['플랫폼 정보 없음']
 }
 
 function getGameImage(game: ApiRecord) {

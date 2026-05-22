@@ -532,10 +532,12 @@
   color: #3157ff;
 }
 
+/* 첫 번째 분석 행: 가격 변동 추이 / 리뷰 수 & 긍정 비율 추이 / 리뷰 감성 분석 */
 .game-detail-chart-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  align-items: stretch;
 }
 
 .game-detail-card {
@@ -693,20 +695,21 @@
   line-height: 1.55;
 }
 
+/* 리뷰 감성 분석도 첫 번째 줄 세 번째 카드로 배치 */
 .sentiment-card {
-  grid-column: 1 / -1;
+  grid-column: auto;
 }
 
 .game-detail-sentiment-content {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 18px;
   min-height: 235px;
 }
 
 .game-detail-donut {
-  width: 170px;
-  height: 170px;
+  width: 140px;
+  height: 140px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -714,8 +717,8 @@
 }
 
 .game-detail-donut div {
-  width: 88px;
-  height: 88px;
+  width: 78px;
+  height: 78px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -725,28 +728,29 @@
 
 .game-detail-donut span {
   color: #617089;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
 .game-detail-donut strong {
   color: #071426;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 950;
 }
 
 .game-detail-sentiment-list {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .game-detail-sentiment-row {
   display: grid;
-  grid-template-columns: 10px 44px 54px 1fr;
+  grid-template-columns: 10px 38px 50px minmax(0, 1fr);
   align-items: center;
-  gap: 9px;
+  gap: 8px;
 }
 
 .game-detail-sentiment-row i {
@@ -770,19 +774,22 @@
 .game-detail-sentiment-row span,
 .game-detail-sentiment-row strong {
   color: #071426;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
 }
 
 .game-detail-sentiment-row em {
+  overflow: hidden;
   color: #617089;
-  font-size: 12px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 800;
   text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* 하단 3열 카드 - 새 클래스명으로 기존 CSS 충돌 방지 */
+/* 두 번째 분석 행: 주요 토픽 TOP5 / 빠른 요약 / 부정 리뷰 키워드 */
 .game-detail-bottom-grid-fixed {
   width: 100%;
   display: grid;
@@ -1018,7 +1025,11 @@ html.theme-dark .game-detail-search-dropdown .chip-button {
   color: #93c5fd;
 }
 
-html.theme-dark .game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
+html.theme-dark
+  .game-detail-bottom-grid-fixed
+  .keyword-card.negative
+  .game-detail-keyword-cloud
+  span {
   background: rgba(239, 91, 91, 0.14);
   color: #fca5a5;
 }
@@ -1076,8 +1087,26 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     font-size: 17px;
   }
 
+  .game-detail-chart-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .game-detail-bottom-grid-fixed {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .game-detail-donut {
+    width: 120px;
+    height: 120px;
+  }
+
+  .game-detail-donut div {
+    width: 70px;
+    height: 70px;
+  }
+
+  .game-detail-sentiment-content {
+    gap: 12px;
   }
 
   .game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
@@ -1124,6 +1153,10 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
 
   .game-detail-bottom-grid-fixed .game-detail-card {
     min-height: auto;
+  }
+
+  .game-detail-sentiment-content {
+    flex-direction: row;
   }
 }
 

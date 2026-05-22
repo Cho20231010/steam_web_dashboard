@@ -782,43 +782,45 @@
   text-align: right;
 }
 
-/* 하단 3열 카드 */
-.game-detail-bottom-grid {
+/* 하단 3열 카드 - 새 클래스명으로 기존 CSS 충돌 방지 */
+.game-detail-bottom-grid-fixed {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
   gap: 16px;
   align-items: stretch;
 }
 
-.game-detail-bottom-grid .game-detail-card {
+.game-detail-bottom-grid-fixed .game-detail-card {
   min-width: 0;
   min-height: 260px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
-.game-detail-bottom-grid .game-detail-card-head {
+.game-detail-bottom-grid-fixed .game-detail-card-head {
   margin-bottom: 16px;
 }
 
-.game-detail-bottom-grid .game-detail-card-head h3 {
+.game-detail-bottom-grid-fixed .game-detail-card-head h3 {
   margin: 0;
   color: #071426;
   font-size: 18px;
   font-weight: 950;
   line-height: 1.35;
+  letter-spacing: -0.03em;
   word-break: keep-all;
 }
 
-.game-detail-topic-list {
+.game-detail-bottom-grid-fixed .game-detail-topic-list {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.game-detail-topic-row {
+.game-detail-bottom-grid-fixed .game-detail-topic-row {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 58px;
   align-items: center;
@@ -827,9 +829,10 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: #f8f9fc;
+  box-sizing: border-box;
 }
 
-.game-detail-topic-row > span {
+.game-detail-bottom-grid-fixed .game-detail-topic-row > span {
   width: 24px;
   height: 24px;
   display: grid;
@@ -841,7 +844,7 @@
   font-weight: 950;
 }
 
-.game-detail-topic-row strong {
+.game-detail-bottom-grid-fixed .game-detail-topic-row strong {
   min-width: 0;
   color: #071426;
   font-size: 13px;
@@ -850,17 +853,19 @@
   text-align: left;
   word-break: keep-all;
   overflow-wrap: break-word;
+  writing-mode: horizontal-tb;
 }
 
-.game-detail-topic-row em {
+.game-detail-bottom-grid-fixed .game-detail-topic-row em {
   color: #071426;
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
   text-align: right;
+  writing-mode: horizontal-tb;
 }
 
-.game-detail-empty {
+.game-detail-bottom-grid-fixed .game-detail-empty {
   flex: 1;
   display: grid;
   place-items: center;
@@ -873,14 +878,14 @@
   word-break: keep-all;
 }
 
-.quick-summary-card ul {
+.game-detail-bottom-grid-fixed .quick-summary-card ul {
   flex: 1;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.quick-summary-card li {
+.game-detail-bottom-grid-fixed .quick-summary-card li {
   position: relative;
   margin-bottom: 12px;
   padding-left: 20px;
@@ -891,13 +896,14 @@
   text-align: left;
   word-break: keep-all;
   overflow-wrap: break-word;
+  writing-mode: horizontal-tb;
 }
 
-.quick-summary-card li:last-child {
+.game-detail-bottom-grid-fixed .quick-summary-card li:last-child {
   margin-bottom: 0;
 }
 
-.quick-summary-card li::before {
+.game-detail-bottom-grid-fixed .quick-summary-card li::before {
   content: '●';
   position: absolute;
   left: 0;
@@ -906,11 +912,11 @@
   font-size: 13px;
 }
 
-.keyword-card.negative {
+.game-detail-bottom-grid-fixed .keyword-card.negative {
   min-width: 0;
 }
 
-.keyword-card.negative .game-detail-keyword-cloud {
+.game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -923,7 +929,7 @@
   padding-top: 4px;
 }
 
-.keyword-card.negative .game-detail-keyword-cloud span {
+.game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
   display: inline-flex;
   flex: 0 1 auto;
   align-items: center;
@@ -1012,7 +1018,7 @@ html.theme-dark .game-detail-search-dropdown .chip-button {
   color: #93c5fd;
 }
 
-html.theme-dark .keyword-card.negative .game-detail-keyword-cloud span {
+html.theme-dark .game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
   background: rgba(239, 91, 91, 0.14);
   color: #fca5a5;
 }
@@ -1070,7 +1076,11 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     font-size: 17px;
   }
 
-  .keyword-card.negative .game-detail-keyword-cloud span {
+  .game-detail-bottom-grid-fixed {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
     font-size: 12px;
     padding: 7px 10px;
   }
@@ -1096,7 +1106,7 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
 
   .game-detail-hero-card,
   .game-detail-chart-grid,
-  .game-detail-bottom-grid {
+  .game-detail-bottom-grid-fixed {
     grid-template-columns: 1fr;
   }
 
@@ -1112,7 +1122,7 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .game-detail-bottom-grid .game-detail-card {
+  .game-detail-bottom-grid-fixed .game-detail-card {
     min-height: auto;
   }
 }
@@ -1120,7 +1130,7 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
 @media (max-width: 760px) {
   .game-detail-meta-grid,
   .game-detail-summary-grid,
-  .game-detail-bottom-grid {
+  .game-detail-bottom-grid-fixed {
     grid-template-columns: 1fr;
   }
 
@@ -1133,11 +1143,11 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     align-items: flex-start;
   }
 
-  .game-detail-topic-row {
+  .game-detail-bottom-grid-fixed .game-detail-topic-row {
     grid-template-columns: 28px minmax(0, 1fr);
   }
 
-  .game-detail-topic-row em {
+  .game-detail-bottom-grid-fixed .game-detail-topic-row em {
     display: none;
   }
 }

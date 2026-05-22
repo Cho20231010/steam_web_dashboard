@@ -743,7 +743,7 @@ function GameDetailPage() {
             </article>
           </section>
 
-          <section className="game-detail-bottom-grid">
+          <section className="game-detail-bottom-grid-fixed">
             <article className="game-detail-card topic-card">
               <div className="game-detail-card-head">
                 <h3>주요 토픽 TOP 5</h3>

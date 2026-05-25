@@ -744,7 +744,7 @@ function GameDetailPage() {
           <section className="game-detail-bottom-grid-fixed">
             <article className="game-detail-card topic-card">
               <div className="game-detail-card-head">
-                <h3>주요 토픽 TOP 5</h3>
+                <h3>주요 리뷰 토픽</h3>
               </div>
 
               {topics.length > 0 ? (
@@ -1149,6 +1149,15 @@ const TOPIC_KO_MAP: Record<string, string> = {
   story: '스토리',
   narrative: '스토리',
   feel: '몰입감',
+  find: '탐색',
+  finding: '탐색',
+  search: '탐색',
+  explore: '탐험',
+  exploration: '탐험',
+  survival: '생존',
+  survive: '생존',
+  zombie: '좀비',
+  zombies: '좀비',
   graphic: '그래픽',
   graphics: '그래픽',
   visual: '비주얼',
@@ -1223,6 +1232,10 @@ const TOPIC_EN_MAP: Record<string, string> = {
   재미: 'fun',
   스토리: 'story',
   몰입감: 'feel',
+  탐색: 'find',
+  탐험: 'exploration',
+  생존: 'survival',
+  좀비: 'zombie',
   그래픽: 'graphics',
   비주얼: 'visuals',
   전투: 'combat',
@@ -1383,7 +1396,7 @@ function createQuickSummaryItems(
     return ['선택된 게임 데이터가 없습니다.']
   }
 
-  const mainTopic = topics[0]?.title ?? '주요 토픽 없음'
+  const mainTopic = topics[0]?.title ?? '주요 리뷰 토픽 없음'
   const satisfaction =
     sentiment.positive >= 85
       ? '매우 긍정적인 평가 흐름입니다.'
@@ -1395,7 +1408,7 @@ function createQuickSummaryItems(
 
   return [
     `긍정 비율은 ${sentiment.positive.toFixed(1)}%로 ${satisfaction}`,
-    `주요 토픽은 ${mainTopic} 중심으로 나타납니다.`,
+    `주요 리뷰 토픽은 ${mainTopic} 중심으로 나타납니다.`,
     compactSentence(reviewInsight.negativeSummary),
     `현재 가격은 ${selectedGame.priceLabel} 기준입니다.`,
   ]

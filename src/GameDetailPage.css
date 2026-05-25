@@ -37,7 +37,6 @@
 .game-detail-header,
 .game-detail-result-panel,
 .game-detail-hero-card,
-.game-detail-tab-card,
 .game-detail-summary-card,
 .game-detail-card {
   border: 1px solid #e6eaf2;
@@ -220,7 +219,6 @@
   font-weight: 800;
 }
 
-/* 전체 화면 폭 제한에 맞춘 2열 구성 */
 .game-detail-layout {
   width: 100%;
   display: grid;
@@ -254,7 +252,6 @@
   font-weight: 850;
 }
 
-/* 검색 결과 5개 정도만 표시 + 스크롤 */
 .game-detail-result-list {
   display: flex;
   flex-direction: column;
@@ -476,32 +473,6 @@
   cursor: default;
 }
 
-.game-detail-tab-card {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
-  gap: 10px;
-  padding: 10px;
-  border-radius: 18px;
-  overflow-x: auto;
-}
-
-.game-detail-tab-card button {
-  min-width: 0;
-  height: 38px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: #617089;
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.game-detail-tab-card button.active {
-  background: #edf0ff;
-  color: #3157ff;
-}
-
 .game-detail-summary-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -552,7 +523,6 @@
   color: #3157ff;
 }
 
-/* 상단 분석 카드 3개 */
 .game-detail-chart-grid {
   width: 100%;
   display: grid;
@@ -811,7 +781,6 @@
   white-space: nowrap;
 }
 
-/* 하단 분석 카드 3개 */
 .game-detail-bottom-grid-fixed {
   width: 100%;
   display: grid;
@@ -847,21 +816,6 @@
   grid-row: auto;
   align-self: stretch;
   justify-self: stretch;
-}
-
-.game-detail-bottom-grid-fixed .game-detail-card-head {
-  margin-bottom: 16px;
-}
-
-.game-detail-bottom-grid-fixed .game-detail-card-head h3 {
-  margin: 0;
-  color: #071426;
-  font-size: 18px;
-  font-weight: 950;
-  line-height: 1.35;
-  letter-spacing: -0.03em;
-  word-break: keep-all;
-  white-space: normal;
 }
 
 .game-detail-topic-list {
@@ -904,7 +858,6 @@
   text-align: left;
   word-break: keep-all;
   overflow-wrap: break-word;
-  writing-mode: horizontal-tb;
 }
 
 .game-detail-topic-row em {
@@ -913,7 +866,6 @@
   font-style: normal;
   font-weight: 900;
   text-align: right;
-  writing-mode: horizontal-tb;
 }
 
 .game-detail-empty {
@@ -948,7 +900,6 @@
   text-align: left;
   word-break: keep-all;
   overflow-wrap: break-word;
-  writing-mode: horizontal-tb;
 }
 
 .quick-summary-card li:last-child {
@@ -998,112 +949,8 @@
   white-space: normal;
   word-break: keep-all;
   overflow-wrap: break-word;
-  writing-mode: horizontal-tb;
 }
 
-/* 다크 모드 */
-html.theme-dark .game-detail-header,
-html.theme-dark .game-detail-result-panel,
-html.theme-dark .game-detail-hero-card,
-html.theme-dark .game-detail-tab-card,
-html.theme-dark .game-detail-summary-card,
-html.theme-dark .game-detail-card {
-  background: #111827;
-  border-color: #334155;
-}
-
-html.theme-dark .game-detail-search-box input,
-html.theme-dark .game-detail-search-dropdown,
-html.theme-dark .game-detail-card-head button {
-  background: #1f2937;
-  border-color: #475569;
-  color: #f9fafb;
-}
-
-html.theme-dark .game-detail-panel-title strong,
-html.theme-dark .game-detail-search-dropdown strong,
-html.theme-dark .game-detail-result-text strong,
-html.theme-dark .game-detail-title-row h2,
-html.theme-dark .game-detail-meta-item strong,
-html.theme-dark .game-detail-action-card strong,
-html.theme-dark .game-detail-action-card b,
-html.theme-dark .game-detail-summary-card strong,
-html.theme-dark .game-detail-card-head h3,
-html.theme-dark .game-detail-donut strong,
-html.theme-dark .game-detail-sentiment-row span,
-html.theme-dark .game-detail-sentiment-row strong,
-html.theme-dark .game-detail-topic-row strong,
-html.theme-dark .game-detail-topic-row em,
-html.theme-dark .game-detail-no-trend strong {
-  color: #f9fafb;
-}
-
-html.theme-dark .game-detail-dropdown-section-title,
-html.theme-dark .game-detail-panel-title span,
-html.theme-dark .game-detail-search-dropdown em,
-html.theme-dark .game-detail-result-text em,
-html.theme-dark .game-detail-meta-item span,
-html.theme-dark .game-detail-action-card span,
-html.theme-dark .game-detail-donut span,
-html.theme-dark .game-detail-sentiment-row em,
-html.theme-dark .quick-summary-card li,
-html.theme-dark .game-detail-empty,
-html.theme-dark .game-detail-no-trend p {
-  color: #cbd5e1;
-}
-
-html.theme-dark .game-detail-search-dropdown button:hover,
-html.theme-dark .game-detail-result-list button,
-html.theme-dark .game-detail-action-card,
-html.theme-dark .game-detail-topic-row,
-html.theme-dark .game-detail-no-trend {
-  background: #1f2937;
-}
-
-html.theme-dark .game-detail-result-list button:hover,
-html.theme-dark .game-detail-result-list button.active,
-html.theme-dark .game-detail-tab-card button.active {
-  background: #263354;
-}
-
-html.theme-dark .game-detail-search-dropdown .chip-button {
-  background: #1f2937;
-  border-color: #475569;
-  color: #93c5fd;
-}
-
-html.theme-dark .keyword-card.negative .game-detail-keyword-cloud span {
-  background: rgba(239, 91, 91, 0.14);
-  color: #fca5a5;
-}
-
-html.theme-dark .game-detail-line-chart,
-html.theme-dark .game-detail-bar-chart {
-  background:
-    linear-gradient(#334155 1px, transparent 1px),
-    #111827;
-  background-size: 100% 25%;
-  border-color: #334155;
-}
-
-html.theme-dark .game-detail-donut div {
-  background: #111827;
-}
-
-html.theme-dark .game-detail-action-card button.secondary {
-  background: #111827;
-  border-color: #475569;
-  color: #93c5fd;
-}
-
-html.theme-dark .game-detail-action-card button.secondary.added,
-html.theme-dark .game-detail-action-card button.secondary:disabled {
-  background: #1f2937;
-  border-color: #475569;
-  color: #94a3b8;
-}
-
-/* 반응형 */
 @media (max-width: 1180px) {
   .game-detail-page {
     max-width: 100%;
@@ -1197,10 +1044,6 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
 
   .game-detail-hero-card {
     grid-template-columns: 1fr;
-  }
-
-  .game-detail-tab-card {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .game-detail-dropdown-game-list {

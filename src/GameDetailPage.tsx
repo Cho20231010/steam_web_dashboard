@@ -93,9 +93,6 @@ function GameDetailPage() {
   const [searchText, setSearchText] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [favoriteGames, setFavoriteGames] = useState<FavoriteGame[]>([])
-  const [selectedTab, setSelectedTab] = useState<
-    'overview' | 'price' | 'sentiment' | 'topic'
-  >('overview')
 
   const [gameDetail, setGameDetail] = useState<ApiRecord | null>(null)
   const [sentimentData, setSentimentData] = useState<ApiRecord | null>(null)
@@ -188,7 +185,6 @@ function GameDetailPage() {
 
     if (!selectedGameIsVisible) {
       setSelectedGameId(String(filteredGames[0].gameId))
-      setSelectedTab('overview')
     }
   }, [filteredGames, searchText, selectedGameId])
 
@@ -310,7 +306,6 @@ function GameDetailPage() {
   function handleSelectGame(gameId: string | number) {
     setSelectedGameId(String(gameId))
     setSearchText('')
-    setSelectedTab('overview')
   }
 
   function handleGenreSuggestionClick(value: string) {
@@ -328,7 +323,6 @@ function GameDetailPage() {
 
     if (matchedGame) {
       setSelectedGameId(String(matchedGame.gameId))
-      setSelectedTab('overview')
     }
 
     setIsSearchFocused(true)
@@ -583,37 +577,6 @@ function GameDetailPage() {
                 {isSelectedGameFavorite ? '관심 게임에 추가됨' : '관심 게임 추가'}
               </button>
             </div>
-          </section>
-
-          <section className="game-detail-tab-card">
-            <button
-              className={selectedTab === 'overview' ? 'active' : ''}
-              onClick={() => setSelectedTab('overview')}
-              type="button"
-            >
-              개요
-            </button>
-            <button
-              className={selectedTab === 'price' ? 'active' : ''}
-              onClick={() => setSelectedTab('price')}
-              type="button"
-            >
-              가격 & 리뷰 추이
-            </button>
-            <button
-              className={selectedTab === 'sentiment' ? 'active' : ''}
-              onClick={() => setSelectedTab('sentiment')}
-              type="button"
-            >
-              리뷰 감성 분석
-            </button>
-            <button
-              className={selectedTab === 'topic' ? 'active' : ''}
-              onClick={() => setSelectedTab('topic')}
-              type="button"
-            >
-              토픽 분석
-            </button>
           </section>
 
           <section className="game-detail-summary-grid">
@@ -1175,6 +1138,7 @@ const TOPIC_KO_MAP: Record<string, string> = {
   battle: '전투',
   boss: '보스전',
   open: '오픈월드',
+  'open world': '오픈월드',
   world: '세계관',
   sound: '사운드',
   music: '음악',

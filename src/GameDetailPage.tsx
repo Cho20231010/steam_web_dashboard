@@ -982,20 +982,17 @@ function normalizeSentiment(
 }
 
 function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
-  const normalizedTopics = topicData
+  return topicData
     .map((topic, index) => {
       const rawKeywords = getUniqueStringList(getKeywords(topic))
-      const translatedKeywords = getUniqueStringList(
-        rawKeywords.map((keyword) => formatTopicLabel(keyword)),
-      )
-
       const backendTitle = getBackendTopicTitle(topic)
+
       const titleSource =
         backendTitle && !isGenericTopicName(backendTitle)
           ? backendTitle
-          : rawKeywords[0] ?? ''
+          : getRepresentativeTopicKeyword(rawKeywords)
 
-      const title = titleSource ? formatTopicLabel(titleSource) : '토픽 데이터 없음'
+      const title = titleSource ? formatTopicLabel(titleSource) : `토픽 ${index + 1}`
 
       const mentionRate =
         normalizeRatio(
@@ -1019,7 +1016,7 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
       return {
         id: String(topic.topic_id ?? topic.id ?? topic.topic_no ?? index),
         title,
-        keywords: translatedKeywords.length > 0 ? translatedKeywords : ['키워드 없음'],
+        keywords: rawKeywords.map((keyword) => formatTopicLabel(keyword)),
         mentionRate,
         positiveRate,
         sentimentLabel:
@@ -1032,23 +1029,7 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
                 : '분석 중',
       }
     })
-    .filter((topic) => topic.title !== '토픽 데이터 없음')
-
-  const seen = new Set<string>()
-  const uniqueTopics: TopicView[] = []
-
-  normalizedTopics.forEach((topic) => {
-    const dedupeKey = normalizeTopicDedupeKey(topic.title)
-
-    if (seen.has(dedupeKey)) {
-      return
-    }
-
-    seen.add(dedupeKey)
-    uniqueTopics.push(topic)
-  })
-
-  return uniqueTopics
+    .filter((topic) => topic.title.trim() !== '')
 }
 
 function getBackendTopicTitle(topic: ApiRecord) {
@@ -1086,6 +1067,41 @@ function isGenericTopicName(value: string) {
     normalized.startsWith('주요 리뷰 토픽')
   )
 }
+
+function getRepresentativeTopicKeyword(keywords: string[]) {
+  const meaningfulKeyword = keywords.find((keyword) => {
+    const normalized = normalizeTopicEnglishKey(keyword)
+
+    return !TOPIC_STOPWORDS.has(normalized)
+  })
+
+  return meaningfulKeyword ?? keywords[0] ?? ''
+}
+
+const TOPIC_STOPWORDS = new Set([
+  'game',
+  'games',
+  'good',
+  'great',
+  'like',
+  'don',
+  'dont',
+  'didn',
+  'doesn',
+  'isn',
+  'wasn',
+  'nt',
+  'de',
+  'doi',
+  'bad',
+  'really',
+  'just',
+  'make',
+  'way',
+  'lot',
+  'thing',
+  'things',
+])
 
 function formatTopicLabel(value: string) {
   const original = value.trim()
@@ -1126,10 +1142,13 @@ function formatTopicLabel(value: string) {
 
 const TOPIC_KO_MAP: Record<string, string> = {
   game: '게임',
+  games: '게임',
   gameplay: '게임플레이',
   play: '플레이',
+  fun: '재미',
   story: '스토리',
   narrative: '스토리',
+  feel: '몰입감',
   graphic: '그래픽',
   graphics: '그래픽',
   visual: '비주얼',
@@ -1156,10 +1175,9 @@ const TOPIC_KO_MAP: Record<string, string> = {
   challenge: '도전성',
   character: '캐릭터',
   characters: '캐릭터',
-  fun: '재미',
   coop: '협동',
   'co-op': '협동',
-  friends: '협동',
+  friends: '친구',
   online: '온라인',
   multiplayer: '멀티플레이',
   content: '콘텐츠',
@@ -1191,13 +1209,20 @@ const TOPIC_KO_MAP: Record<string, string> = {
   replay: '반복 플레이',
   grinding: '반복 플레이',
   tutorial: '튜토리얼',
+  time: '시간',
+  fps: 'FPS',
+  players: '플레이어',
+  access: '접근성',
+  war: '전쟁',
 }
 
 const TOPIC_EN_MAP: Record<string, string> = {
   게임: 'game',
   게임플레이: 'gameplay',
   플레이: 'play',
+  재미: 'fun',
   스토리: 'story',
+  몰입감: 'feel',
   그래픽: 'graphics',
   비주얼: 'visuals',
   전투: 'combat',
@@ -1216,8 +1241,8 @@ const TOPIC_EN_MAP: Record<string, string> = {
   난이도: 'difficulty',
   도전성: 'challenge',
   캐릭터: 'character',
-  재미: 'fun',
   협동: 'co-op',
+  친구: 'friends',
   온라인: 'online',
   멀티플레이: 'multiplayer',
   콘텐츠: 'content',
@@ -1240,6 +1265,11 @@ const TOPIC_EN_MAP: Record<string, string> = {
   밸런스: 'balance',
   반복플레이: 'replay',
   튜토리얼: 'tutorial',
+  시간: 'time',
+  fps: 'fps',
+  플레이어: 'players',
+  접근성: 'access',
+  전쟁: 'war',
 }
 
 function extractParenthesesText(value: string) {
@@ -1296,18 +1326,6 @@ function getEnglishTopicNameFromOriginal(value: string) {
   }
 
   return ''
-}
-
-function normalizeTopicDedupeKey(title: string) {
-  const english = extractParenthesesText(title)
-  const source = english || title
-
-  return source
-    .toLowerCase()
-    .replace(/[_-]/g, ' ')
-    .replace(/[^a-z가-힣0-9\s]/g, '')
-    .replace(/\s+/g, '')
-    .trim()
 }
 
 function normalizeTrendPoints(

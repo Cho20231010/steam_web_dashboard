@@ -1,6 +1,6 @@
 .game-detail-page {
   width: 100%;
-  max-width: 1280px;
+  max-width: 1580px;
   min-width: 0;
   margin: 0 auto;
   display: flex;
@@ -49,14 +49,14 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  min-height: 82px;
-  padding: 16px 20px;
+  min-height: 76px;
+  padding: 14px 18px;
   border-radius: 20px;
 }
 
 .game-detail-search-box {
   position: relative;
-  width: min(640px, 100%);
+  width: min(720px, 100%);
   max-width: 100%;
 }
 
@@ -172,8 +172,8 @@
 }
 
 .game-detail-result-thumb {
-  width: 78px;
-  height: 46px;
+  width: 76px;
+  height: 44px;
 }
 
 .game-detail-search-thumb img,
@@ -222,13 +222,14 @@
 
 .game-detail-layout {
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr);
+  grid-template-columns: 250px minmax(0, 1fr);
   gap: 16px;
+  align-items: start;
 }
 
 .game-detail-result-panel {
   align-self: start;
-  padding: 16px;
+  padding: 14px;
   border-radius: 20px;
 }
 
@@ -255,17 +256,30 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 430px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.game-detail-result-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.game-detail-result-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
 }
 
 .game-detail-result-list button {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   min-width: 0;
+  min-height: 76px;
   border: 1px solid transparent;
   border-radius: 14px;
-  padding: 10px;
+  padding: 9px;
   background: #ffffff;
   text-align: left;
   cursor: pointer;
@@ -278,6 +292,7 @@
 }
 
 .game-detail-main-area {
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -286,14 +301,14 @@
 
 .game-detail-hero-card {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 240px;
-  gap: 20px;
-  padding: 20px;
+  grid-template-columns: 270px minmax(0, 1fr) 220px;
+  gap: 18px;
+  padding: 18px;
   border-radius: 20px;
 }
 
 .game-detail-cover {
-  min-height: 190px;
+  min-height: 185px;
   overflow: hidden;
   border-radius: 16px;
   background: #edf0ff;
@@ -302,13 +317,13 @@
 .game-detail-cover img {
   width: 100%;
   height: 100%;
-  min-height: 190px;
+  min-height: 185px;
   object-fit: cover;
 }
 
 .game-detail-cover div {
   width: 100%;
-  height: 190px;
+  height: 185px;
   display: grid;
   place-items: center;
   color: #5d63f1;
@@ -329,7 +344,7 @@
 .game-detail-title-row h2 {
   margin: 0;
   color: #071426;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 950;
   letter-spacing: -0.04em;
   line-height: 1.2;
@@ -359,13 +374,14 @@
   color: #4d58df;
   font-size: 12px;
   font-weight: 900;
+  line-height: 1.2;
 }
 
 .game-detail-meta-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 22px;
 }
 
 .game-detail-meta-item {
@@ -398,8 +414,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 170px;
-  padding: 18px;
+  min-height: 168px;
+  padding: 16px;
   border: 1px solid #edf0f5;
   border-radius: 16px;
   background: #f8f9fc;
@@ -416,7 +432,7 @@
   display: block;
   margin: 10px 0 3px;
   color: #071426;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 950;
   line-height: 1.15;
 }
@@ -425,7 +441,7 @@
   display: block;
   margin-bottom: 8px;
   color: #071426;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 900;
   line-height: 1.25;
 }
@@ -458,7 +474,8 @@
 }
 
 .game-detail-tab-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
   gap: 10px;
   padding: 10px;
   border-radius: 18px;
@@ -466,7 +483,7 @@
 }
 
 .game-detail-tab-card button {
-  min-width: 118px;
+  min-width: 0;
   height: 38px;
   border: 0;
   border-radius: 12px;
@@ -484,13 +501,13 @@
 
 .game-detail-summary-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
   gap: 14px;
 }
 
 .game-detail-summary-card {
-  min-height: 132px;
-  padding: 18px;
+  min-height: 128px;
+  padding: 16px;
   border-radius: 18px;
 }
 
@@ -505,7 +522,7 @@
   display: block;
   margin-top: 12px;
   color: #071426;
-  font-size: clamp(18px, 1.25vw, 23px);
+  font-size: clamp(18px, 1.3vw, 23px);
   font-weight: 950;
   line-height: 1.3;
   word-break: keep-all;
@@ -513,7 +530,7 @@
 
 .game-detail-summary-card:nth-child(4) strong,
 .game-detail-summary-card:nth-child(5) strong {
-  font-size: clamp(16px, 1vw, 20px);
+  font-size: clamp(16px, 1.05vw, 20px);
 }
 
 .game-detail-summary-card p {
@@ -532,10 +549,9 @@
   color: #3157ff;
 }
 
-/* 첫 번째 분석 행: 가격 변동 추이 / 리뷰 수 & 긍정 비율 추이 / 리뷰 감성 분석 */
 .game-detail-chart-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(230px, 1fr));
   gap: 16px;
   align-items: stretch;
 }
@@ -587,7 +603,7 @@
 
 .game-detail-line-chart {
   position: relative;
-  height: 235px;
+  height: 230px;
   overflow: hidden;
   border: 1px solid #edf0f5;
   border-radius: 16px;
@@ -633,7 +649,7 @@
 }
 
 .game-detail-bar-chart {
-  height: 235px;
+  height: 230px;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: end;
@@ -669,22 +685,23 @@
   font-size: 11px;
   font-style: normal;
   font-weight: 800;
+  white-space: normal;
 }
 
 .game-detail-no-trend {
-  min-height: 235px;
+  min-height: 230px;
   display: grid;
   place-items: center;
   text-align: center;
   border: 1px dashed #dfe4ee;
   border-radius: 16px;
   background: #f8f9fc;
-  padding: 24px;
+  padding: 22px;
 }
 
 .game-detail-no-trend strong {
   color: #071426;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 950;
 }
 
@@ -704,12 +721,12 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 235px;
+  min-height: 230px;
 }
 
 .game-detail-donut {
-  width: 120px;
-  height: 120px;
+  width: 118px;
+  height: 118px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -717,8 +734,8 @@
 }
 
 .game-detail-donut div {
-  width: 70px;
-  height: 70px;
+  width: 68px;
+  height: 68px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -789,18 +806,17 @@
   white-space: nowrap;
 }
 
-/* 두 번째 분석 행: 주요 토픽 TOP5 / 빠른 요약 / 부정 리뷰 키워드 */
 .game-detail-bottom-grid-fixed {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(230px, 1fr));
   gap: 16px;
   align-items: stretch;
 }
 
 .game-detail-bottom-grid-fixed .game-detail-card {
   min-width: 0;
-  min-height: 260px;
+  min-height: 255px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -818,16 +834,17 @@
   line-height: 1.35;
   letter-spacing: -0.03em;
   word-break: keep-all;
+  white-space: normal;
 }
 
-.game-detail-bottom-grid-fixed .game-detail-topic-list {
+.game-detail-topic-list {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.game-detail-bottom-grid-fixed .game-detail-topic-row {
+.game-detail-topic-row {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 58px;
   align-items: center;
@@ -839,7 +856,7 @@
   box-sizing: border-box;
 }
 
-.game-detail-bottom-grid-fixed .game-detail-topic-row > span {
+.game-detail-topic-row > span {
   width: 24px;
   height: 24px;
   display: grid;
@@ -851,7 +868,7 @@
   font-weight: 950;
 }
 
-.game-detail-bottom-grid-fixed .game-detail-topic-row strong {
+.game-detail-topic-row strong {
   min-width: 0;
   color: #071426;
   font-size: 13px;
@@ -863,7 +880,7 @@
   writing-mode: horizontal-tb;
 }
 
-.game-detail-bottom-grid-fixed .game-detail-topic-row em {
+.game-detail-topic-row em {
   color: #071426;
   font-size: 12px;
   font-style: normal;
@@ -872,7 +889,7 @@
   writing-mode: horizontal-tb;
 }
 
-.game-detail-bottom-grid-fixed .game-detail-empty {
+.game-detail-empty {
   flex: 1;
   display: grid;
   place-items: center;
@@ -885,32 +902,32 @@
   word-break: keep-all;
 }
 
-.game-detail-bottom-grid-fixed .quick-summary-card ul {
+.quick-summary-card ul {
   flex: 1;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.game-detail-bottom-grid-fixed .quick-summary-card li {
+.quick-summary-card li {
   position: relative;
-  margin-bottom: 12px;
-  padding-left: 20px;
+  margin-bottom: 11px;
+  padding-left: 19px;
   color: #334155;
   font-size: 13px;
   font-weight: 750;
-  line-height: 1.55;
+  line-height: 1.45;
   text-align: left;
   word-break: keep-all;
   overflow-wrap: break-word;
   writing-mode: horizontal-tb;
 }
 
-.game-detail-bottom-grid-fixed .quick-summary-card li:last-child {
+.quick-summary-card li:last-child {
   margin-bottom: 0;
 }
 
-.game-detail-bottom-grid-fixed .quick-summary-card li::before {
+.quick-summary-card li::before {
   content: '●';
   position: absolute;
   left: 0;
@@ -919,11 +936,11 @@
   font-size: 13px;
 }
 
-.game-detail-bottom-grid-fixed .keyword-card.negative {
+.keyword-card.negative {
   min-width: 0;
 }
 
-.game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud {
+.keyword-card.negative .game-detail-keyword-cloud {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -936,7 +953,7 @@
   padding-top: 4px;
 }
 
-.game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
+.keyword-card.negative .game-detail-keyword-cloud span {
   display: inline-flex;
   flex: 0 1 auto;
   align-items: center;
@@ -1025,11 +1042,7 @@ html.theme-dark .game-detail-search-dropdown .chip-button {
   color: #93c5fd;
 }
 
-html.theme-dark
-  .game-detail-bottom-grid-fixed
-  .keyword-card.negative
-  .game-detail-keyword-cloud
-  span {
+html.theme-dark .keyword-card.negative .game-detail-keyword-cloud span {
   background: rgba(239, 91, 91, 0.14);
   color: #fca5a5;
 }
@@ -1062,29 +1075,94 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
 
 @media (max-width: 1500px) {
   .game-detail-page {
-    max-width: 1180px;
+    max-width: 1400px;
+  }
+
+  .game-detail-layout {
+    grid-template-columns: 240px minmax(0, 1fr);
   }
 
   .game-detail-hero-card {
-    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-columns: 250px minmax(0, 1fr) 210px;
+  }
+}
+
+@media (max-width: 1240px) {
+  .game-detail-page {
+    max-width: 1180px;
+  }
+
+  .game-detail-layout {
+    grid-template-columns: 225px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .game-detail-hero-card {
+    grid-template-columns: 230px minmax(0, 1fr);
   }
 
   .game-detail-action-card {
     grid-column: 1 / -1;
   }
-}
 
-@media (max-width: 1280px) {
+  .game-detail-chart-grid,
+  .game-detail-bottom-grid-fixed {
+    grid-template-columns: repeat(3, minmax(190px, 1fr));
+    gap: 14px;
+  }
+
+  .game-detail-card {
+    padding: 16px;
+  }
+
+  .game-detail-donut {
+    width: 104px;
+    height: 104px;
+  }
+
+  .game-detail-donut div {
+    width: 62px;
+    height: 62px;
+  }
+
+  .game-detail-sentiment-content {
+    gap: 10px;
+  }
+
+  .game-detail-sentiment-row {
+    grid-template-columns: 10px 34px 44px minmax(0, 1fr);
+    gap: 6px;
+  }
+
   .game-detail-summary-grid {
-    grid-template-columns: repeat(5, minmax(145px, 1fr));
+    grid-template-columns: repeat(5, minmax(112px, 1fr));
   }
 
   .game-detail-summary-card {
-    padding: 15px;
+    padding: 14px;
   }
 
   .game-detail-summary-card strong {
     font-size: 17px;
+  }
+
+  .quick-summary-card li {
+    font-size: 12px;
+    line-height: 1.42;
+  }
+}
+
+@media (max-width: 980px) {
+  .game-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .game-detail-result-panel {
+    order: 2;
+  }
+
+  .game-detail-result-list {
+    max-height: 390px;
   }
 
   .game-detail-chart-grid,
@@ -1092,27 +1170,21 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .game-detail-donut {
-    width: 110px;
-    height: 110px;
+  .game-detail-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .game-detail-donut div {
-    width: 66px;
-    height: 66px;
+  .game-detail-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .game-detail-sentiment-content {
-    gap: 10px;
-  }
-
-  .game-detail-bottom-grid-fixed .keyword-card.negative .game-detail-keyword-cloud span {
-    font-size: 12px;
-    padding: 7px 10px;
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 760px) {
   .game-detail-header {
     justify-content: stretch;
     min-height: auto;
@@ -1122,69 +1194,34 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     width: 100%;
   }
 
-  .game-detail-layout {
+  .game-detail-hero-card,
+  .game-detail-chart-grid,
+  .game-detail-bottom-grid-fixed {
     grid-template-columns: 1fr;
   }
 
-  .game-detail-result-panel {
-    order: 2;
-  }
-
-  .game-detail-hero-card {
-    grid-template-columns: 1fr;
-  }
-
-  .game-detail-meta-grid {
+  .game-detail-tab-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .game-detail-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .game-detail-chart-grid,
-  .game-detail-bottom-grid-fixed {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .game-detail-sentiment-content {
-    flex-direction: row;
-  }
-}
-
-@media (max-width: 900px) {
-  .game-detail-chart-grid,
-  .game-detail-bottom-grid-fixed {
-    grid-template-columns: 1fr;
-  }
-
-  .game-detail-bottom-grid-fixed .game-detail-card {
-    min-height: auto;
-  }
-}
-
-@media (max-width: 760px) {
-  .game-detail-meta-grid,
-  .game-detail-summary-grid,
-  .game-detail-chart-grid,
-  .game-detail-bottom-grid-fixed {
-    grid-template-columns: 1fr;
   }
 
   .game-detail-dropdown-game-list {
     grid-template-columns: 1fr;
   }
 
-  .game-detail-sentiment-content {
-    flex-direction: column;
-    align-items: flex-start;
+  .game-detail-meta-grid,
+  .game-detail-summary-grid {
+    grid-template-columns: 1fr;
   }
 
-  .game-detail-bottom-grid-fixed .game-detail-topic-row {
+  .game-detail-bottom-grid-fixed .game-detail-card {
+    min-height: auto;
+  }
+
+  .game-detail-topic-row {
     grid-template-columns: 28px minmax(0, 1fr);
   }
 
-  .game-detail-bottom-grid-fixed .game-detail-topic-row em {
+  .game-detail-topic-row em {
     display: none;
   }
 }

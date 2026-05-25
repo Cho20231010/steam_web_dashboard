@@ -162,19 +162,17 @@ function GameDetailPage() {
     const keyword = searchText.trim().toLowerCase()
 
     if (!keyword) {
-      return gameSummaries.slice(0, 8)
+      return gameSummaries
     }
 
-    return gameSummaries
-      .filter((game) => {
-        return (
-          game.name.toLowerCase().includes(keyword) ||
-          game.genre.toLowerCase().includes(keyword) ||
-          game.genreSearchText.includes(keyword) ||
-          game.genres.some((genre) => genre.toLowerCase().includes(keyword))
-        )
-      })
-      .slice(0, 8)
+    return gameSummaries.filter((game) => {
+      return (
+        game.name.toLowerCase().includes(keyword) ||
+        game.genre.toLowerCase().includes(keyword) ||
+        game.genreSearchText.includes(keyword) ||
+        game.genres.some((genre) => genre.toLowerCase().includes(keyword))
+      )
+    })
   }, [gameSummaries, searchText])
 
   useEffect(() => {
@@ -413,7 +411,7 @@ function GameDetailPage() {
                   <div className="game-detail-dropdown-section-title">검색 결과</div>
 
                   {filteredGames.length > 0 ? (
-                    filteredGames.map((game) => (
+                    filteredGames.slice(0, 12).map((game) => (
                       <button
                         key={game.id}
                         onMouseDown={(event) => event.preventDefault()}
@@ -500,7 +498,7 @@ function GameDetailPage() {
         <aside className="game-detail-result-panel">
           <div className="game-detail-panel-title">
             <strong>검색 결과</strong>
-            <span>{filteredGames.length}개 표시</span>
+            <span>{filteredGames.length}개</span>
           </div>
 
           <div className="game-detail-result-list">

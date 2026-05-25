@@ -220,6 +220,7 @@
   font-weight: 800;
 }
 
+/* 왼쪽 검색 영역을 줄이고 오른쪽 메인 영역을 넓힘 */
 .game-detail-layout {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
@@ -252,11 +253,12 @@
   font-weight: 850;
 }
 
+/* 검색 결과는 약 5개만 보이고 그 이상은 스크롤 */
 .game-detail-result-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 430px;
+  max-height: 420px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -473,6 +475,7 @@
   cursor: default;
 }
 
+/* 개요 / 가격&리뷰추이 탭 영역을 메인 폭에 맞게 확장 */
 .game-detail-tab-card {
   display: grid;
   grid-template-columns: repeat(4, minmax(130px, 1fr));
@@ -549,7 +552,9 @@
   color: #3157ff;
 }
 
+/* 상단 분석 카드 3개 */
 .game-detail-chart-grid {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(230px, 1fr));
   gap: 16px;
@@ -806,20 +811,44 @@
   white-space: nowrap;
 }
 
+/* 하단 분석 카드 3개: 빈 공간이 생기지 않도록 같은 줄 3열 고정 */
 .game-detail-bottom-grid-fixed {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(230px, 1fr));
   gap: 16px;
   align-items: stretch;
+  margin-top: 0;
 }
 
-.game-detail-bottom-grid-fixed .game-detail-card {
+/* 하단 카드 크기 동일화 */
+.game-detail-bottom-grid-fixed > .game-detail-card {
+  width: 100%;
   min-width: 0;
   min-height: 255px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  margin: 0;
+  grid-column: auto;
+  grid-row: auto;
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+/* 특정 카드가 아래로 밀리는 기존 영향 제거 */
+.game-detail-bottom-grid-fixed > .topic-card,
+.game-detail-bottom-grid-fixed > .quick-summary-card,
+.game-detail-bottom-grid-fixed > .keyword-card,
+.game-detail-bottom-grid-fixed > .keyword-card.negative {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  grid-column: auto;
+  grid-row: auto;
+  align-self: stretch;
+  justify-self: stretch;
 }
 
 .game-detail-bottom-grid-fixed .game-detail-card-head {
@@ -891,6 +920,7 @@
 
 .game-detail-empty {
   flex: 1;
+  width: 100%;
   display: grid;
   place-items: center;
   margin: 0;
@@ -911,12 +941,12 @@
 
 .quick-summary-card li {
   position: relative;
-  margin-bottom: 11px;
-  padding-left: 19px;
+  margin-bottom: 12px;
+  padding-left: 20px;
   color: #334155;
   font-size: 13px;
   font-weight: 750;
-  line-height: 1.45;
+  line-height: 1.55;
   text-align: left;
   word-break: keep-all;
   overflow-wrap: break-word;
@@ -942,6 +972,7 @@
 
 .keyword-card.negative .game-detail-keyword-cloud {
   flex: 1;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: row;
@@ -972,6 +1003,7 @@
   writing-mode: horizontal-tb;
 }
 
+/* 다크 모드 */
 html.theme-dark .game-detail-header,
 html.theme-dark .game-detail-result-panel,
 html.theme-dark .game-detail-hero-card,
@@ -1073,6 +1105,7 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
   color: #94a3b8;
 }
 
+/* 반응형 */
 @media (max-width: 1500px) {
   .game-detail-page {
     max-width: 1400px;
@@ -1213,7 +1246,7 @@ html.theme-dark .game-detail-action-card button.secondary:disabled {
     grid-template-columns: 1fr;
   }
 
-  .game-detail-bottom-grid-fixed .game-detail-card {
+  .game-detail-bottom-grid-fixed > .game-detail-card {
     min-height: auto;
   }
 

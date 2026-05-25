@@ -1019,16 +1019,20 @@ function normalizeSentiment(
 }
 
 function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
-  return topicData
+  const normalizedTopics = topicData
     .map((topic, index) => {
-      const rawKeywords = getKeywords(topic)
-      const translatedKeywords = rawKeywords.map((keyword) => translateKeyword(keyword))
-      const backendTitle = getBackendTopicTitle(topic)
+      const rawKeywords = getUniqueStringList(getKeywords(topic))
+      const translatedKeywords = getUniqueStringList(
+        rawKeywords.map((keyword) => formatTopicLabel(keyword)),
+      )
 
-      const title =
+      const backendTitle = getBackendTopicTitle(topic)
+      const titleSource =
         backendTitle && !isGenericTopicName(backendTitle)
-          ? translateTopicTitle(backendTitle)
-          : createTopicTitle(translatedKeywords, rawKeywords, backendTitle, index)
+          ? backendTitle
+          : rawKeywords[0] ?? ''
+
+      const title = titleSource ? formatTopicLabel(titleSource) : '토픽 데이터 없음'
 
       const mentionRate =
         normalizeRatio(
@@ -1066,6 +1070,22 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
       }
     })
     .filter((topic) => topic.title !== '토픽 데이터 없음')
+
+  const seen = new Set<string>()
+  const uniqueTopics: TopicView[] = []
+
+  normalizedTopics.forEach((topic) => {
+    const dedupeKey = normalizeTopicDedupeKey(topic.title)
+
+    if (seen.has(dedupeKey)) {
+      return
+    }
+
+    seen.add(dedupeKey)
+    uniqueTopics.push(topic)
+  })
+
+  return uniqueTopics
 }
 
 function getBackendTopicTitle(topic: ApiRecord) {
@@ -1099,161 +1119,231 @@ function isGenericTopicName(value: string) {
     normalized.startsWith('topic ') ||
     normalized.startsWith('review topic ') ||
     normalized.startsWith('리뷰 토픽') ||
-    normalized.startsWith('토픽 ')
+    normalized.startsWith('토픽 ') ||
+    normalized.startsWith('주요 리뷰 토픽')
   )
 }
 
-function translateTopicTitle(value: string) {
-  const normalized = value.toLowerCase().trim()
+function formatTopicLabel(value: string) {
+  const original = value.trim()
 
-  const map: Record<string, string> = {
-    gameplay: '게임플레이',
-    play: '게임플레이',
-    combat: '전투',
-    battle: '전투',
-    boss: '보스전',
-    story: '스토리',
-    narrative: '스토리',
-    world: '세계관',
-    character: '캐릭터',
-    characters: '캐릭터',
-    graphics: '그래픽',
-    graphic: '그래픽',
-    visual: '그래픽',
-    visuals: '그래픽',
-    sound: '사운드',
-    music: '음악',
-    optimization: '최적화',
-    performance: '성능',
-    bug: '버그',
-    bugs: '버그',
-    server: '서버',
-    price: '가격',
-    dlc: 'DLC',
-    content: '콘텐츠',
-    difficulty: '난이도',
-    challenge: '도전성',
-    multiplayer: '멀티플레이',
-    coop: '협동',
-    'co-op': '협동',
+  if (!original) {
+    return ''
   }
 
-  return map[normalized] ?? value
+  const englishFromParentheses = extractParenthesesText(original)
+  const normalizedEnglish = normalizeTopicEnglishKey(englishFromParentheses || original)
+  const koreanFromOriginal = normalizeTopicKoreanKey(original)
+
+  const koreanName =
+    TOPIC_KO_MAP[normalizedEnglish] ??
+    TOPIC_KO_MAP[koreanFromOriginal] ??
+    getKoreanTopicNameFromOriginal(original)
+
+  const englishName =
+    TOPIC_EN_MAP[normalizedEnglish] ??
+    TOPIC_EN_MAP[koreanFromOriginal] ??
+    englishFromParentheses ??
+    getEnglishTopicNameFromOriginal(original)
+
+  if (koreanName && englishName) {
+    return `${koreanName} (${englishName})`
+  }
+
+  if (koreanName) {
+    return koreanName
+  }
+
+  if (englishName && englishName !== original) {
+    return `${original} (${englishName})`
+  }
+
+  return original
 }
 
-function createTopicTitle(
-  translatedKeywords: string[],
-  rawKeywords: string[],
-  backendTitle: string,
-  index: number,
-) {
-  const keywordSource = [...translatedKeywords, ...rawKeywords, backendTitle]
-    .join(' ')
+const TOPIC_KO_MAP: Record<string, string> = {
+  game: '게임',
+  gameplay: '게임플레이',
+  play: '플레이',
+  story: '스토리',
+  narrative: '스토리',
+  graphic: '그래픽',
+  graphics: '그래픽',
+  visual: '비주얼',
+  visuals: '비주얼',
+  combat: '전투',
+  battle: '전투',
+  boss: '보스전',
+  open: '오픈월드',
+  world: '세계관',
+  sound: '사운드',
+  music: '음악',
+  price: '가격',
+  value: '가격 만족도',
+  dlc: 'DLC',
+  bug: '버그',
+  bugs: '버그',
+  server: '서버',
+  optimization: '최적화',
+  performance: '성능',
+  difficulty: '난이도',
+  hard: '난이도',
+  easy: '난이도',
+  challenge: '도전성',
+  character: '캐릭터',
+  characters: '캐릭터',
+  fun: '재미',
+  coop: '협동',
+  'co-op': '협동',
+  friends: '협동',
+  online: '온라인',
+  multiplayer: '멀티플레이',
+  content: '콘텐츠',
+  camera: '카메라',
+  control: '조작감',
+  controls: '조작감',
+  quest: '퀘스트',
+  quests: '퀘스트',
+  map: '맵',
+  mission: '미션',
+  missions: '미션',
+  level: '레벨',
+  weapon: '무기',
+  weapons: '무기',
+  enemy: '적',
+  enemies: '적',
+  puzzle: '퍼즐',
+  puzzles: '퍼즐',
+  design: '디자인',
+  system: '시스템',
+  mode: '모드',
+  modes: '모드',
+  item: '아이템',
+  items: '아이템',
+  animation: '애니메이션',
+  ui: 'UI',
+  interface: '인터페이스',
+  balance: '밸런스',
+  replay: '반복 플레이',
+  grinding: '반복 플레이',
+  tutorial: '튜토리얼',
+}
+
+const TOPIC_EN_MAP: Record<string, string> = {
+  게임: 'game',
+  게임플레이: 'gameplay',
+  플레이: 'play',
+  스토리: 'story',
+  그래픽: 'graphics',
+  비주얼: 'visuals',
+  전투: 'combat',
+  보스전: 'boss',
+  오픈월드: 'open world',
+  세계관: 'world',
+  사운드: 'sound',
+  음악: 'music',
+  가격: 'price',
+  가격만족도: 'value',
+  dlc: 'dlc',
+  버그: 'bug',
+  서버: 'server',
+  최적화: 'optimization',
+  성능: 'performance',
+  난이도: 'difficulty',
+  도전성: 'challenge',
+  캐릭터: 'character',
+  재미: 'fun',
+  협동: 'co-op',
+  온라인: 'online',
+  멀티플레이: 'multiplayer',
+  콘텐츠: 'content',
+  카메라: 'camera',
+  조작감: 'controls',
+  퀘스트: 'quest',
+  맵: 'map',
+  미션: 'mission',
+  레벨: 'level',
+  무기: 'weapon',
+  적: 'enemy',
+  퍼즐: 'puzzle',
+  디자인: 'design',
+  시스템: 'system',
+  모드: 'mode',
+  아이템: 'item',
+  애니메이션: 'animation',
+  ui: 'ui',
+  인터페이스: 'interface',
+  밸런스: 'balance',
+  반복플레이: 'replay',
+  튜토리얼: 'tutorial',
+}
+
+function extractParenthesesText(value: string) {
+  const matched = value.match(/\(([^)]+)\)/)
+
+  if (!matched?.[1]) {
+    return ''
+  }
+
+  return matched[1].trim()
+}
+
+function normalizeTopicEnglishKey(value: string) {
+  return value
     .toLowerCase()
+    .replace(/[_-]/g, ' ')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
-  if (!keywordSource.trim()) {
-    return '토픽 데이터 없음'
+function normalizeTopicKoreanKey(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, '')
+    .replace(/[^a-z가-힣0-9]/g, '')
+    .trim()
+}
+
+function getKoreanTopicNameFromOriginal(value: string) {
+  const koreanOnly = value
+    .replace(/\([^)]*\)/g, '')
+    .replace(/[^가-힣A-Za-z0-9\s]/g, '')
+    .trim()
+
+  if (!koreanOnly) {
+    return ''
   }
 
-  if (
-    keywordSource.includes('게임플레이') ||
-    keywordSource.includes('gameplay') ||
-    keywordSource.includes('play') ||
-    keywordSource.includes('전투') ||
-    keywordSource.includes('combat') ||
-    keywordSource.includes('battle') ||
-    keywordSource.includes('boss') ||
-    keywordSource.includes('보스')
-  ) {
-    return '게임플레이/전투'
+  const compacted = koreanOnly.replace(/\s+/g, '')
+
+  if (TOPIC_EN_MAP[compacted.toLowerCase()]) {
+    return koreanOnly
   }
 
-  if (
-    keywordSource.includes('스토리') ||
-    keywordSource.includes('story') ||
-    keywordSource.includes('narrative') ||
-    keywordSource.includes('세계관') ||
-    keywordSource.includes('world') ||
-    keywordSource.includes('캐릭터') ||
-    keywordSource.includes('character')
-  ) {
-    return '스토리/세계관'
+  return ''
+}
+
+function getEnglishTopicNameFromOriginal(value: string) {
+  const normalized = normalizeTopicEnglishKey(value)
+
+  if (TOPIC_KO_MAP[normalized]) {
+    return normalized
   }
 
-  if (
-    keywordSource.includes('그래픽') ||
-    keywordSource.includes('graphic') ||
-    keywordSource.includes('graphics') ||
-    keywordSource.includes('visual') ||
-    keywordSource.includes('사운드') ||
-    keywordSource.includes('sound') ||
-    keywordSource.includes('음악') ||
-    keywordSource.includes('music')
-  ) {
-    return '그래픽/사운드'
-  }
+  return ''
+}
 
-  if (
-    keywordSource.includes('최적화') ||
-    keywordSource.includes('optimization') ||
-    keywordSource.includes('성능') ||
-    keywordSource.includes('performance') ||
-    keywordSource.includes('버그') ||
-    keywordSource.includes('bug') ||
-    keywordSource.includes('server') ||
-    keywordSource.includes('서버') ||
-    keywordSource.includes('crash') ||
-    keywordSource.includes('lag')
-  ) {
-    return '최적화/성능'
-  }
+function normalizeTopicDedupeKey(title: string) {
+  const english = extractParenthesesText(title)
+  const source = english || title
 
-  if (
-    keywordSource.includes('가격') ||
-    keywordSource.includes('price') ||
-    keywordSource.includes('dlc') ||
-    keywordSource.includes('콘텐츠') ||
-    keywordSource.includes('content') ||
-    keywordSource.includes('value')
-  ) {
-    return '가격/콘텐츠'
-  }
-
-  if (
-    keywordSource.includes('난이도') ||
-    keywordSource.includes('difficulty') ||
-    keywordSource.includes('challenge') ||
-    keywordSource.includes('hard') ||
-    keywordSource.includes('easy')
-  ) {
-    return '난이도/도전성'
-  }
-
-  if (
-    keywordSource.includes('멀티') ||
-    keywordSource.includes('multiplayer') ||
-    keywordSource.includes('협동') ||
-    keywordSource.includes('coop') ||
-    keywordSource.includes('co-op') ||
-    keywordSource.includes('friends') ||
-    keywordSource.includes('online')
-  ) {
-    return '멀티플레이/협동'
-  }
-
-  const firstKeyword = translatedKeywords.find((keyword) => keyword && keyword !== '키워드 없음')
-
-  if (firstKeyword) {
-    return `${firstKeyword} 관련 반응`
-  }
-
-  const rawFirstKeyword = rawKeywords.find((keyword) => keyword)
-
-  if (rawFirstKeyword) {
-    return `${rawFirstKeyword} 관련 반응`
-  }
-
-  return `주요 리뷰 토픽 ${index + 1}`
+  return source
+    .toLowerCase()
+    .replace(/[_-]/g, ' ')
+    .replace(/[^a-z가-힣0-9\s]/g, '')
+    .replace(/\s+/g, '')
+    .trim()
 }
 
 function normalizeTrendPoints(
@@ -1532,61 +1622,32 @@ function normalizeKeywordCandidate(value: unknown): string[] {
   return []
 }
 
-function getNegativeKeywords() {
-  return ['어렵다', '버그', '불편하다', '난이도', '반복적', '카메라', '가이드 부족']
+function getUniqueStringList(values: string[]) {
+  const seen = new Set<string>()
+  const result: string[] = []
+
+  values.forEach((value) => {
+    const normalized = value.trim()
+
+    if (!normalized) {
+      return
+    }
+
+    const key = normalized.toLowerCase().replace(/\s+/g, '')
+
+    if (seen.has(key)) {
+      return
+    }
+
+    seen.add(key)
+    result.push(normalized)
+  })
+
+  return result
 }
 
-function translateKeyword(keyword: string) {
-  const normalized = keyword.toLowerCase().trim()
-
-  const dictionary: Record<string, string> = {
-    game: '게임',
-    gameplay: '게임플레이',
-    play: '플레이',
-    story: '스토리',
-    narrative: '스토리',
-    graphic: '그래픽',
-    graphics: '그래픽',
-    visual: '그래픽',
-    visuals: '그래픽',
-    combat: '전투',
-    battle: '전투',
-    boss: '보스전',
-    open: '오픈월드',
-    world: '세계관',
-    sound: '사운드',
-    music: '음악',
-    price: '가격',
-    value: '가격 만족도',
-    dlc: 'DLC',
-    bug: '버그',
-    bugs: '버그',
-    server: '서버',
-    optimization: '최적화',
-    performance: '성능',
-    difficulty: '난이도',
-    hard: '난이도',
-    challenge: '도전성',
-    character: '캐릭터',
-    characters: '캐릭터',
-    fun: '재미',
-    coop: '협동',
-    'co-op': '협동',
-    friends: '협동',
-    online: '온라인',
-    multiplayer: '멀티플레이',
-    content: '콘텐츠',
-    camera: '카메라',
-    control: '조작감',
-    controls: '조작감',
-    quest: '퀘스트',
-    quests: '퀘스트',
-    map: '맵',
-    mission: '미션',
-    missions: '미션',
-  }
-
-  return dictionary[normalized] ?? keyword
+function getNegativeKeywords() {
+  return ['어렵다', '버그', '불편하다', '난이도', '반복적', '카메라', '가이드 부족']
 }
 
 function formatSteamPrice(price: number) {

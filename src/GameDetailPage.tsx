@@ -1019,65 +1019,86 @@ function normalizeSentiment(
 }
 
 function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
-  return topicData.map((topic, index) => {
-    const rawKeywords = getKeywords(topic)
-    const translatedKeywords = rawKeywords.map((keyword) => translateKeyword(keyword))
-    const backendTitle = getBackendTopicTitle(topic)
+  return topicData
+    .map((topic, index) => {
+      const rawKeywords = getKeywords(topic)
+      const translatedKeywords = rawKeywords.map((keyword) => translateKeyword(keyword))
+      const backendTitle = getBackendTopicTitle(topic)
 
-    const title =
-      backendTitle && !isGenericTopicName(backendTitle)
-        ? translateTopicTitle(backendTitle)
-        : createTopicTitle(translatedKeywords, backendTitle, index)
+      const title =
+        backendTitle && !isGenericTopicName(backendTitle)
+          ? translateTopicTitle(backendTitle)
+          : createTopicTitle(translatedKeywords, rawKeywords, backendTitle, index)
 
-    const mentionRate =
-      normalizeRatio(
-        topic.mention_rate ??
-          topic.weight_percent ??
-          topic.percentage ??
-          topic.percent ??
-          topic.ratio ??
-          topic.weight,
-      ) || Math.max(8, 28 - index * 4)
+      const mentionRate =
+        normalizeRatio(
+          topic.mention_rate ??
+            topic.weight_percent ??
+            topic.percentage ??
+            topic.percent ??
+            topic.ratio ??
+            topic.weight ??
+            topic.probability ??
+            topic.score,
+        ) || Math.max(8, 28 - index * 4)
 
-    const positiveRate = normalizeRatio(topic.positive_ratio ?? topic.positive_rate)
+      const positiveRate = normalizeRatio(
+        topic.positive_ratio ??
+          topic.positive_rate ??
+          topic.positiveRate ??
+          topic.sentiment_score,
+      )
 
-    return {
-      id: String(topic.topic_id ?? topic.id ?? index),
-      title,
-      keywords: translatedKeywords.length > 0 ? translatedKeywords : ['키워드 없음'],
-      mentionRate,
-      positiveRate,
-      sentimentLabel:
-        positiveRate >= 70
-          ? '매우 긍정'
-          : positiveRate >= 50
-            ? '긍정'
-            : positiveRate > 0
-              ? '혼합'
-              : '분석 중',
-    }
-  })
+      return {
+        id: String(topic.topic_id ?? topic.id ?? topic.topic_no ?? index),
+        title,
+        keywords: translatedKeywords.length > 0 ? translatedKeywords : ['키워드 없음'],
+        mentionRate,
+        positiveRate,
+        sentimentLabel:
+          positiveRate >= 70
+            ? '매우 긍정'
+            : positiveRate >= 50
+              ? '긍정'
+              : positiveRate > 0
+                ? '혼합'
+                : '분석 중',
+      }
+    })
+    .filter((topic) => topic.title !== '토픽 데이터 없음')
 }
 
 function getBackendTopicTitle(topic: ApiRecord) {
-  return String(
+  const value =
+    topic.topic_name ??
+    topic.topic_title ??
     topic.title ??
-      topic.topic_title ??
-      topic.topic_name ??
-      topic.topic ??
-      topic.name ??
-      '',
-  ).trim()
+    topic.name ??
+    topic.label ??
+    topic.cluster_name ??
+    topic.category ??
+    topic.topic
+
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  return String(value).trim()
 }
 
 function isGenericTopicName(value: string) {
-  const normalized = value.toLowerCase().trim()
+  const normalized = value.toLowerCase().trim().replace(/\s+/g, ' ')
 
   return (
     normalized === '' ||
     normalized === 'topic' ||
+    normalized === 'topics' ||
+    normalized === 'review topic' ||
+    normalized === 'review topics' ||
     normalized.startsWith('topic_') ||
     normalized.startsWith('topic ') ||
+    normalized.startsWith('review topic ') ||
+    normalized.startsWith('리뷰 토픽') ||
     normalized.startsWith('토픽 ')
   )
 }
@@ -1087,97 +1108,152 @@ function translateTopicTitle(value: string) {
 
   const map: Record<string, string> = {
     gameplay: '게임플레이',
+    play: '게임플레이',
     combat: '전투',
+    battle: '전투',
+    boss: '보스전',
     story: '스토리',
+    narrative: '스토리',
+    world: '세계관',
+    character: '캐릭터',
+    characters: '캐릭터',
     graphics: '그래픽',
     graphic: '그래픽',
+    visual: '그래픽',
+    visuals: '그래픽',
     sound: '사운드',
     music: '음악',
     optimization: '최적화',
     performance: '성능',
+    bug: '버그',
+    bugs: '버그',
+    server: '서버',
     price: '가격',
+    dlc: 'DLC',
     content: '콘텐츠',
     difficulty: '난이도',
+    challenge: '도전성',
     multiplayer: '멀티플레이',
     coop: '협동',
+    'co-op': '협동',
   }
 
   return map[normalized] ?? value
 }
 
-function createTopicTitle(keywords: string[], backendTitle: string, index: number) {
-  const source = `${keywords.join(' ')} ${backendTitle}`.toLowerCase()
+function createTopicTitle(
+  translatedKeywords: string[],
+  rawKeywords: string[],
+  backendTitle: string,
+  index: number,
+) {
+  const keywordSource = [...translatedKeywords, ...rawKeywords, backendTitle]
+    .join(' ')
+    .toLowerCase()
 
-  if (source.includes('전투') || source.includes('combat') || source.includes('boss')) {
+  if (!keywordSource.trim()) {
+    return '토픽 데이터 없음'
+  }
+
+  if (
+    keywordSource.includes('게임플레이') ||
+    keywordSource.includes('gameplay') ||
+    keywordSource.includes('play') ||
+    keywordSource.includes('전투') ||
+    keywordSource.includes('combat') ||
+    keywordSource.includes('battle') ||
+    keywordSource.includes('boss') ||
+    keywordSource.includes('보스')
+  ) {
     return '게임플레이/전투'
   }
 
   if (
-    source.includes('스토리') ||
-    source.includes('story') ||
-    source.includes('세계관') ||
-    source.includes('world') ||
-    source.includes('캐릭터') ||
-    source.includes('character')
+    keywordSource.includes('스토리') ||
+    keywordSource.includes('story') ||
+    keywordSource.includes('narrative') ||
+    keywordSource.includes('세계관') ||
+    keywordSource.includes('world') ||
+    keywordSource.includes('캐릭터') ||
+    keywordSource.includes('character')
   ) {
     return '스토리/세계관'
   }
 
   if (
-    source.includes('그래픽') ||
-    source.includes('graphic') ||
-    source.includes('사운드') ||
-    source.includes('sound') ||
-    source.includes('음악') ||
-    source.includes('music')
+    keywordSource.includes('그래픽') ||
+    keywordSource.includes('graphic') ||
+    keywordSource.includes('graphics') ||
+    keywordSource.includes('visual') ||
+    keywordSource.includes('사운드') ||
+    keywordSource.includes('sound') ||
+    keywordSource.includes('음악') ||
+    keywordSource.includes('music')
   ) {
     return '그래픽/사운드'
   }
 
   if (
-    source.includes('최적화') ||
-    source.includes('optimization') ||
-    source.includes('성능') ||
-    source.includes('performance') ||
-    source.includes('버그') ||
-    source.includes('bug') ||
-    source.includes('server')
+    keywordSource.includes('최적화') ||
+    keywordSource.includes('optimization') ||
+    keywordSource.includes('성능') ||
+    keywordSource.includes('performance') ||
+    keywordSource.includes('버그') ||
+    keywordSource.includes('bug') ||
+    keywordSource.includes('server') ||
+    keywordSource.includes('서버') ||
+    keywordSource.includes('crash') ||
+    keywordSource.includes('lag')
   ) {
     return '최적화/성능'
   }
 
   if (
-    source.includes('가격') ||
-    source.includes('price') ||
-    source.includes('dlc') ||
-    source.includes('콘텐츠') ||
-    source.includes('content')
+    keywordSource.includes('가격') ||
+    keywordSource.includes('price') ||
+    keywordSource.includes('dlc') ||
+    keywordSource.includes('콘텐츠') ||
+    keywordSource.includes('content') ||
+    keywordSource.includes('value')
   ) {
     return '가격/콘텐츠'
   }
 
   if (
-    source.includes('난이도') ||
-    source.includes('difficulty') ||
-    source.includes('challenge')
+    keywordSource.includes('난이도') ||
+    keywordSource.includes('difficulty') ||
+    keywordSource.includes('challenge') ||
+    keywordSource.includes('hard') ||
+    keywordSource.includes('easy')
   ) {
     return '난이도/도전성'
   }
 
   if (
-    source.includes('멀티') ||
-    source.includes('협동') ||
-    source.includes('coop') ||
-    source.includes('friends')
+    keywordSource.includes('멀티') ||
+    keywordSource.includes('multiplayer') ||
+    keywordSource.includes('협동') ||
+    keywordSource.includes('coop') ||
+    keywordSource.includes('co-op') ||
+    keywordSource.includes('friends') ||
+    keywordSource.includes('online')
   ) {
     return '멀티플레이/협동'
   }
 
-  if (keywords.length > 0 && keywords[0] !== '키워드 없음') {
-    return `${keywords[0]} 관련 반응`
+  const firstKeyword = translatedKeywords.find((keyword) => keyword && keyword !== '키워드 없음')
+
+  if (firstKeyword) {
+    return `${firstKeyword} 관련 반응`
   }
 
-  return `리뷰 토픽 ${index + 1}`
+  const rawFirstKeyword = rawKeywords.find((keyword) => keyword)
+
+  if (rawFirstKeyword) {
+    return `${rawFirstKeyword} 관련 반응`
+  }
+
+  return `주요 리뷰 토픽 ${index + 1}`
 }
 
 function normalizeTrendPoints(
@@ -1354,11 +1430,102 @@ function getKeywords(topic: ApiRecord) {
     topic.topKeywords,
     topic.words,
     topic.terms,
+    topic.keyword_list,
+    topic.keywordList,
+    topic.representative_words,
+    topic.representativeWords,
+    topic.topic_words,
+    topic.topicWords,
   ]
 
   for (const candidate of candidates) {
-    if (Array.isArray(candidate) && candidate.length > 0) {
-      return candidate.map((keyword) => String(keyword))
+    const keywords = normalizeKeywordCandidate(candidate)
+
+    if (keywords.length > 0) {
+      return keywords
+    }
+  }
+
+  return []
+}
+
+function normalizeKeywordCandidate(value: unknown): string[] {
+  if (value === null || value === undefined) {
+    return []
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => {
+        if (typeof item === 'string' || typeof item === 'number') {
+          return String(item)
+        }
+
+        if (isRecord(item)) {
+          const word =
+            item.keyword ??
+            item.word ??
+            item.term ??
+            item.name ??
+            item.label ??
+            item.text
+
+          if (word !== null && word !== undefined) {
+            return String(word)
+          }
+        }
+
+        return ''
+      })
+      .map((keyword) => keyword.trim())
+      .filter(Boolean)
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+
+    if (!trimmed) {
+      return []
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed)
+      const parsedKeywords = normalizeKeywordCandidate(parsed)
+
+      if (parsedKeywords.length > 0) {
+        return parsedKeywords
+      }
+    } catch {
+      // JSON 문자열이 아니면 일반 문자열로 처리
+    }
+
+    return trimmed
+      .replace(/^\[|\]$/g, '')
+      .split(/[,|/]/)
+      .map((keyword) =>
+        keyword
+          .replace(/^['"]|['"]$/g, '')
+          .replace(/^\(|\)$/g, '')
+          .trim(),
+      )
+      .filter(Boolean)
+  }
+
+  if (typeof value === 'number') {
+    return [String(value)]
+  }
+
+  if (isRecord(value)) {
+    const word =
+      value.keyword ??
+      value.word ??
+      value.term ??
+      value.name ??
+      value.label ??
+      value.text
+
+    if (word !== null && word !== undefined) {
+      return [String(word).trim()].filter(Boolean)
     }
   }
 
@@ -1375,16 +1542,22 @@ function translateKeyword(keyword: string) {
   const dictionary: Record<string, string> = {
     game: '게임',
     gameplay: '게임플레이',
+    play: '플레이',
     story: '스토리',
+    narrative: '스토리',
     graphic: '그래픽',
     graphics: '그래픽',
+    visual: '그래픽',
+    visuals: '그래픽',
     combat: '전투',
+    battle: '전투',
     boss: '보스전',
     open: '오픈월드',
     world: '세계관',
     sound: '사운드',
     music: '음악',
     price: '가격',
+    value: '가격 만족도',
     dlc: 'DLC',
     bug: '버그',
     bugs: '버그',
@@ -1392,12 +1565,25 @@ function translateKeyword(keyword: string) {
     optimization: '최적화',
     performance: '성능',
     difficulty: '난이도',
+    hard: '난이도',
+    challenge: '도전성',
     character: '캐릭터',
+    characters: '캐릭터',
     fun: '재미',
     coop: '협동',
+    'co-op': '협동',
     friends: '협동',
+    online: '온라인',
+    multiplayer: '멀티플레이',
     content: '콘텐츠',
-    challenge: '도전성',
+    camera: '카메라',
+    control: '조작감',
+    controls: '조작감',
+    quest: '퀘스트',
+    quests: '퀘스트',
+    map: '맵',
+    mission: '미션',
+    missions: '미션',
   }
 
   return dictionary[normalized] ?? keyword

@@ -85,9 +85,12 @@ type ReviewInsight = {
   negativeSummary: string
 }
 
-type KeywordBubble = {
-  label: string
-  size: number
+type TopicReliabilityView = {
+  reliability: string
+  sampleSize: number
+  minSampleSize: number
+  warning: string
+  topicCount: number
 }
 
 const USD_TO_KRW = 1350
@@ -294,6 +297,10 @@ function GameDetailPage() {
 
   const topics = useMemo(() => {
     return normalizeTopics(topicData)
+  }, [topicData])
+
+  const topicReliability = useMemo(() => {
+    return normalizeTopicReliability(topicData)
   }, [topicData])
 
   const trendPoints = useMemo(() => {
@@ -795,17 +802,9 @@ function GameDetailPage() {
               </ul>
             </article>
 
-            <KeywordBubbleCard
-              title="부정 리뷰 키워드"
-              type="negative"
-              keywords={getNegativeKeywords()}
-            />
+            <TopicReliabilityCard reliability={topicReliability} />
 
-            <KeywordBubbleCard
-              title="긍정 리뷰 키워드"
-              type="positive"
-              keywords={getPositiveKeywords()}
-            />
+            <SentimentSummaryCard sentiment={sentiment} />
           </section>
         </div>
       </section>
@@ -871,35 +870,92 @@ function SentimentRow({
   )
 }
 
-function KeywordBubbleCard({
-  title,
-  type,
-  keywords,
-}: {
-  title: string
-  type: 'positive' | 'negative'
-  keywords: KeywordBubble[]
-}) {
+function TopicReliabilityCard({ reliability }: { reliability: TopicReliabilityView }) {
   return (
-    <article className={`game-detail-card keyword-bubble-card ${type}`}>
+    <article className="game-detail-card topic-reliability-card">
       <div className="game-detail-card-head">
-        <h3>{title}</h3>
+        <h3>토픽 신뢰도</h3>
       </div>
 
-      <div className="keyword-bubble-cloud">
-        {keywords.map((keyword) => (
-          <span
-            key={keyword.label}
-            style={{
-              width: `${keyword.size}px`,
-              height: `${keyword.size}px`,
-            }}
-          >
-            {keyword.label}
-          </span>
-        ))}
+      <div className="topic-reliability-list">
+        <InfoRow label="신뢰도" value={reliability.reliability} highlight />
+        <InfoRow
+          label="샘플 수"
+          value={reliability.sampleSize > 0 ? formatNumber(reliability.sampleSize) : '제공 없음'}
+        />
+        <InfoRow
+          label="최소 기준"
+          value={
+            reliability.minSampleSize > 0
+              ? formatNumber(reliability.minSampleSize)
+              : '제공 없음'
+          }
+        />
+        <InfoRow label="그룹 수" value={`${reliability.topicCount}개`} />
+        <InfoRow label="경고" value={reliability.warning} />
       </div>
     </article>
+  )
+}
+
+function SentimentSummaryCard({ sentiment }: { sentiment: SentimentView }) {
+  return (
+    <article className="game-detail-card sentiment-summary-card">
+      <div className="game-detail-card-head">
+        <h3>감성 비율 요약</h3>
+      </div>
+
+      <div className="sentiment-summary-list">
+        <SentimentSummaryRow label="긍정" value={sentiment.positive} type="positive" />
+        <SentimentSummaryRow label="중립" value={sentiment.neutral} type="neutral" />
+        <SentimentSummaryRow label="부정" value={sentiment.negative} type="negative" />
+      </div>
+
+      <div className="sentiment-summary-total">
+        <span>총 리뷰</span>
+        <strong>{formatNumber(sentiment.totalCount)}</strong>
+      </div>
+    </article>
+  )
+}
+
+function InfoRow({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string
+  value: string
+  highlight?: boolean
+}) {
+  return (
+    <div className="info-row">
+      <span>{label}</span>
+      <strong className={highlight ? 'highlight' : ''}>{value}</strong>
+    </div>
+  )
+}
+
+function SentimentSummaryRow({
+  label,
+  value,
+  type,
+}: {
+  label: string
+  value: number
+  type: 'positive' | 'neutral' | 'negative'
+}) {
+  return (
+    <div className={`sentiment-summary-row ${type}`}>
+      <div>
+        <span>{label}</span>
+        <strong>{value.toFixed(1)}%</strong>
+      </div>
+
+      <div className="sentiment-summary-track">
+        <i style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+      </div>
+    </div>
   )
 }
 
@@ -992,22 +1048,38 @@ function normalizeSentiment(
           sentimentData.neutralRate,
       ) || Math.max(0, 100 - positive - negative)
 
+    const positiveCount = toNumber(
+      sentimentData.positive ??
+        sentimentData.positive_reviews ??
+        sentimentData.positive_count ??
+        selectedGame?.positiveReviews,
+    )
+
+    const neutralCount = toNumber(
+      sentimentData.neutral ?? sentimentData.neutral_reviews ?? sentimentData.neutral_count,
+    )
+
+    const negativeCount = toNumber(
+      sentimentData.negative ??
+        sentimentData.negative_reviews ??
+        sentimentData.negative_count ??
+        selectedGame?.negativeReviews,
+    )
+
+    const totalCount =
+      toNumber(sentimentData.total ?? sentimentData.total_reviews ?? sentimentData.total_count) ||
+      positiveCount + neutralCount + negativeCount ||
+      selectedGame?.totalReviews ||
+      0
+
     return {
       positive,
       neutral,
       negative,
-      positiveCount: toNumber(
-        sentimentData.positive ??
-          sentimentData.positive_reviews ??
-          selectedGame?.positiveReviews,
-      ),
-      neutralCount: toNumber(sentimentData.neutral ?? sentimentData.neutral_reviews),
-      negativeCount: toNumber(
-        sentimentData.negative ??
-          sentimentData.negative_reviews ??
-          selectedGame?.negativeReviews,
-      ),
-      totalCount: toNumber(sentimentData.total ?? selectedGame?.totalReviews),
+      positiveCount,
+      neutralCount,
+      negativeCount,
+      totalCount,
     }
   }
 
@@ -1079,6 +1151,31 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
       }
     })
     .filter((topic) => topic.keywords.length > 0)
+}
+
+function normalizeTopicReliability(topicData: ApiRecord[]): TopicReliabilityView {
+  const firstTopic = topicData[0]
+
+  if (!firstTopic) {
+    return {
+      reliability: '제공 없음',
+      sampleSize: 0,
+      minSampleSize: 0,
+      warning: '토픽 데이터 없음',
+      topicCount: 0,
+    }
+  }
+
+  return {
+    reliability: String(firstTopic.reliability ?? firstTopic.quality ?? '제공 없음'),
+    sampleSize: toNumber(firstTopic.sample_size ?? firstTopic.sampleSize),
+    minSampleSize: toNumber(firstTopic.min_sample_size ?? firstTopic.minSampleSize),
+    warning:
+      firstTopic.warning === null || firstTopic.warning === undefined || firstTopic.warning === ''
+        ? '없음'
+        : String(firstTopic.warning),
+    topicCount: topicData.length,
+  }
 }
 
 function formatTopicLabel(value: string) {
@@ -1773,30 +1870,6 @@ function getUniqueStringList(values: string[]) {
   })
 
   return result
-}
-
-function getNegativeKeywords(): KeywordBubble[] {
-  return [
-    { label: '버그', size: 82 },
-    { label: '어렵다', size: 76 },
-    { label: '불편하다', size: 72 },
-    { label: '난이도', size: 66 },
-    { label: '반복적', size: 62 },
-    { label: '카메라', size: 58 },
-    { label: '가이드 부족', size: 70 },
-  ]
-}
-
-function getPositiveKeywords(): KeywordBubble[] {
-  return [
-    { label: '재미', size: 86 },
-    { label: '몰입감', size: 78 },
-    { label: '플레이', size: 74 },
-    { label: '스토리', size: 66 },
-    { label: '전투', size: 62 },
-    { label: '그래픽', size: 60 },
-    { label: '높은 만족도', size: 72 },
-  ]
 }
 
 function formatSteamPrice(price: number) {

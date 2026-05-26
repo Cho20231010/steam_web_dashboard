@@ -563,7 +563,7 @@ function GameDetailPage() {
                 <MetaItem label="메타스코어" value={selectedGame.metacriticScore} />
                 <MetaItem
                   label="평가"
-                  value={`긍정적 (${selectedGame.positiveRate.toFixed(1)}%)`}
+                  value={`매우 긍정적 (${selectedGame.positiveRate.toFixed(1)}%)`}
                   positive
                 />
               </div>
@@ -594,13 +594,13 @@ function GameDetailPage() {
             <SummaryCard
               title="긍정 비율"
               value={`${sentiment.positive.toFixed(1)}%`}
-              description="Steam 긍정/부정 리뷰 기준"
+              description="선택 게임 기준"
               type="positive"
             />
             <SummaryCard
               title="총 리뷰 수"
               value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
-              description="positive_reviews + negative_reviews"
+              description="긍정/중립/부정 합산 우선"
               type="blue"
             />
             <SummaryCard
@@ -1027,27 +1027,12 @@ function normalizeSentiment(
   sentimentData: ApiRecord | null,
   selectedGame: GameDetailView | null,
 ): SentimentView {
-  const selectedPositive = selectedGame?.positiveReviews ?? 0
-  const selectedNegative = selectedGame?.negativeReviews ?? 0
-  const selectedTotal = selectedPositive + selectedNegative
-
-  if (selectedTotal > 0) {
-    return {
-      positive: (selectedPositive / selectedTotal) * 100,
-      neutral: 0,
-      negative: (selectedNegative / selectedTotal) * 100,
-      positiveCount: selectedPositive,
-      neutralCount: 0,
-      negativeCount: selectedNegative,
-      totalCount: selectedTotal,
-    }
-  }
-
   if (sentimentData) {
     const positiveCount = toNumber(
       sentimentData.positive_count ??
         sentimentData.positive_reviews ??
-        sentimentData.positive,
+        sentimentData.positive ??
+        selectedGame?.positiveReviews,
     )
 
     const neutralCount = toNumber(
@@ -1057,7 +1042,8 @@ function normalizeSentiment(
     const negativeCount = toNumber(
       sentimentData.negative_count ??
         sentimentData.negative_reviews ??
-        sentimentData.negative,
+        sentimentData.negative ??
+        selectedGame?.negativeReviews,
     )
 
     const calculatedTotal = positiveCount + neutralCount + negativeCount
@@ -1068,21 +1054,22 @@ function normalizeSentiment(
         sentimentData.total,
     )
 
-    const totalCount = calculatedTotal > 0 ? calculatedTotal : apiTotal
+    const totalCount =
+      calculatedTotal > 0 ? calculatedTotal : apiTotal || selectedGame?.totalReviews || 0
 
     const positive =
       normalizeRatio(
         sentimentData.positive_ratio ??
           sentimentData.positive_rate ??
           sentimentData.positiveRate,
-      ) || (totalCount > 0 ? (positiveCount / totalCount) * 100 : 0)
+      ) || (totalCount > 0 ? (positiveCount / totalCount) * 100 : selectedGame?.positiveRate || 0)
 
     const negative =
       normalizeRatio(
         sentimentData.negative_ratio ??
           sentimentData.negative_rate ??
           sentimentData.negativeRate,
-      ) || (totalCount > 0 ? (negativeCount / totalCount) * 100 : 0)
+      ) || (totalCount > 0 ? (negativeCount / totalCount) * 100 : selectedGame?.negativeRate || 0)
 
     const neutral =
       normalizeRatio(
@@ -1102,14 +1089,26 @@ function normalizeSentiment(
     }
   }
 
+  if (!selectedGame) {
+    return {
+      positive: 0,
+      neutral: 0,
+      negative: 0,
+      positiveCount: 0,
+      neutralCount: 0,
+      negativeCount: 0,
+      totalCount: 0,
+    }
+  }
+
   return {
-    positive: 0,
-    neutral: 0,
-    negative: 0,
-    positiveCount: 0,
+    positive: selectedGame.positiveRate,
+    negative: selectedGame.negativeRate,
+    neutral: Math.max(0, 100 - selectedGame.positiveRate - selectedGame.negativeRate),
+    positiveCount: selectedGame.positiveReviews,
+    negativeCount: selectedGame.negativeReviews,
     neutralCount: 0,
-    negativeCount: 0,
-    totalCount: 0,
+    totalCount: selectedGame.positiveReviews + selectedGame.negativeReviews || selectedGame.totalReviews,
   }
 }
 
@@ -1524,7 +1523,12 @@ const TOPIC_EN_MAP: Record<string, string> = {
 
 function extractParenthesesText(value: string) {
   const matched = value.match(/\(([^)]+)\)/)
-  return matched?.[1]?.trim() ?? ''
+
+  if (!matched?.[1]) {
+    return ''
+  }
+
+  return matched[1].trim()
 }
 
 function normalizeTopicEnglishKey(value: string) {
@@ -1650,7 +1654,12 @@ function createQuickSummaryItems(
 
 function compactSentence(text: string) {
   const cleaned = text.replace(/\s+/g, ' ').trim()
-  return cleaned.length <= 42 ? cleaned : `${cleaned.slice(0, 42)}...`
+
+  if (cleaned.length <= 42) {
+    return cleaned
+  }
+
+  return `${cleaned.slice(0, 42)}...`
 }
 
 function getGameId(game: ApiRecord) {

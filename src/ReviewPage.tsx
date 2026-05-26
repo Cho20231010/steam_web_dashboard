@@ -4,9 +4,6 @@ import './ReviewPage.css'
 type GameOption = {
   id: number
   name: string
-  positiveReviews: number
-  negativeReviews: number
-  reviewCount: number
 }
 
 type SentimentSummary = {
@@ -144,29 +141,6 @@ function ReviewPage() {
     }
   }, [])
 
-  const selectedGameFallback = useMemo(() => {
-    if (selectedTarget === 'all') {
-      const positiveReviews = games.reduce((sum, game) => sum + game.positiveReviews, 0)
-      const negativeReviews = games.reduce((sum, game) => sum + game.negativeReviews, 0)
-
-      return {
-        positive_reviews: positiveReviews,
-        negative_reviews: negativeReviews,
-      }
-    }
-
-    const selectedGame = games.find((game) => String(game.id) === selectedTarget)
-
-    if (!selectedGame) {
-      return null
-    }
-
-    return {
-      positive_reviews: selectedGame.positiveReviews,
-      negative_reviews: selectedGame.negativeReviews,
-    }
-  }, [games, selectedTarget])
-
   useEffect(() => {
     let cancelled = false
 
@@ -175,24 +149,26 @@ function ReviewPage() {
       setError('')
 
       try {
-        const [sentimentRaw, topicsRaw, insightsRaw] =
+        const [sentimentRaw, topicsRaw, insightsRaw, detailRaw] =
           selectedTarget === 'all'
             ? await Promise.all([
                 fetchJson('/analysis/sentiment'),
                 fetchJson('/analysis/topics'),
+                Promise.resolve(null),
                 Promise.resolve(null),
               ])
             : await Promise.all([
                 fetchJson(`/games/${selectedTarget}/sentiment`),
                 fetchJson(`/games/${selectedTarget}/topics`),
                 fetchJson(`/games/${selectedTarget}/reviews/insights`).catch(() => null),
+                fetchJson(`/games/${selectedTarget}`).catch(() => null),
               ])
 
         if (cancelled) {
           return
         }
 
-        const parsedSummary = parseSentimentSummary(sentimentRaw, selectedGameFallback)
+        const parsedSummary = parseSentimentSummary(sentimentRaw, detailRaw)
         const parsedTopics = parseTopics(topicsRaw).slice(0, 5)
         const parsedInsights = parseInsightTexts(insightsRaw, parsedSummary, parsedTopics)
 
@@ -223,7 +199,7 @@ function ReviewPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedTarget, selectedPeriod, selectedGameFallback])
+  }, [selectedTarget, selectedPeriod])
 
   const selectedGameName = useMemo(() => {
     if (selectedTarget === 'all') {
@@ -307,7 +283,7 @@ function ReviewPage() {
           <strong className="review-summary-value positive">
             {loading ? '-' : formatPercent(summary.positiveRate)}
           </strong>
-          <span className="review-summary-sub">Steam 긍정 리뷰 비중</span>
+          <span className="review-summary-sub">긍정 리뷰 비중</span>
         </article>
 
         <article className="review-summary-card review-card">
@@ -315,7 +291,7 @@ function ReviewPage() {
           <strong className="review-summary-value negative">
             {loading ? '-' : formatPercent(summary.negativeRate)}
           </strong>
-          <span className="review-summary-sub">Steam 부정 리뷰 비중</span>
+          <span className="review-summary-sub">부정 리뷰 비중</span>
         </article>
 
         <article className="review-summary-card review-card">
@@ -323,7 +299,7 @@ function ReviewPage() {
           <strong className="review-summary-value">
             {loading ? '-' : formatNumber(summary.totalReviews)}
           </strong>
-          <span className="review-summary-sub">positive_reviews + negative_reviews</span>
+          <span className="review-summary-sub">긍정/중립/부정 합산 우선</span>
         </article>
 
         <article className="review-summary-card review-card">
@@ -457,83 +433,96 @@ function parseGameOptions(raw: unknown): GameOption[] {
 
       const positiveReviews = toNumber(record.positive_reviews ?? record.positiveReviews)
       const negativeReviews = toNumber(record.negative_reviews ?? record.negativeReviews)
-      const calculatedReviewCount = positiveReviews + negativeReviews
+      const calculatedReviews = positiveReviews + negativeReviews
+      const apiReviewCount = toNumber(
+        record.review_count ?? record.total_reviews ?? record.totalReviews ?? record.reviews,
+      )
 
       return {
         id,
         name,
-        positiveReviews,
-        negativeReviews,
-        reviewCount: calculatedReviewCount,
+        reviewCount: calculatedReviews > 0 ? calculatedReviews : apiReviewCount,
       }
     })
-    .filter((item) => item.id > 0 && item.name && item.reviewCount > 0)
-    .sort((a, b) => b.reviewCount - a.reviewCount)
+    .filter((item) => item.id > 0 && item.name)
+    .sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0))
     .slice(0, 200)
+    .map(({ id, name }) => ({ id, name }))
 }
 
 function parseSentimentSummary(raw: unknown, fallbackRaw: unknown = null): SentimentSummary {
   const source = extractObject(raw)
   const fallback = extractObject(fallbackRaw)
 
-  const fallbackPositive = toNumber(fallback.positive_reviews ?? fallback.positiveReviews)
-  const fallbackNegative = toNumber(fallback.negative_reviews ?? fallback.negativeReviews)
-  const fallbackTotal = fallbackPositive + fallbackNegative
-
-  if (fallbackTotal > 0) {
-    return {
-      positiveRate: (fallbackPositive / fallbackTotal) * 100,
-      negativeRate: (fallbackNegative / fallbackTotal) * 100,
-      neutralRate: 0,
-      positiveCount: fallbackPositive,
-      negativeCount: fallbackNegative,
-      neutralCount: 0,
-      totalReviews: fallbackTotal,
-      sentimentScore: ((fallbackPositive - fallbackNegative) / fallbackTotal) * 100,
-    }
-  }
-
   const positiveCount = toNumber(
     source.positive_count ??
       source.positive_reviews ??
       source.positive ??
-      source.pos_count,
+      source.pos_count ??
+      fallback.positive_reviews ??
+      fallback.positiveReviews,
   )
 
   const negativeCount = toNumber(
     source.negative_count ??
       source.negative_reviews ??
       source.negative ??
-      source.neg_count,
+      source.neg_count ??
+      fallback.negative_reviews ??
+      fallback.negativeReviews,
   )
 
   const neutralCount = toNumber(
-    source.neutral_count ?? source.neutral_reviews ?? source.neutral,
+    source.neutral_count ??
+      source.neutral_reviews ??
+      source.neutral ??
+      fallback.neutral_count ??
+      fallback.neutral_reviews,
   )
 
   const calculatedTotal = positiveCount + negativeCount + neutralCount
 
+  const apiTotalReviews = toNumber(
+    source.total_reviews ??
+      source.review_count ??
+      source.total_count ??
+      source.total ??
+      fallback.total_reviews ??
+      fallback.totalReviews ??
+      fallback.review_count ??
+      fallback.reviews,
+  )
+
+  const totalReviews = calculatedTotal > 0 ? calculatedTotal : apiTotalReviews
+
   const positiveRate =
-    calculatedTotal > 0
-      ? (positiveCount / calculatedTotal) * 100
-      : normalizePercent(
-          source.positive_rate ?? source.positive_ratio ?? source.positive_percent,
-        )
+    normalizePercent(
+      source.positive_rate ??
+        source.positive_ratio ??
+        source.positive_percent ??
+        fallback.positive_rate ??
+        fallback.positive_ratio,
+    ) || (totalReviews > 0 ? (positiveCount / totalReviews) * 100 : 0)
 
   const negativeRate =
-    calculatedTotal > 0
-      ? (negativeCount / calculatedTotal) * 100
-      : normalizePercent(
-          source.negative_rate ?? source.negative_ratio ?? source.negative_percent,
-        )
+    normalizePercent(
+      source.negative_rate ??
+        source.negative_ratio ??
+        source.negative_percent ??
+        fallback.negative_rate ??
+        fallback.negative_ratio,
+    ) || (totalReviews > 0 ? (negativeCount / totalReviews) * 100 : 0)
 
   const neutralRate =
-    calculatedTotal > 0
-      ? (neutralCount / calculatedTotal) * 100
-      : Math.max(0, 100 - positiveRate - negativeRate)
+    normalizePercent(
+      source.neutral_rate ?? source.neutral_ratio ?? source.neutral_percent,
+    ) || Math.max(0, 100 - positiveRate - negativeRate)
 
   let sentimentScore = toNumber(
-    source.sentiment_score ?? source.compound_mean ?? source.average_score ?? source.score,
+    source.sentiment_score ??
+      source.compound_mean ??
+      source.average_score ??
+      source.score,
   )
 
   if (sentimentScore >= -1 && sentimentScore <= 1 && sentimentScore !== 0) {
@@ -551,7 +540,7 @@ function parseSentimentSummary(raw: unknown, fallbackRaw: unknown = null): Senti
     positiveCount,
     negativeCount,
     neutralCount,
-    totalReviews: calculatedTotal,
+    totalReviews,
     sentimentScore,
   }
 }

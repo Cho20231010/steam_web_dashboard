@@ -149,24 +149,26 @@ function ReviewPage() {
       setError('')
 
       try {
-        const [sentimentRaw, topicsRaw, insightsRaw] =
+        const [sentimentRaw, topicsRaw, insightsRaw, detailRaw] =
           selectedTarget === 'all'
             ? await Promise.all([
                 fetchJson('/analysis/sentiment'),
                 fetchJson('/analysis/topics'),
+                Promise.resolve(null),
                 Promise.resolve(null),
               ])
             : await Promise.all([
                 fetchJson(`/games/${selectedTarget}/sentiment`),
                 fetchJson(`/games/${selectedTarget}/topics`),
                 fetchJson(`/games/${selectedTarget}/reviews/insights`).catch(() => null),
+                fetchJson(`/games/${selectedTarget}`).catch(() => null),
               ])
 
         if (cancelled) {
           return
         }
 
-        const parsedSummary = parseSentimentSummary(sentimentRaw)
+        const parsedSummary = parseSentimentSummary(sentimentRaw, detailRaw)
         const parsedTopics = parseTopics(topicsRaw).slice(0, 5)
         const parsedInsights = parseInsightTexts(insightsRaw, parsedSummary, parsedTopics)
 
@@ -297,7 +299,7 @@ function ReviewPage() {
           <strong className="review-summary-value">
             {loading ? '-' : formatNumber(summary.totalReviews)}
           </strong>
-          <span className="review-summary-sub">긍정/중립/부정 합산</span>
+          <span className="review-summary-sub">긍정/중립/부정 합산 우선</span>
         </article>
 
         <article className="review-summary-card review-card">
@@ -429,17 +431,17 @@ function parseGameOptions(raw: unknown): GameOption[] {
       const id = toNumber(record.game_id ?? record.id ?? record.app_id ?? record.appid)
       const name = toStringValue(record.name ?? record.title ?? record.game_name)
 
-      const reviewCount = toNumber(
-        record.review_count ??
-          record.total_reviews ??
-          record.reviews ??
-          record.positive_reviews,
+      const positiveReviews = toNumber(record.positive_reviews ?? record.positiveReviews)
+      const negativeReviews = toNumber(record.negative_reviews ?? record.negativeReviews)
+      const calculatedReviews = positiveReviews + negativeReviews
+      const apiReviewCount = toNumber(
+        record.review_count ?? record.total_reviews ?? record.totalReviews ?? record.reviews,
       )
 
       return {
         id,
         name,
-        reviewCount,
+        reviewCount: calculatedReviews > 0 ? calculatedReviews : apiReviewCount,
       }
     })
     .filter((item) => item.id > 0 && item.name)
@@ -448,52 +450,72 @@ function parseGameOptions(raw: unknown): GameOption[] {
     .map(({ id, name }) => ({ id, name }))
 }
 
-function parseSentimentSummary(raw: unknown): SentimentSummary {
+function parseSentimentSummary(raw: unknown, fallbackRaw: unknown = null): SentimentSummary {
   const source = extractObject(raw)
+  const fallback = extractObject(fallbackRaw)
 
   const positiveCount = toNumber(
     source.positive_count ??
       source.positive_reviews ??
       source.positive ??
-      source.pos_count,
+      source.pos_count ??
+      fallback.positive_reviews ??
+      fallback.positiveReviews,
   )
 
   const negativeCount = toNumber(
     source.negative_count ??
       source.negative_reviews ??
       source.negative ??
-      source.neg_count,
+      source.neg_count ??
+      fallback.negative_reviews ??
+      fallback.negativeReviews,
   )
 
   const neutralCount = toNumber(
     source.neutral_count ??
       source.neutral_reviews ??
-      source.neutral,
+      source.neutral ??
+      fallback.neutral_count ??
+      fallback.neutral_reviews,
   )
 
-  const totalReviews =
-    toNumber(source.total_reviews ?? source.review_count ?? source.total_count ?? source.total) ||
-    positiveCount + negativeCount + neutralCount
+  const calculatedTotal = positiveCount + negativeCount + neutralCount
+
+  const apiTotalReviews = toNumber(
+    source.total_reviews ??
+      source.review_count ??
+      source.total_count ??
+      source.total ??
+      fallback.total_reviews ??
+      fallback.totalReviews ??
+      fallback.review_count ??
+      fallback.reviews,
+  )
+
+  const totalReviews = calculatedTotal > 0 ? calculatedTotal : apiTotalReviews
 
   const positiveRate =
     normalizePercent(
       source.positive_rate ??
         source.positive_ratio ??
-        source.positive_percent,
+        source.positive_percent ??
+        fallback.positive_rate ??
+        fallback.positive_ratio,
     ) || (totalReviews > 0 ? (positiveCount / totalReviews) * 100 : 0)
 
   const negativeRate =
     normalizePercent(
       source.negative_rate ??
         source.negative_ratio ??
-        source.negative_percent,
+        source.negative_percent ??
+        fallback.negative_rate ??
+        fallback.negative_ratio,
     ) || (totalReviews > 0 ? (negativeCount / totalReviews) * 100 : 0)
 
   const neutralRate =
     normalizePercent(
-      source.neutral_rate ??
-        source.neutral_ratio ??
-        source.neutral_percent,
+      source.neutral_rate ?? source.neutral_ratio ?? source.neutral_percent,
     ) || Math.max(0, 100 - positiveRate - negativeRate)
 
   let sentimentScore = toNumber(
@@ -539,12 +561,8 @@ function parseTopics(raw: unknown): TopicItem[] {
       )
 
       const label =
-        toStringValue(
-          record.label ??
-            record.name ??
-            record.topic_name ??
-            record.topic,
-        ) || `토픽 ${index + 1}`
+        toStringValue(record.label ?? record.name ?? record.topic_name ?? record.topic) ||
+        `토픽 ${index + 1}`
 
       const percentage = normalizePercent(
         record.weight_percent ??

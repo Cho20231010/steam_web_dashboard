@@ -219,6 +219,9 @@
   font-weight: 800;
 }
 
+/* 핵심 변경:
+   상단은 검색 결과 + 게임 정보 2열 유지,
+   가격 변동 추이 줄부터는 전체 폭으로 확장 */
 .game-detail-layout {
   width: 100%;
   display: grid;
@@ -227,10 +230,44 @@
   align-items: start;
 }
 
+.game-detail-main-area {
+  display: contents;
+}
+
 .game-detail-result-panel {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   align-self: start;
   padding: 14px;
   border-radius: 20px;
+}
+
+.game-detail-hero-card {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.game-detail-summary-grid {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.game-detail-chart-grid,
+.game-detail-keyword-group-section,
+.game-detail-bottom-grid-fixed {
+  grid-column: 1 / -1;
+}
+
+.game-detail-chart-grid {
+  grid-row: 3;
+}
+
+.game-detail-keyword-group-section {
+  grid-row: 4;
+}
+
+.game-detail-bottom-grid-fixed {
+  grid-row: 5;
 }
 
 .game-detail-panel-title {
@@ -289,14 +326,6 @@
 .game-detail-result-list button.active {
   border-color: #5d63f1;
   background: #f5f7ff;
-}
-
-.game-detail-main-area {
-  width: 100%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
 .game-detail-hero-card {
@@ -1055,7 +1084,25 @@
 
 @media (max-width: 900px) {
   .game-detail-layout {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .game-detail-main-area {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .game-detail-result-panel,
+  .game-detail-hero-card,
+  .game-detail-summary-grid,
+  .game-detail-chart-grid,
+  .game-detail-keyword-group-section,
+  .game-detail-bottom-grid-fixed {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .game-detail-result-panel {

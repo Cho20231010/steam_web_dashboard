@@ -85,6 +85,11 @@ type ReviewInsight = {
   negativeSummary: string
 }
 
+type KeywordBubble = {
+  label: string
+  size: number
+}
+
 const USD_TO_KRW = 1350
 
 function GameDetailPage() {
@@ -777,7 +782,7 @@ function GameDetailPage() {
             </article>
           </section>
 
-          <section className="game-detail-bottom-grid-fixed compact">
+          <section className="game-detail-bottom-grid-fixed">
             <article className="game-detail-card quick-summary-card">
               <div className="game-detail-card-head">
                 <h3>빠른 요약</h3>
@@ -790,17 +795,17 @@ function GameDetailPage() {
               </ul>
             </article>
 
-            <article className="game-detail-card keyword-card negative">
-              <div className="game-detail-card-head">
-                <h3>부정 리뷰 키워드</h3>
-              </div>
+            <KeywordBubbleCard
+              title="부정 리뷰 키워드"
+              type="negative"
+              keywords={getNegativeKeywords()}
+            />
 
-              <div className="game-detail-keyword-cloud">
-                {getNegativeKeywords().map((keyword) => (
-                  <span key={keyword}>{keyword}</span>
-                ))}
-              </div>
-            </article>
+            <KeywordBubbleCard
+              title="긍정 리뷰 키워드"
+              type="positive"
+              keywords={getPositiveKeywords()}
+            />
           </section>
         </div>
       </section>
@@ -863,6 +868,38 @@ function SentimentRow({
       <strong>{rate.toFixed(1)}%</strong>
       <em>{formatNumber(count)}</em>
     </div>
+  )
+}
+
+function KeywordBubbleCard({
+  title,
+  type,
+  keywords,
+}: {
+  title: string
+  type: 'positive' | 'negative'
+  keywords: KeywordBubble[]
+}) {
+  return (
+    <article className={`game-detail-card keyword-bubble-card ${type}`}>
+      <div className="game-detail-card-head">
+        <h3>{title}</h3>
+      </div>
+
+      <div className="keyword-bubble-cloud">
+        {keywords.map((keyword) => (
+          <span
+            key={keyword.label}
+            style={{
+              width: `${keyword.size}px`,
+              height: `${keyword.size}px`,
+            }}
+          >
+            {keyword.label}
+          </span>
+        ))}
+      </div>
+    </article>
   )
 }
 
@@ -1111,6 +1148,7 @@ const TOPIC_KO_MAP: Record<string, string> = {
   hours: '플레이 시간',
   way: '방식',
   new: '신규 콘텐츠',
+  data: '데이터',
   story: '스토리',
   narrative: '스토리',
   lore: '세계관',
@@ -1254,6 +1292,9 @@ const TOPIC_KO_MAP: Record<string, string> = {
   vehicles: '차량',
   gaijin: '가이진',
   tanks: '전차',
+  snail: '스네일',
+  salt: '솔트',
+  russia: '러시아',
 }
 
 const TOPIC_EN_MAP: Record<string, string> = {
@@ -1273,6 +1314,7 @@ const TOPIC_EN_MAP: Record<string, string> = {
   플레이시간: 'time',
   방식: 'way',
   신규콘텐츠: 'new',
+  데이터: 'data',
   스토리: 'story',
   세계관: 'world',
   월드: 'worlds',
@@ -1371,6 +1413,9 @@ const TOPIC_EN_MAP: Record<string, string> = {
   차량: 'vehicles',
   가이진: 'gaijin',
   전차: 'tanks',
+  스네일: 'snail',
+  솔트: 'salt',
+  러시아: 'russia',
 }
 
 function extractParenthesesText(value: string) {
@@ -1730,8 +1775,28 @@ function getUniqueStringList(values: string[]) {
   return result
 }
 
-function getNegativeKeywords() {
-  return ['어렵다', '버그', '불편하다', '난이도', '반복적', '카메라', '가이드 부족']
+function getNegativeKeywords(): KeywordBubble[] {
+  return [
+    { label: '버그', size: 82 },
+    { label: '어렵다', size: 76 },
+    { label: '불편하다', size: 72 },
+    { label: '난이도', size: 66 },
+    { label: '반복적', size: 62 },
+    { label: '카메라', size: 58 },
+    { label: '가이드 부족', size: 70 },
+  ]
+}
+
+function getPositiveKeywords(): KeywordBubble[] {
+  return [
+    { label: '재미', size: 86 },
+    { label: '몰입감', size: 78 },
+    { label: '플레이', size: 74 },
+    { label: '스토리', size: 66 },
+    { label: '전투', size: 62 },
+    { label: '그래픽', size: 60 },
+    { label: '높은 만족도', size: 72 },
+  ]
 }
 
 function formatSteamPrice(price: number) {

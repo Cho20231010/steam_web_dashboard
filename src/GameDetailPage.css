@@ -219,9 +219,6 @@
   font-weight: 800;
 }
 
-/* 핵심 변경:
-   상단은 검색 결과 + 게임 정보 2열 유지,
-   가격 변동 추이 줄부터는 전체 폭으로 확장 */
 .game-detail-layout {
   width: 100%;
   display: grid;
@@ -927,14 +924,10 @@
   margin-top: 0;
 }
 
-.game-detail-bottom-grid-fixed.compact {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .game-detail-bottom-grid-fixed > .game-detail-card {
   width: 100%;
   min-width: 0;
-  min-height: 230px;
+  min-height: 250px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -992,40 +985,44 @@
   font-size: 13px;
 }
 
-.keyword-card.negative {
-  min-width: 0;
+.keyword-bubble-card {
+  overflow: hidden;
 }
 
-.keyword-card.negative .game-detail-keyword-cloud {
+.keyword-bubble-cloud {
   flex: 1;
-  width: 100%;
-  min-width: 0;
   display: flex;
-  flex-direction: row;
   flex-wrap: wrap;
-  align-content: flex-start;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 10px;
-  padding-top: 4px;
-}
-
-.keyword-card.negative .game-detail-keyword-cloud span {
-  display: inline-flex;
-  flex: 0 1 auto;
+  align-content: center;
   align-items: center;
   justify-content: center;
-  max-width: 100%;
-  padding: 8px 12px;
-  border-radius: 999px;
+  gap: 10px;
+  min-height: 170px;
+}
+
+.keyword-bubble-cloud span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  padding: 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.2;
+  word-break: keep-all;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.keyword-bubble-card.negative .keyword-bubble-cloud span {
   background: #fff1f1;
   color: #d95050;
-  font-size: 13px;
-  font-weight: 900;
-  line-height: 1.2;
-  white-space: normal;
-  word-break: keep-all;
-  overflow-wrap: break-word;
+}
+
+.keyword-bubble-card.positive .keyword-bubble-cloud span {
+  background: #effaf2;
+  color: #1f9d60;
 }
 
 @media (max-width: 1180px) {
@@ -1058,13 +1055,12 @@
     font-size: 17px;
   }
 
-  .game-detail-chart-grid,
-  .game-detail-bottom-grid-fixed {
+  .game-detail-chart-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .game-detail-bottom-grid-fixed.compact {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .game-detail-bottom-grid-fixed {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .game-detail-card {
@@ -1122,8 +1118,7 @@
   }
 
   .game-detail-chart-grid,
-  .game-detail-bottom-grid-fixed,
-  .game-detail-bottom-grid-fixed.compact {
+  .game-detail-bottom-grid-fixed {
     grid-template-columns: 1fr;
   }
 
@@ -1138,6 +1133,11 @@
 
   .game-detail-keyword-group-title {
     justify-content: space-between;
+  }
+
+  .keyword-bubble-cloud {
+    justify-content: flex-start;
+    min-height: auto;
   }
 }
 

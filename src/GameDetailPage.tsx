@@ -73,6 +73,13 @@ type TopicView = {
   sentimentLabel: string
 }
 
+type TopicSummaryView = {
+  topicCount: number
+  strongestTopicRate: number
+  averageTopicRate: number
+  mainKeywords: string
+}
+
 type TrendPoint = {
   label: string
   price: number
@@ -83,14 +90,6 @@ type TrendPoint = {
 type ReviewInsight = {
   positiveSummary: string
   negativeSummary: string
-}
-
-type TopicReliabilityView = {
-  reliability: string
-  sampleSize: number
-  minSampleSize: number
-  warning: string
-  topicCount: number
 }
 
 const USD_TO_KRW = 1350
@@ -299,9 +298,9 @@ function GameDetailPage() {
     return normalizeTopics(topicData)
   }, [topicData])
 
-  const topicReliability = useMemo(() => {
-    return normalizeTopicReliability(topicData)
-  }, [topicData])
+  const topicSummary = useMemo(() => {
+    return normalizeTopicSummary(topics)
+  }, [topics])
 
   const trendPoints = useMemo(() => {
     return normalizeTrendPoints(historyData, reviewTrendData)
@@ -802,7 +801,7 @@ function GameDetailPage() {
               </ul>
             </article>
 
-            <TopicReliabilityCard reliability={topicReliability} />
+            <TopicSummaryCard topicSummary={topicSummary} />
 
             <SentimentSummaryCard sentiment={sentiment} />
           </section>
@@ -870,29 +869,33 @@ function SentimentRow({
   )
 }
 
-function TopicReliabilityCard({ reliability }: { reliability: TopicReliabilityView }) {
+function TopicSummaryCard({ topicSummary }: { topicSummary: TopicSummaryView }) {
   return (
-    <article className="game-detail-card topic-reliability-card">
+    <article className="game-detail-card topic-summary-card">
       <div className="game-detail-card-head">
-        <h3>토픽 신뢰도</h3>
+        <h3>토픽 분석 요약</h3>
       </div>
 
-      <div className="topic-reliability-list">
-        <InfoRow label="신뢰도" value={reliability.reliability} highlight />
+      <div className="topic-summary-list">
+        <InfoRow label="그룹 수" value={`${topicSummary.topicCount}개`} />
         <InfoRow
-          label="샘플 수"
-          value={reliability.sampleSize > 0 ? formatNumber(reliability.sampleSize) : '제공 없음'}
+          label="대표 그룹 비중"
+          value={
+            topicSummary.strongestTopicRate > 0
+              ? `${topicSummary.strongestTopicRate.toFixed(1)}%`
+              : '제공 없음'
+          }
+          highlight
         />
         <InfoRow
-          label="최소 기준"
+          label="평균 그룹 비중"
           value={
-            reliability.minSampleSize > 0
-              ? formatNumber(reliability.minSampleSize)
+            topicSummary.averageTopicRate > 0
+              ? `${topicSummary.averageTopicRate.toFixed(1)}%`
               : '제공 없음'
           }
         />
-        <InfoRow label="그룹 수" value={`${reliability.topicCount}개`} />
-        <InfoRow label="경고" value={reliability.warning} />
+        <InfoRow label="대표 키워드" value={topicSummary.mainKeywords} />
       </div>
     </article>
   )
@@ -1153,28 +1156,28 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
     .filter((topic) => topic.keywords.length > 0)
 }
 
-function normalizeTopicReliability(topicData: ApiRecord[]): TopicReliabilityView {
-  const firstTopic = topicData[0]
-
-  if (!firstTopic) {
+function normalizeTopicSummary(topics: TopicView[]): TopicSummaryView {
+  if (topics.length === 0) {
     return {
-      reliability: '제공 없음',
-      sampleSize: 0,
-      minSampleSize: 0,
-      warning: '토픽 데이터 없음',
       topicCount: 0,
+      strongestTopicRate: 0,
+      averageTopicRate: 0,
+      mainKeywords: '제공 없음',
     }
   }
 
+  const strongestTopic = topics.reduce((maxTopic, currentTopic) => {
+    return currentTopic.mentionRate > maxTopic.mentionRate ? currentTopic : maxTopic
+  }, topics[0])
+
+  const totalRate = topics.reduce((sum, topic) => sum + topic.mentionRate, 0)
+  const averageTopicRate = totalRate / topics.length
+
   return {
-    reliability: String(firstTopic.reliability ?? firstTopic.quality ?? '제공 없음'),
-    sampleSize: toNumber(firstTopic.sample_size ?? firstTopic.sampleSize),
-    minSampleSize: toNumber(firstTopic.min_sample_size ?? firstTopic.minSampleSize),
-    warning:
-      firstTopic.warning === null || firstTopic.warning === undefined || firstTopic.warning === ''
-        ? '없음'
-        : String(firstTopic.warning),
-    topicCount: topicData.length,
+    topicCount: topics.length,
+    strongestTopicRate: strongestTopic.mentionRate,
+    averageTopicRate,
+    mainKeywords: strongestTopic.keywords.slice(0, 3).join(', '),
   }
 }
 

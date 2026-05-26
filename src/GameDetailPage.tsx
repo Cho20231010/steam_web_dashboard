@@ -600,7 +600,7 @@ function GameDetailPage() {
             <SummaryCard
               title="총 리뷰 수"
               value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
-              description="긍정/중립/부정 합산 우선"
+              description="긍정/중립/부정 합산"
               type="blue"
             />
             <SummaryCard
@@ -983,11 +983,9 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
   const gameId = toSafeGameId(getGameId(game), 'unknown')
   const positiveReviews = toNumber(game.positive_reviews ?? game.positiveReviews)
   const negativeReviews = toNumber(game.negative_reviews ?? game.negativeReviews)
-  const calculatedTotalReviews = positiveReviews + negativeReviews
-  const apiTotalReviews = toNumber(
-    game.total_reviews ?? game.totalReviews ?? game.review_count ?? game.reviews,
-  )
-  const totalReviews = calculatedTotalReviews > 0 ? calculatedTotalReviews : apiTotalReviews
+  const totalReviews =
+    positiveReviews + negativeReviews ||
+    toNumber(game.total_reviews ?? game.totalReviews ?? game.review_count)
 
   const price = normalizePrice(game.price ?? game.price_usd ?? game.current_price)
   const isFree = Boolean(game.is_free ?? game.free ?? game.isFree) || price <= 0
@@ -1028,48 +1026,23 @@ function normalizeSentiment(
   selectedGame: GameDetailView | null,
 ): SentimentView {
   if (sentimentData) {
-    const positiveCount = toNumber(
-      sentimentData.positive_count ??
-        sentimentData.positive_reviews ??
-        sentimentData.positive ??
-        selectedGame?.positiveReviews,
-    )
-
-    const neutralCount = toNumber(
-      sentimentData.neutral_count ?? sentimentData.neutral_reviews ?? sentimentData.neutral,
-    )
-
-    const negativeCount = toNumber(
-      sentimentData.negative_count ??
-        sentimentData.negative_reviews ??
-        sentimentData.negative ??
-        selectedGame?.negativeReviews,
-    )
-
-    const calculatedTotal = positiveCount + neutralCount + negativeCount
-    const apiTotal = toNumber(
-      sentimentData.total_reviews ??
-        sentimentData.review_count ??
-        sentimentData.total_count ??
-        sentimentData.total,
-    )
-
-    const totalCount =
-      calculatedTotal > 0 ? calculatedTotal : apiTotal || selectedGame?.totalReviews || 0
-
     const positive =
       normalizeRatio(
         sentimentData.positive_ratio ??
           sentimentData.positive_rate ??
           sentimentData.positiveRate,
-      ) || (totalCount > 0 ? (positiveCount / totalCount) * 100 : selectedGame?.positiveRate || 0)
+      ) ||
+      selectedGame?.positiveRate ||
+      0
 
     const negative =
       normalizeRatio(
         sentimentData.negative_ratio ??
           sentimentData.negative_rate ??
           sentimentData.negativeRate,
-      ) || (totalCount > 0 ? (negativeCount / totalCount) * 100 : selectedGame?.negativeRate || 0)
+      ) ||
+      selectedGame?.negativeRate ||
+      0
 
     const neutral =
       normalizeRatio(
@@ -1077,6 +1050,30 @@ function normalizeSentiment(
           sentimentData.neutral_rate ??
           sentimentData.neutralRate,
       ) || Math.max(0, 100 - positive - negative)
+
+    const positiveCount = toNumber(
+      sentimentData.positive ??
+        sentimentData.positive_reviews ??
+        sentimentData.positive_count ??
+        selectedGame?.positiveReviews,
+    )
+
+    const neutralCount = toNumber(
+      sentimentData.neutral ?? sentimentData.neutral_reviews ?? sentimentData.neutral_count,
+    )
+
+    const negativeCount = toNumber(
+      sentimentData.negative ??
+        sentimentData.negative_reviews ??
+        sentimentData.negative_count ??
+        selectedGame?.negativeReviews,
+    )
+
+    const totalCount =
+      toNumber(sentimentData.total ?? sentimentData.total_reviews ?? sentimentData.total_count) ||
+      positiveCount + neutralCount + negativeCount ||
+      selectedGame?.totalReviews ||
+      0
 
     return {
       positive,
@@ -1108,7 +1105,7 @@ function normalizeSentiment(
     positiveCount: selectedGame.positiveReviews,
     negativeCount: selectedGame.negativeReviews,
     neutralCount: 0,
-    totalCount: selectedGame.positiveReviews + selectedGame.negativeReviews || selectedGame.totalReviews,
+    totalCount: selectedGame.totalReviews,
   }
 }
 
@@ -1645,7 +1642,6 @@ function createQuickSummaryItems(
 
   return [
     `긍정 비율은 ${sentiment.positive.toFixed(1)}%로 ${satisfaction}`,
-    `총 리뷰 수는 ${formatNumber(sentiment.totalCount || selectedGame.totalReviews)}개입니다.`,
     `가장 큰 키워드 그룹은 ${mainKeywords} 중심으로 나타납니다.`,
     compactSentence(reviewInsight.negativeSummary),
     `현재 가격은 ${selectedGame.priceLabel} 기준입니다.`,

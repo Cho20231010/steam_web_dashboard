@@ -66,7 +66,7 @@ type SentimentView = {
 
 type TopicView = {
   id: string
-  title: string
+  groupName: string
   keywords: string[]
   mentionRate: number
   positiveRate: number
@@ -288,7 +288,7 @@ function GameDetailPage() {
   }, [sentimentData, selectedGame])
 
   const topics = useMemo(() => {
-    return normalizeTopics(topicData).slice(0, 5)
+    return normalizeTopics(topicData)
   }, [topicData])
 
   const trendPoints = useMemo(() => {
@@ -741,27 +741,43 @@ function GameDetailPage() {
             </article>
           </section>
 
-          <section className="game-detail-bottom-grid-fixed">
-            <article className="game-detail-card topic-card">
-              <div className="game-detail-card-head">
-                <h3>주요 리뷰 토픽</h3>
+          <section className="game-detail-keyword-group-section">
+            <article className="game-detail-card keyword-group-card">
+              <div className="game-detail-card-head keyword-group-head">
+                <div>
+                  <h3>게임별 키워드 그룹</h3>
+                  <p>선택한 게임의 리뷰에서 함께 자주 등장한 키워드 묶음입니다.</p>
+                </div>
+
+                <span>{topics.length}개 그룹</span>
               </div>
 
               {topics.length > 0 ? (
-                <div className="game-detail-topic-list">
-                  {topics.map((topic, index) => (
-                    <div className="game-detail-topic-row" key={topic.id}>
-                      <span>{index + 1}</span>
-                      <strong>{topic.title}</strong>
-                      <em>{topic.mentionRate.toFixed(1)}%</em>
+                <div className="game-detail-keyword-group-list">
+                  {topics.map((topic) => (
+                    <div className="game-detail-keyword-group-item" key={topic.id}>
+                      <div className="game-detail-keyword-group-title">
+                        <strong>{topic.groupName}</strong>
+                        <em>{topic.mentionRate.toFixed(1)}%</em>
+                      </div>
+
+                      <div className="game-detail-topic-chip-list">
+                        {topic.keywords.map((keyword) => (
+                          <span key={`${topic.id}-${keyword}`}>{keyword}</span>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="game-detail-empty">토픽 데이터가 없습니다.</p>
+                <p className="game-detail-empty">
+                  이 게임의 키워드 그룹 데이터가 없습니다.
+                </p>
               )}
             </article>
+          </section>
 
+          <section className="game-detail-bottom-grid-fixed compact">
             <article className="game-detail-card quick-summary-card">
               <div className="game-detail-card-head">
                 <h3>빠른 요약</h3>
@@ -985,14 +1001,10 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
   return topicData
     .map((topic, index) => {
       const rawKeywords = getUniqueStringList(getKeywords(topic))
-      const backendTitle = getBackendTopicTitle(topic)
-
-      const titleSource =
-        backendTitle && !isGenericTopicName(backendTitle)
-          ? backendTitle
-          : getRepresentativeTopicKeyword(rawKeywords)
-
-      const title = titleSource ? formatTopicLabel(titleSource) : `토픽 ${index + 1}`
+      const formattedKeywords =
+        rawKeywords.length > 0
+          ? rawKeywords.map((keyword) => formatTopicLabel(keyword))
+          : ['키워드 없음']
 
       const mentionRate =
         normalizeRatio(
@@ -1015,8 +1027,8 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
 
       return {
         id: String(topic.topic_id ?? topic.id ?? topic.topic_no ?? index),
-        title,
-        keywords: rawKeywords.map((keyword) => formatTopicLabel(keyword)),
+        groupName: `키워드 그룹 ${index + 1}`,
+        keywords: formattedKeywords,
         mentionRate,
         positiveRate,
         sentimentLabel:
@@ -1029,79 +1041,8 @@ function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
                 : '분석 중',
       }
     })
-    .filter((topic) => topic.title.trim() !== '')
+    .filter((topic) => topic.keywords.length > 0)
 }
-
-function getBackendTopicTitle(topic: ApiRecord) {
-  const value =
-    topic.topic_name ??
-    topic.topic_title ??
-    topic.title ??
-    topic.name ??
-    topic.label ??
-    topic.cluster_name ??
-    topic.category ??
-    topic.topic
-
-  if (value === null || value === undefined) {
-    return ''
-  }
-
-  return String(value).trim()
-}
-
-function isGenericTopicName(value: string) {
-  const normalized = value.toLowerCase().trim().replace(/\s+/g, ' ')
-
-  return (
-    normalized === '' ||
-    normalized === 'topic' ||
-    normalized === 'topics' ||
-    normalized === 'review topic' ||
-    normalized === 'review topics' ||
-    normalized.startsWith('topic_') ||
-    normalized.startsWith('topic ') ||
-    normalized.startsWith('review topic ') ||
-    normalized.startsWith('리뷰 토픽') ||
-    normalized.startsWith('토픽 ') ||
-    normalized.startsWith('주요 리뷰 토픽')
-  )
-}
-
-function getRepresentativeTopicKeyword(keywords: string[]) {
-  const meaningfulKeyword = keywords.find((keyword) => {
-    const normalized = normalizeTopicEnglishKey(keyword)
-
-    return !TOPIC_STOPWORDS.has(normalized)
-  })
-
-  return meaningfulKeyword ?? keywords[0] ?? ''
-}
-
-const TOPIC_STOPWORDS = new Set([
-  'game',
-  'games',
-  'good',
-  'great',
-  'like',
-  'don',
-  'dont',
-  'didn',
-  'doesn',
-  'isn',
-  'wasn',
-  'nt',
-  'de',
-  'doi',
-  'bad',
-  'really',
-  'just',
-  'make',
-  'way',
-  'lot',
-  'thing',
-  'things',
-])
 
 function formatTopicLabel(value: string) {
   const original = value.trim()
@@ -1138,7 +1079,7 @@ function formatTopicLabel(value: string) {
   }
 
   if (/^[a-z0-9\s-]+$/i.test(original)) {
-    return `기타 리뷰 키워드 (${original})`
+    return original
   }
 
   if (englishName && englishName !== original) {
@@ -1150,193 +1091,284 @@ function formatTopicLabel(value: string) {
 
 const TOPIC_KO_MAP: Record<string, string> = {
   game: '게임',
-  games: '게임들',
+  games: '게임',
   gameplay: '게임플레이',
-  play: '진행',
-  playing: '진행중',
+  play: '플레이',
+  playing: '플레이',
+  played: '플레이 경험',
   player: '플레이어',
-  players: '플레이어들',
-
+  players: '플레이어',
   fun: '재미',
-  enjoyable: '재미있는',
-  good: '좋음',
-  great: '훌륭한',
-  bad: '나쁨',
+  enjoyable: '재미',
+  good: '긍정 평가',
+  great: '호평',
+  best: '높은 만족도',
+  bad: '부정 평가',
   like: '선호도',
+  love: '애정도',
+  want: '요구사항',
   time: '플레이 시간',
-
-  story: '줄거리',
-  narrative: '이야기',
-  lore: '학문, 지식',
+  hours: '플레이 시간',
+  way: '방식',
+  new: '신규 콘텐츠',
+  story: '스토리',
+  narrative: '스토리',
+  lore: '세계관',
   world: '세계관',
+  worlds: '월드',
   character: '캐릭터',
-  characters: '캐릭터들',
-  feel: '느낌',
+  characters: '캐릭터',
+  feel: '몰입감',
   atmosphere: '분위기',
   immersion: '몰입감',
-
-  find: '찾다',
-  finding: '찾는중',
+  find: '탐색',
+  finding: '탐색',
   search: '탐색',
-  explore: '탐구',
+  got: '획득',
+  spawn: '스폰',
+  explore: '탐험',
   exploration: '탐험',
   map: '맵',
   location: '위치',
-  locations: '위치들',
-  open: '열린',
+  locations: '위치',
+  open: '오픈월드',
   'open world': '오픈월드',
-
-  survival: '살아남기',
+  survival: '생존',
   survive: '생존',
   survivor: '생존자',
-  survivors: '생존자들',
+  survivors: '생존자',
+  die: '사망',
   zombie: '좀비',
-  zombies: '좀비들',
+  zombies: '좀비',
   infected: '감염자',
   disease: '질병',
   hunger: '허기',
   thirst: '갈증',
   health: '체력',
-  medical: '의료진',
-  medicine: '약품',
-
-  loot: '전리품',
-  looting: '약탈, 취득',
+  medical: '의료',
+  medicine: '의료',
+  loot: '아이템 파밍',
+  looting: '아이템 파밍',
   item: '아이템',
-  items: '아이템들',
+  items: '아이템',
   inventory: '인벤토리',
   gear: '장비',
   weapon: '무기',
-  weapons: '무기들',
+  weapons: '무기',
   gun: '총기',
-  guns: '총기들',
+  guns: '총기',
   ammo: '탄약',
   armor: '방어구',
   base: '거점',
-  building: '건설중',
+  building: '건설',
+  builder: '건설',
   craft: '제작',
-  crafting: '제작중',
-
+  crafting: '제작',
   combat: '전투',
-  battle: '배틀',
-  fight: '싸움',
-  fighting: '싸우는중',
-  boss: '보스',
+  battle: '전투',
+  fight: '전투',
+  fighting: '전투',
+  kill: '킬',
+  killer: '살인마',
+  boss: '보스전',
   enemy: '적',
-  enemies: '적들',
+  enemies: '적',
   war: '전쟁',
   raid: '레이드',
   pvp: 'PvP',
-  pve: '플레이어 대 환경',
-
+  pve: 'PvE',
   fps: 'FPS',
   shooting: '슈팅',
-  shooter: '사수',
+  shooter: '슈팅',
   aim: '조준',
-  aiming: '조준중',
-
+  aiming: '조준',
   graphic: '그래픽',
-  graphics: '그래픽들',
+  graphics: '그래픽',
   visual: '비주얼',
-  visuals: '비주얼들',
+  visuals: '비주얼',
   design: '디자인',
   animation: '애니메이션',
-
-  sound: '소리',
+  sound: '사운드',
   music: '음악',
   voice: '음성',
   audio: '오디오',
-
   price: '가격',
-  value: '가치',
-  sale: '거래',
+  value: '가격 만족도',
+  sale: '할인',
   discount: '할인',
   dlc: 'DLC',
   content: '콘텐츠',
   update: '업데이트',
-  updates: '업데이트들',
+  updates: '업데이트',
   patch: '패치',
-  patches: '패치들',
-
+  patches: '패치',
   bug: '버그',
-  bugs: '버그들',
-  glitch: '일시적 오류',
-  glitches: '일시적 오류들',
+  bugs: '버그',
+  glitch: '오류',
+  glitches: '오류',
   crash: '충돌 오류',
-  crashes: '충돌 오류들',
+  crashes: '충돌 오류',
+  crashing: '충돌 오류',
   lag: '렉',
   optimization: '최적화',
   performance: '성능',
   server: '서버',
-  servers: '서버들',
+  servers: '서버',
   connection: '접속',
   online: '온라인',
   multiplayer: '멀티플레이',
   coop: '협동',
   'co-op': '협동',
-  friends: '친구들',
-
+  friends: '친구',
+  people: '사람들',
   difficulty: '난이도',
-  hard: '어려움',
-  easy: '쉬움',
-  challenge: '도전',
+  hard: '난이도',
+  easy: '난이도',
+  challenge: '도전성',
   balance: '밸런스',
   tutorial: '튜토리얼',
   guide: '가이드',
-  guides: '가이드들',
-
-  control: '조종',
-  controls: '조작',
+  guides: '가이드',
+  control: '조작감',
+  controls: '조작감',
   camera: '카메라',
   ui: 'UI',
   interface: '인터페이스',
   system: '시스템',
   mode: '모드',
-  modes: '모드들',
-
+  modes: '모드',
   quest: '퀘스트',
-  quests: '퀘스트들',
+  quests: '퀘스트',
   mission: '미션',
-  missions: '미션들',
+  missions: '미션',
   level: '레벨',
   puzzle: '퍼즐',
-  puzzles: '퍼즐들',
-
-  replay: '리플레이',
-  grinding: '반복 작업',
+  puzzles: '퍼즐',
+  pieces: '조각',
+  piece: '조각',
+  replay: '반복 플레이',
+  grinding: '반복 플레이',
   access: '접근성',
   early: '얼리 액세스',
   'early access': '얼리 액세스',
+  devs: '개발진',
+  warbonds: '워본드',
+  helldivers: '헬다이버즈',
+  democracy: '민주주의',
+  vehicles: '차량',
+  gaijin: '가이진',
+  tanks: '전차',
+  cheaters: '핵/치터',
+  city: '도시',
+  room: '공간',
+  key: '키/열쇠',
+  ghost: '유령',
+  ghosts: '유령',
+  mod: '모드',
+  mods: '모드',
+  garry: '개리',
+  factory: '공장',
+  stamina: '스태미나',
+  angler: '낚시꾼',
+  coach: '코치',
+  nick: '닉',
+  ellis: '엘리스',
+  cozy: '힐링',
+  farm: '농장',
+  arthur: '아서',
+  rockstar: '락스타',
+  account: '계정',
+  steam: '스팀',
+  drugs: '약물',
+  witcher: '위쳐',
+  ring: '반지',
+  elden: '엘든',
+  souls: '소울류',
+  rust: '러스트',
+  run: '런',
+  rain: '레인',
+  risk: '리스크',
+  fallout: '폴아웃',
+  bethesda: '베데스다',
+  company: '컴퍼니',
+  lethal: '리썰',
+  monster: '몬스터',
+  monsters: '몬스터',
+  hunter: '헌터',
+  destiny: '데스티니',
+  bungie: '번지',
+  cod: '콜 오브 듀티',
+  restart: '재시작',
+  number: '수치',
+  forest: '숲',
+  harry: '해리',
+  potter: '포터',
+  hogwarts: '호그와트',
+  wizard: '마법사',
+  dragon: '드래곤',
+  age: '에이지',
+  xcom: 'XCOM',
+  cover: '엄폐',
+  tactical: '전술',
+  starcraft: '스타크래프트',
+  campaign: '캠페인',
+  rts: 'RTS',
+  sc: '스타크래프트',
+  sims: '심즈',
+  ea: 'EA',
+  life: '라이프',
+  space: '우주',
+  ship: '함선',
+  ships: '함선',
+  sim: '시뮬레이션',
+  half: '하프',
+  headcrab: '헤드크랩',
+  episode: '에피소드',
+  tokyo: '도쿄',
+  ark: '아크',
+  truck: '트럭',
+  driving: '운전',
+  simulator: '시뮬레이터',
+  euro: '유로',
+  glass: '글래스',
+  beautiful: '아름다움',
+  frontier: '프론티어',
+  gta: 'GTA',
 }
 
 const TOPIC_EN_MAP: Record<string, string> = {
   게임: 'game',
-  게임들: 'games',
   게임플레이: 'gameplay',
   플레이: 'play',
-  플레이어: 'player',
-  플레이어들: 'platers',
+  플레이경험: 'played',
+  플레이어: 'players',
   재미: 'fun',
-  좋음: 'good',
-  훌륭함 : 'great',
-  나쁨: 'bad',
+  긍정평가: 'good',
+  호평: 'great',
+  높은만족도: 'best',
+  부정평가: 'bad',
   선호도: 'like',
+  애정도: 'love',
+  요구사항: 'want',
   플레이시간: 'time',
-
+  방식: 'way',
+  신규콘텐츠: 'new',
   스토리: 'story',
   세계관: 'world',
+  월드: 'worlds',
   캐릭터: 'character',
   몰입감: 'feel',
   분위기: 'atmosphere',
-
   탐색: 'find',
+  획득: 'got',
+  스폰: 'spawn',
   탐험: 'exploration',
   맵: 'map',
   위치: 'location',
   오픈월드: 'open world',
-
   생존: 'survival',
   생존자: 'survivor',
+  사망: 'die',
   좀비: 'zombie',
   감염자: 'infected',
   질병: 'disease',
@@ -1344,7 +1376,6 @@ const TOPIC_EN_MAP: Record<string, string> = {
   갈증: 'thirst',
   체력: 'health',
   의료: 'medical',
-
   아이템파밍: 'loot',
   아이템: 'item',
   인벤토리: 'inventory',
@@ -1356,29 +1387,26 @@ const TOPIC_EN_MAP: Record<string, string> = {
   거점: 'base',
   건설: 'building',
   제작: 'crafting',
-
   전투: 'combat',
+  킬: 'kill',
+  살인마: 'killer',
   보스전: 'boss',
   적: 'enemy',
   전쟁: 'war',
   레이드: 'raid',
   pvp: 'pvp',
   pve: 'pve',
-
   fps: 'fps',
   슈팅: 'shooter',
   조준: 'aim',
-
   그래픽: 'graphics',
   비주얼: 'visuals',
   디자인: 'design',
   애니메이션: 'animation',
-
   사운드: 'sound',
   음악: 'music',
   음성: 'voice',
   오디오: 'audio',
-
   가격: 'price',
   가격만족도: 'value',
   할인: 'sale',
@@ -1386,7 +1414,6 @@ const TOPIC_EN_MAP: Record<string, string> = {
   콘텐츠: 'content',
   업데이트: 'update',
   패치: 'patch',
-
   버그: 'bug',
   오류: 'glitch',
   충돌오류: 'crash',
@@ -1399,25 +1426,23 @@ const TOPIC_EN_MAP: Record<string, string> = {
   멀티플레이: 'multiplayer',
   협동: 'co-op',
   친구: 'friends',
-
+  사람들: 'people',
   난이도: 'difficulty',
   도전성: 'challenge',
   밸런스: 'balance',
   튜토리얼: 'tutorial',
   가이드: 'guide',
-
   조작감: 'controls',
   카메라: 'camera',
   ui: 'ui',
   인터페이스: 'interface',
   시스템: 'system',
   모드: 'mode',
-
   퀘스트: 'quest',
   미션: 'mission',
   레벨: 'level',
   퍼즐: 'puzzle',
-
+  조각: 'piece',
   반복플레이: 'replay',
   접근성: 'access',
   얼리액세스: 'early access',
@@ -1534,7 +1559,8 @@ function createQuickSummaryItems(
     return ['선택된 게임 데이터가 없습니다.']
   }
 
-  const mainTopic = topics[0]?.title ?? '주요 리뷰 토픽 없음'
+  const mainGroup = topics[0]
+  const mainKeywords = mainGroup?.keywords.slice(0, 3).join(', ') ?? '키워드 그룹 없음'
   const satisfaction =
     sentiment.positive >= 85
       ? '매우 긍정적인 평가 흐름입니다.'
@@ -1546,7 +1572,7 @@ function createQuickSummaryItems(
 
   return [
     `긍정 비율은 ${sentiment.positive.toFixed(1)}%로 ${satisfaction}`,
-    `주요 리뷰 토픽은 ${mainTopic} 중심으로 나타납니다.`,
+    `가장 큰 키워드 그룹은 ${mainKeywords} 중심으로 나타납니다.`,
     compactSentence(reviewInsight.negativeSummary),
     `현재 가격은 ${selectedGame.priceLabel} 기준입니다.`,
   ]

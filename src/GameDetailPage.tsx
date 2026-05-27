@@ -145,23 +145,6 @@ function GameDetailPage() {
     return games.map((game, index) => normalizeGameSummary(game, index))
   }, [games])
 
-  const searchSuggestions = useMemo(() => {
-    const genreSet = new Set<string>()
-
-    gameSummaries.forEach((game) => {
-      game.genres.forEach((genre) => {
-        if (genre && genre !== '장르 없음') {
-          genreSet.add(genre)
-        }
-      })
-    })
-
-    return {
-      genres: Array.from(genreSet).sort((a, b) => a.localeCompare(b)),
-      games: gameSummaries.slice(0, 12),
-    }
-  }, [gameSummaries])
-
   const filteredGames = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -178,6 +161,10 @@ function GameDetailPage() {
       )
     })
   }, [gameSummaries, searchText])
+
+  const searchGameOptions = useMemo(() => {
+    return filteredGames.slice(0, 12)
+  }, [filteredGames])
 
   useEffect(() => {
     const keyword = searchText.trim()
@@ -314,34 +301,26 @@ function GameDetailPage() {
     return createQuickSummaryItems(selectedGame, sentiment, topics, reviewInsight)
   }, [selectedGame, sentiment, topics, reviewInsight])
 
-  function handleSelectGame(gameId: string | number) {
+  function handleSelectGame(gameId: string | number, gameName?: string) {
     setSelectedGameId(String(gameId))
-    setSearchText('')
-  }
 
-  function handleGenreSuggestionClick(value: string) {
-    setSearchText(value)
-
-    const keyword = value.toLowerCase()
-
-    const matchedGame = gameSummaries.find((game) => {
-      return (
-        game.genre.toLowerCase().includes(keyword) ||
-        game.genreSearchText.includes(keyword) ||
-        game.genres.some((genre) => genre.toLowerCase().includes(keyword))
-      )
-    })
-
-    if (matchedGame) {
-      setSelectedGameId(String(matchedGame.gameId))
+    if (gameName) {
+      setSearchText(gameName)
     }
-
-    setIsSearchFocused(true)
   }
 
-  function handleGameSuggestionClick(gameId: string | number) {
-    handleSelectGame(gameId)
+  function handleGameSuggestionClick(game: GameSummary) {
+    handleSelectGame(game.gameId, game.name)
     setIsSearchFocused(false)
+  }
+
+  function handleShowAllGames() {
+    setSearchText('')
+    setIsSearchFocused(false)
+
+    if (!selectedGameId && gameSummaries.length > 0) {
+      setSelectedGameId(String(gameSummaries[0].gameId))
+    }
   }
 
   function handleAddFavoriteGame() {
@@ -409,94 +388,51 @@ function GameDetailPage() {
                 setIsSearchFocused(false)
               }, 150)
             }}
-            placeholder="게임명, 장르로 검색"
+            placeholder="게임명으로 검색"
             type="text"
           />
 
           {isSearchFocused && (
             <div className="game-detail-search-dropdown">
-              {searchText.trim() ? (
-                <>
-                  <div className="game-detail-dropdown-section-title">검색 결과</div>
+              <div className="game-detail-dropdown-section-title">게임명 선택</div>
 
-                  {filteredGames.length > 0 ? (
-                    filteredGames.slice(0, 12).map((game) => (
-                      <button
-                        key={game.id}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => handleGameSuggestionClick(game.gameId)}
-                        type="button"
-                      >
-                        <span className="game-detail-search-thumb">
-                          {game.image ? (
-                            <img src={game.image} alt={`${game.name} 이미지`} />
-                          ) : (
-                            game.name.slice(0, 2)
-                          )}
-                        </span>
+              <button
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={handleShowAllGames}
+                type="button"
+              >
+                <span className="game-detail-search-thumb">전체</span>
 
-                        <span>
-                          <strong>{game.name}</strong>
-                          <em>{game.genre}</em>
-                        </span>
-                      </button>
-                    ))
-                  ) : (
-                    <p>검색 결과가 없습니다.</p>
-                  )}
-                </>
+                <span>
+                  <strong>전체</strong>
+                  <em>샘플 데이터 {gameSummaries.length}개 전체 보기</em>
+                </span>
+              </button>
+
+              {searchGameOptions.length > 0 ? (
+                searchGameOptions.map((game) => (
+                  <button
+                    key={game.id}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => handleGameSuggestionClick(game)}
+                    type="button"
+                  >
+                    <span className="game-detail-search-thumb">
+                      {game.image ? (
+                        <img src={game.image} alt={`${game.name} 이미지`} />
+                      ) : (
+                        game.name.slice(0, 2)
+                      )}
+                    </span>
+
+                    <span>
+                      <strong>{game.name}</strong>
+                      <em>{game.genre}</em>
+                    </span>
+                  </button>
+                ))
               ) : (
-                <>
-                  <div className="game-detail-dropdown-section">
-                    <div className="game-detail-dropdown-section-title">
-                      검색 가능한 장르
-                    </div>
-
-                    <div className="game-detail-dropdown-chip-list">
-                      {searchSuggestions.genres.map((genre) => (
-                        <button
-                          className="chip-button"
-                          key={genre}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => handleGenreSuggestionClick(genre)}
-                          type="button"
-                        >
-                          {genre}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="game-detail-dropdown-section">
-                    <div className="game-detail-dropdown-section-title">
-                      추천 게임명
-                    </div>
-
-                    <div className="game-detail-dropdown-game-list">
-                      {searchSuggestions.games.map((game) => (
-                        <button
-                          key={game.id}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => handleGameSuggestionClick(game.gameId)}
-                          type="button"
-                        >
-                          <span className="game-detail-search-thumb">
-                            {game.image ? (
-                              <img src={game.image} alt={`${game.name} 이미지`} />
-                            ) : (
-                              game.name.slice(0, 2)
-                            )}
-                          </span>
-
-                          <span>
-                            <strong>{game.name}</strong>
-                            <em>{game.genre}</em>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                <p>검색 결과가 없습니다.</p>
               )}
             </div>
           )}
@@ -506,16 +442,33 @@ function GameDetailPage() {
       <section className="game-detail-layout">
         <aside className="game-detail-result-panel">
           <div className="game-detail-panel-title">
-            <strong>검색 결과</strong>
-            <span>{filteredGames.length}개</span>
+            <strong>게임 목록</strong>
+            <span>
+              {searchText.trim()
+                ? `${filteredGames.length}개 · 전체 ${gameSummaries.length}개`
+                : `${gameSummaries.length}개`}
+            </span>
           </div>
 
           <div className="game-detail-result-list">
+            <button
+              className={!searchText.trim() ? 'active' : ''}
+              onClick={handleShowAllGames}
+              type="button"
+            >
+              <span className="game-detail-result-thumb">전체</span>
+
+              <span className="game-detail-result-text">
+                <strong>전체</strong>
+                <em>샘플 데이터 {gameSummaries.length}개 전체 보기</em>
+              </span>
+            </button>
+
             {filteredGames.map((game) => (
               <button
                 className={String(game.gameId) === selectedGameId ? 'active' : ''}
                 key={game.id}
-                onClick={() => handleSelectGame(game.gameId)}
+                onClick={() => handleSelectGame(game.gameId, game.name)}
                 type="button"
               >
                 <span className="game-detail-result-thumb">

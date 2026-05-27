@@ -205,7 +205,7 @@ function HomePage() {
         />
 
         <MetricCard
-          title="분석 샘플 수"
+          title="분석 샘플 리뷰 수"
           value={analysisSampleCount > 0 ? formatNumber(analysisSampleCount) : '-'}
           description="감성·토픽 분석 기준"
           icon="🧪"
@@ -844,4 +844,3 @@ function formatMetricName(value: unknown) {
 }
 
 export default HomePage
-

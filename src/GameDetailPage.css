@@ -117,6 +117,15 @@
   box-shadow: 0 18px 32px rgba(15, 23, 42, 0.14);
 }
 
+.game-detail-search-dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.game-detail-search-dropdown::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
 .game-detail-dropdown-section {
   display: flex;
   flex-direction: column;
@@ -249,14 +258,21 @@
 
 .game-detail-result-panel {
   align-self: start;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
   padding: 16px;
   border-radius: 20px;
+  overflow: hidden;
 }
 
 .game-detail-panel-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
   margin-bottom: 14px;
 }
 
@@ -273,9 +289,26 @@
 }
 
 .game-detail-result-list {
+  min-height: 0;
+  max-height: calc(100vh - 160px);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.game-detail-result-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.game-detail-result-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.game-detail-result-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .game-detail-result-list button {
@@ -284,6 +317,7 @@
   gap: 12px;
   width: 100%;
   min-width: 0;
+  flex-shrink: 0;
   border: 1px solid transparent;
   border-radius: 14px;
   padding: 10px;
@@ -1043,6 +1077,11 @@ html.theme-dark .game-detail-search-dropdown button:hover {
   background: #263244;
 }
 
+html.theme-dark .game-detail-result-list::-webkit-scrollbar-thumb,
+html.theme-dark .game-detail-search-dropdown::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
 html.theme-dark .sentiment-summary-track {
   background: #334155;
 }
@@ -1053,7 +1092,9 @@ html.theme-dark .sentiment-summary-track {
   }
 
   .game-detail-result-panel {
+    position: static;
     order: 2;
+    max-height: none;
   }
 
   .game-detail-main-area {
@@ -1061,7 +1102,7 @@ html.theme-dark .sentiment-summary-track {
   }
 
   .game-detail-result-list {
-    max-height: 360px;
+    max-height: 420px;
     overflow-y: auto;
   }
 
@@ -1144,5 +1185,9 @@ html.theme-dark .sentiment-summary-track {
 
   .game-detail-sentiment-list {
     width: 100%;
+  }
+
+  .game-detail-result-list {
+    max-height: 360px;
   }
 }

@@ -166,17 +166,19 @@ function GameDetailPage() {
     const keyword = searchText.trim().toLowerCase()
 
     if (!keyword) {
-      return gameSummaries
+      return gameSummaries.slice(0, 8)
     }
 
-    return gameSummaries.filter((game) => {
-      return (
-        game.name.toLowerCase().includes(keyword) ||
-        game.genre.toLowerCase().includes(keyword) ||
-        game.genreSearchText.includes(keyword) ||
-        game.genres.some((genre) => genre.toLowerCase().includes(keyword))
-      )
-    })
+    return gameSummaries
+      .filter((game) => {
+        return (
+          game.name.toLowerCase().includes(keyword) ||
+          game.genre.toLowerCase().includes(keyword) ||
+          game.genreSearchText.includes(keyword) ||
+          game.genres.some((genre) => genre.toLowerCase().includes(keyword))
+        )
+      })
+      .slice(0, 8)
   }, [gameSummaries, searchText])
 
   useEffect(() => {
@@ -395,81 +397,33 @@ function GameDetailPage() {
   return (
     <div className="game-detail-page">
       <section className="game-detail-header">
-        <div className="game-detail-search-box">
-          <input
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => {
-              window.setTimeout(() => {
-                setIsSearchFocused(false)
-              }, 150)
-            }}
-            placeholder="게임명, 장르로 검색"
-            type="text"
-          />
+        <div className="game-detail-search-row">
+          <p className="game-detail-sample-note">
+            ※ 현재 분석 화면은 샘플 데이터 기준 50개 게임을 대상으로 제공합니다.
+          </p>
 
-          {isSearchFocused && (
-            <div className="game-detail-search-dropdown">
-              {searchText.trim() ? (
-                <>
-                  <div className="game-detail-dropdown-section-title">검색 결과</div>
+          <div className="game-detail-search-box">
+            <input
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => {
+                window.setTimeout(() => {
+                  setIsSearchFocused(false)
+                }, 150)
+              }}
+              placeholder="게임명, 장르로 검색"
+              type="text"
+            />
 
-                  {filteredGames.length > 0 ? (
-                    filteredGames.slice(0, 12).map((game) => (
-                      <button
-                        key={game.id}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => handleGameSuggestionClick(game.gameId)}
-                        type="button"
-                      >
-                        <span className="game-detail-search-thumb">
-                          {game.image ? (
-                            <img src={game.image} alt={`${game.name} 이미지`} />
-                          ) : (
-                            game.name.slice(0, 2)
-                          )}
-                        </span>
+            {isSearchFocused && (
+              <div className="game-detail-search-dropdown">
+                {searchText.trim() ? (
+                  <>
+                    <div className="game-detail-dropdown-section-title">검색 결과</div>
 
-                        <span>
-                          <strong>{game.name}</strong>
-                          <em>{game.genre}</em>
-                        </span>
-                      </button>
-                    ))
-                  ) : (
-                    <p>검색 결과가 없습니다.</p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="game-detail-dropdown-section">
-                    <div className="game-detail-dropdown-section-title">
-                      검색 가능한 장르
-                    </div>
-
-                    <div className="game-detail-dropdown-chip-list">
-                      {searchSuggestions.genres.map((genre) => (
-                        <button
-                          className="chip-button"
-                          key={genre}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => handleGenreSuggestionClick(genre)}
-                          type="button"
-                        >
-                          {genre}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="game-detail-dropdown-section">
-                    <div className="game-detail-dropdown-section-title">
-                      추천 게임명
-                    </div>
-
-                    <div className="game-detail-dropdown-game-list">
-                      {searchSuggestions.games.map((game) => (
+                    {filteredGames.length > 0 ? (
+                      filteredGames.map((game) => (
                         <button
                           key={game.id}
                           onMouseDown={(event) => event.preventDefault()}
@@ -489,13 +443,67 @@ function GameDetailPage() {
                             <em>{game.genre}</em>
                           </span>
                         </button>
-                      ))}
+                      ))
+                    ) : (
+                      <p>검색 결과가 없습니다.</p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="game-detail-dropdown-section">
+                      <div className="game-detail-dropdown-section-title">
+                        검색 가능한 장르
+                      </div>
+
+                      <div className="game-detail-dropdown-chip-list">
+                        {searchSuggestions.genres.map((genre) => (
+                          <button
+                            className="chip-button"
+                            key={genre}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => handleGenreSuggestionClick(genre)}
+                            type="button"
+                          >
+                            {genre}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+
+                    <div className="game-detail-dropdown-section">
+                      <div className="game-detail-dropdown-section-title">
+                        추천 게임명
+                      </div>
+
+                      <div className="game-detail-dropdown-game-list">
+                        {searchSuggestions.games.map((game) => (
+                          <button
+                            key={game.id}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => handleGameSuggestionClick(game.gameId)}
+                            type="button"
+                          >
+                            <span className="game-detail-search-thumb">
+                              {game.image ? (
+                                <img src={game.image} alt={`${game.name} 이미지`} />
+                              ) : (
+                                game.name.slice(0, 2)
+                              )}
+                            </span>
+
+                            <span>
+                              <strong>{game.name}</strong>
+                              <em>{game.genre}</em>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -503,7 +511,7 @@ function GameDetailPage() {
         <aside className="game-detail-result-panel">
           <div className="game-detail-panel-title">
             <strong>검색 결과</strong>
-            <span>{filteredGames.length}개</span>
+            <span>{filteredGames.length}개 표시</span>
           </div>
 
           <div className="game-detail-result-list">
@@ -563,7 +571,7 @@ function GameDetailPage() {
                 <MetaItem label="메타스코어" value={selectedGame.metacriticScore} />
                 <MetaItem
                   label="평가"
-                  value={`매우 긍정적 (${selectedGame.positiveRate.toFixed(1)}%)`}
+                  value={`긍정적 (${selectedGame.positiveRate.toFixed(1)}%)`}
                   positive
                 />
               </div>
@@ -594,13 +602,13 @@ function GameDetailPage() {
             <SummaryCard
               title="긍정 비율"
               value={`${sentiment.positive.toFixed(1)}%`}
-              description="선택 게임 기준"
+              description="Steam 긍정/부정 리뷰 기준"
               type="positive"
             />
             <SummaryCard
               title="총 리뷰 수"
               value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
-              description="긍정/중립/부정 합산"
+              description="positive_reviews + negative_reviews"
               type="blue"
             />
             <SummaryCard
@@ -983,9 +991,11 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
   const gameId = toSafeGameId(getGameId(game), 'unknown')
   const positiveReviews = toNumber(game.positive_reviews ?? game.positiveReviews)
   const negativeReviews = toNumber(game.negative_reviews ?? game.negativeReviews)
-  const totalReviews =
-    positiveReviews + negativeReviews ||
-    toNumber(game.total_reviews ?? game.totalReviews ?? game.review_count)
+  const calculatedTotalReviews = positiveReviews + negativeReviews
+  const apiTotalReviews = toNumber(
+    game.total_reviews ?? game.totalReviews ?? game.review_count ?? game.reviews,
+  )
+  const totalReviews = calculatedTotalReviews > 0 ? calculatedTotalReviews : apiTotalReviews
 
   const price = normalizePrice(game.price ?? game.price_usd ?? game.current_price)
   const isFree = Boolean(game.is_free ?? game.free ?? game.isFree) || price <= 0
@@ -1025,24 +1035,62 @@ function normalizeSentiment(
   sentimentData: ApiRecord | null,
   selectedGame: GameDetailView | null,
 ): SentimentView {
+  const selectedPositive = selectedGame?.positiveReviews ?? 0
+  const selectedNegative = selectedGame?.negativeReviews ?? 0
+  const selectedTotal = selectedPositive + selectedNegative
+
+  if (selectedTotal > 0) {
+    return {
+      positive: (selectedPositive / selectedTotal) * 100,
+      neutral: 0,
+      negative: (selectedNegative / selectedTotal) * 100,
+      positiveCount: selectedPositive,
+      neutralCount: 0,
+      negativeCount: selectedNegative,
+      totalCount: selectedTotal,
+    }
+  }
+
   if (sentimentData) {
+    const positiveCount = toNumber(
+      sentimentData.positive_count ??
+        sentimentData.positive_reviews ??
+        sentimentData.positive,
+    )
+
+    const neutralCount = toNumber(
+      sentimentData.neutral_count ?? sentimentData.neutral_reviews ?? sentimentData.neutral,
+    )
+
+    const negativeCount = toNumber(
+      sentimentData.negative_count ??
+        sentimentData.negative_reviews ??
+        sentimentData.negative,
+    )
+
+    const calculatedTotal = positiveCount + neutralCount + negativeCount
+    const apiTotal = toNumber(
+      sentimentData.total_reviews ??
+        sentimentData.review_count ??
+        sentimentData.total_count ??
+        sentimentData.total,
+    )
+
+    const totalCount = calculatedTotal > 0 ? calculatedTotal : apiTotal
+
     const positive =
       normalizeRatio(
         sentimentData.positive_ratio ??
           sentimentData.positive_rate ??
           sentimentData.positiveRate,
-      ) ||
-      selectedGame?.positiveRate ||
-      0
+      ) || (totalCount > 0 ? (positiveCount / totalCount) * 100 : 0)
 
     const negative =
       normalizeRatio(
         sentimentData.negative_ratio ??
           sentimentData.negative_rate ??
           sentimentData.negativeRate,
-      ) ||
-      selectedGame?.negativeRate ||
-      0
+      ) || (totalCount > 0 ? (negativeCount / totalCount) * 100 : 0)
 
     const neutral =
       normalizeRatio(
@@ -1050,30 +1098,6 @@ function normalizeSentiment(
           sentimentData.neutral_rate ??
           sentimentData.neutralRate,
       ) || Math.max(0, 100 - positive - negative)
-
-    const positiveCount = toNumber(
-      sentimentData.positive ??
-        sentimentData.positive_reviews ??
-        sentimentData.positive_count ??
-        selectedGame?.positiveReviews,
-    )
-
-    const neutralCount = toNumber(
-      sentimentData.neutral ?? sentimentData.neutral_reviews ?? sentimentData.neutral_count,
-    )
-
-    const negativeCount = toNumber(
-      sentimentData.negative ??
-        sentimentData.negative_reviews ??
-        sentimentData.negative_count ??
-        selectedGame?.negativeReviews,
-    )
-
-    const totalCount =
-      toNumber(sentimentData.total ?? sentimentData.total_reviews ?? sentimentData.total_count) ||
-      positiveCount + neutralCount + negativeCount ||
-      selectedGame?.totalReviews ||
-      0
 
     return {
       positive,
@@ -1086,26 +1110,14 @@ function normalizeSentiment(
     }
   }
 
-  if (!selectedGame) {
-    return {
-      positive: 0,
-      neutral: 0,
-      negative: 0,
-      positiveCount: 0,
-      neutralCount: 0,
-      negativeCount: 0,
-      totalCount: 0,
-    }
-  }
-
   return {
-    positive: selectedGame.positiveRate,
-    negative: selectedGame.negativeRate,
-    neutral: Math.max(0, 100 - selectedGame.positiveRate - selectedGame.negativeRate),
-    positiveCount: selectedGame.positiveReviews,
-    negativeCount: selectedGame.negativeReviews,
+    positive: 0,
+    neutral: 0,
+    negative: 0,
+    positiveCount: 0,
     neutralCount: 0,
-    totalCount: selectedGame.totalReviews,
+    negativeCount: 0,
+    totalCount: 0,
   }
 }
 
@@ -1179,6 +1191,86 @@ function normalizeTopicSummary(topics: TopicView[]): TopicSummaryView {
     averageTopicRate,
     mainKeywords: strongestTopic.keywords.slice(0, 3).join(', '),
   }
+}
+
+function normalizeTrendPoints(
+  historyData: ApiRecord[],
+  reviewTrendData: ApiRecord[],
+): TrendPoint[] {
+  const source = reviewTrendData.length > 0 ? reviewTrendData : historyData
+
+  if (source.length === 0) {
+    return []
+  }
+
+  return source.slice(-6).map((item, index) => {
+    const label = String(item.date ?? item.month ?? item.period ?? item.label ?? index + 1)
+
+    return {
+      label: label.length > 7 ? label.slice(5, 10) : label,
+      price: normalizePrice(item.price ?? item.price_usd ?? item.current_price),
+      positiveRate: normalizeRatio(item.positive_ratio ?? item.positive_rate),
+      reviewCount: toNumber(item.review_count ?? item.total_reviews ?? item.reviews),
+    }
+  })
+}
+
+function normalizeReviewInsight(reviewInsightData: unknown): ReviewInsight {
+  const record = isRecord(reviewInsightData) ? reviewInsightData : {}
+
+  const positiveSummary = String(
+    record.positive_summary ??
+      record.positiveSummary ??
+      record.positive_review ??
+      '긍정 리뷰에서는 게임성, 몰입감, 전투 경험에 대한 만족이 나타납니다.',
+  )
+
+  const negativeSummary = String(
+    record.negative_summary ??
+      record.negativeSummary ??
+      record.negative_review ??
+      '부정 리뷰에서는 난이도, 최적화, 가격 관련 불만이 나타날 수 있습니다.',
+  )
+
+  return {
+    positiveSummary,
+    negativeSummary,
+  }
+}
+
+function createQuickSummaryItems(
+  selectedGame: GameDetailView | null,
+  sentiment: SentimentView,
+  topics: TopicView[],
+  reviewInsight: ReviewInsight,
+) {
+  if (!selectedGame) {
+    return ['선택된 게임 데이터가 없습니다.']
+  }
+
+  const mainGroup = topics[0]
+  const mainKeywords = mainGroup?.keywords.slice(0, 3).join(', ') ?? '키워드 그룹 없음'
+  const satisfaction =
+    sentiment.positive >= 85
+      ? '매우 긍정적인 평가 흐름입니다.'
+      : sentiment.positive >= 70
+        ? '전반적으로 긍정적인 평가입니다.'
+        : sentiment.positive >= 50
+          ? '긍정과 부정 반응이 함께 나타납니다.'
+          : '개선 이슈가 비교적 크게 나타납니다.'
+
+  return [
+    `긍정 비율은 ${sentiment.positive.toFixed(1)}%로 ${satisfaction}`,
+    `총 리뷰 수는 ${formatNumber(sentiment.totalCount || selectedGame.totalReviews)}개입니다.`,
+    `가장 큰 키워드 그룹은 ${mainKeywords} 중심으로 나타납니다.`,
+    compactSentence(reviewInsight.negativeSummary),
+    `현재 가격은 ${selectedGame.priceLabel} 기준입니다.`,
+  ]
+}
+
+function compactSentence(text: string) {
+  const cleaned = text.replace(/\s+/g, ' ').trim()
+  return cleaned.length <= 42 ? cleaned : `${cleaned.slice(0, 42)}...`
 }
 
 function formatTopicLabel(value: string) {
@@ -1520,12 +1612,7 @@ const TOPIC_EN_MAP: Record<string, string> = {
 
 function extractParenthesesText(value: string) {
   const matched = value.match(/\(([^)]+)\)/)
-
-  if (!matched?.[1]) {
-    return ''
-  }
-
-  return matched[1].trim()
+  return matched?.[1]?.trim() ?? ''
 }
 
 function normalizeTopicEnglishKey(value: string) {
@@ -1572,90 +1659,6 @@ function getEnglishTopicNameFromOriginal(value: string) {
   }
 
   return ''
-}
-
-function normalizeTrendPoints(
-  historyData: ApiRecord[],
-  reviewTrendData: ApiRecord[],
-): TrendPoint[] {
-  const source = reviewTrendData.length > 0 ? reviewTrendData : historyData
-
-  if (source.length === 0) {
-    return []
-  }
-
-  return source.slice(-6).map((item, index) => {
-    const label = String(item.date ?? item.month ?? item.period ?? item.label ?? index + 1)
-
-    return {
-      label: label.length > 7 ? label.slice(5, 10) : label,
-      price: normalizePrice(item.price ?? item.price_usd ?? item.current_price),
-      positiveRate: normalizeRatio(item.positive_ratio ?? item.positive_rate),
-      reviewCount: toNumber(item.review_count ?? item.total_reviews ?? item.reviews),
-    }
-  })
-}
-
-function normalizeReviewInsight(reviewInsightData: unknown): ReviewInsight {
-  const record = isRecord(reviewInsightData) ? reviewInsightData : {}
-
-  const positiveSummary = String(
-    record.positive_summary ??
-      record.positiveSummary ??
-      record.positive_review ??
-      '긍정 리뷰에서는 게임성, 몰입감, 전투 경험에 대한 만족이 나타납니다.',
-  )
-
-  const negativeSummary = String(
-    record.negative_summary ??
-      record.negativeSummary ??
-      record.negative_review ??
-      '부정 리뷰에서는 난이도, 최적화, 가격 관련 불만이 나타날 수 있습니다.',
-  )
-
-  return {
-    positiveSummary,
-    negativeSummary,
-  }
-}
-
-function createQuickSummaryItems(
-  selectedGame: GameDetailView | null,
-  sentiment: SentimentView,
-  topics: TopicView[],
-  reviewInsight: ReviewInsight,
-) {
-  if (!selectedGame) {
-    return ['선택된 게임 데이터가 없습니다.']
-  }
-
-  const mainGroup = topics[0]
-  const mainKeywords = mainGroup?.keywords.slice(0, 3).join(', ') ?? '키워드 그룹 없음'
-  const satisfaction =
-    sentiment.positive >= 85
-      ? '매우 긍정적인 평가 흐름입니다.'
-      : sentiment.positive >= 70
-        ? '전반적으로 긍정적인 평가입니다.'
-        : sentiment.positive >= 50
-          ? '긍정과 부정 반응이 함께 나타납니다.'
-          : '개선 이슈가 비교적 크게 나타납니다.'
-
-  return [
-    `긍정 비율은 ${sentiment.positive.toFixed(1)}%로 ${satisfaction}`,
-    `가장 큰 키워드 그룹은 ${mainKeywords} 중심으로 나타납니다.`,
-    compactSentence(reviewInsight.negativeSummary),
-    `현재 가격은 ${selectedGame.priceLabel} 기준입니다.`,
-  ]
-}
-
-function compactSentence(text: string) {
-  const cleaned = text.replace(/\s+/g, ' ').trim()
-
-  if (cleaned.length <= 42) {
-    return cleaned
-  }
-
-  return `${cleaned.slice(0, 42)}...`
 }
 
 function getGameId(game: ApiRecord) {

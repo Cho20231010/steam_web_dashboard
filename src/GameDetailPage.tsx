@@ -166,20 +166,22 @@ function GameDetailPage() {
     const keyword = searchText.trim().toLowerCase()
 
     if (!keyword) {
-      return gameSummaries.slice(0, 8)
+      return gameSummaries
     }
 
-    return gameSummaries
-      .filter((game) => {
-        return (
-          game.name.toLowerCase().includes(keyword) ||
-          game.genre.toLowerCase().includes(keyword) ||
-          game.genreSearchText.includes(keyword) ||
-          game.genres.some((genre) => genre.toLowerCase().includes(keyword))
-        )
-      })
-      .slice(0, 8)
+    return gameSummaries.filter((game) => {
+      return (
+        game.name.toLowerCase().includes(keyword) ||
+        game.genre.toLowerCase().includes(keyword) ||
+        game.genreSearchText.includes(keyword) ||
+        game.genres.some((genre) => genre.toLowerCase().includes(keyword))
+      )
+    })
   }, [gameSummaries, searchText])
+
+  const dropdownFilteredGames = useMemo(() => {
+    return filteredGames.slice(0, 8)
+  }, [filteredGames])
 
   useEffect(() => {
     const keyword = searchText.trim()
@@ -422,8 +424,8 @@ function GameDetailPage() {
                   <>
                     <div className="game-detail-dropdown-section-title">검색 결과</div>
 
-                    {filteredGames.length > 0 ? (
-                      filteredGames.map((game) => (
+                    {dropdownFilteredGames.length > 0 ? (
+                      dropdownFilteredGames.map((game) => (
                         <button
                           key={game.id}
                           onMouseDown={(event) => event.preventDefault()}

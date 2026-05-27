@@ -844,3 +844,4 @@ function formatMetricName(value: unknown) {
 }
 
 export default HomePage
+

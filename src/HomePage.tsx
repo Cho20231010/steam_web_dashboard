@@ -124,9 +124,20 @@ function HomePage() {
     readNumber(summary, ['total_games', 'totalGames', 'game_count']) ||
     rankingGames.length
 
-  const totalReviews =
-    readNumber(summary, ['total_reviews', 'totalReviews', 'review_count']) ||
-    rankingGames.reduce((sum, game) => sum + getReliableReviewCount(game), 0)
+  const steamTotalReviews = rankingGames.reduce((sum, game) => {
+    return sum + getReliableReviewCount(game)
+  }, 0)
+
+  const analysisSampleCount =
+    readNumber(summary, [
+      'analysis_sample_count',
+      'sample_size',
+      'sentiment_sample_size',
+      'review_sample_count',
+      'total_reviews',
+      'totalReviews',
+      'review_count',
+    ]) || 0
 
   const averagePositiveRate =
     normalizeRatio(
@@ -144,13 +155,19 @@ function HomePage() {
 
   const insights = useMemo(() => {
     return createInsights({
-      totalReviews,
-      averagePositiveRate,
+      steamTotalReviews,
+      analysisSampleCount,
       averagePrice,
       genres,
       correlations,
     })
-  }, [totalReviews, averagePositiveRate, averagePrice, genres, correlations])
+  }, [
+    steamTotalReviews,
+    analysisSampleCount,
+    averagePrice,
+    genres,
+    correlations,
+  ])
 
   if (loading) {
     return (
@@ -174,17 +191,24 @@ function HomePage() {
     <div className="home-page-v2">
       <section className="home-v2-summary-grid">
         <MetricCard
-          title="전체 분석 게임 수"
+          title="게임 수"
           value={formatNumber(totalGames)}
           description="전체 게임 데이터 기준"
           icon="🎮"
         />
 
         <MetricCard
-          title="전체 리뷰 수"
-          value={formatNumber(totalReviews)}
-          description="긍정/부정 리뷰 합산"
+          title="총 Steam 리뷰 수"
+          value={formatNumber(steamTotalReviews)}
+          description="긍정 리뷰 + 부정 리뷰 합산"
           icon="💬"
+        />
+
+        <MetricCard
+          title="분석 샘플 수"
+          value={analysisSampleCount > 0 ? formatNumber(analysisSampleCount) : '-'}
+          description="감성·토픽 분석 기준"
+          icon="🧪"
         />
 
         <MetricCard
@@ -479,9 +503,9 @@ function normalizeBubbles(
             ),
             name: String(readField(item, ['name', 'game_name']) ?? '게임'),
             price: normalizePrice(readField(item, ['price', 'price_usd'])),
-            reviewCount: toNumber(
-              readField(item, ['review_count', 'total_reviews']),
-            ),
+            reviewCount:
+              calculateReviewCountFromRecord(item) ||
+              toNumber(readField(item, ['review_count', 'total_reviews'])),
             positiveRate,
           }
         })
@@ -507,14 +531,14 @@ function normalizeBubbles(
 }
 
 function createInsights({
-  totalReviews,
-  averagePositiveRate,
+  steamTotalReviews,
+  analysisSampleCount,
   averagePrice,
   genres,
   correlations,
 }: {
-  totalReviews: number
-  averagePositiveRate: number
+  steamTotalReviews: number
+  analysisSampleCount: number
   averagePrice: number
   genres: GenreView[]
   correlations: CorrelationResult[]
@@ -525,18 +549,21 @@ function createInsights({
 
   return [
     {
-      title: '리뷰 규모 확인',
-      description: `현재 분석 리뷰 수는 약 ${formatNumber(
-        totalReviews,
-      )}건으로, 시장 반응을 비교하기에 충분한 규모입니다.`,
-      icon: '📈',
+      title: 'Steam 리뷰 규모',
+      description: `전체 게임의 긍정·부정 리뷰 합산은 약 ${formatNumber(
+        steamTotalReviews,
+      )}건으로, 시장 반응 규모를 파악할 수 있습니다.`,
+      icon: '💬',
     },
     {
-      title: '긍정 비율 흐름',
-      description: `평균 긍정 비율은 ${averagePositiveRate.toFixed(
-        1,
-      )}%로, 전반적인 사용자 만족도를 핵심 지표로 활용할 수 있습니다.`,
-      icon: '👍',
+      title: '분석 샘플 규모',
+      description:
+        analysisSampleCount > 0
+          ? `감성·토픽 분석에는 약 ${formatNumber(
+              analysisSampleCount,
+            )}건의 리뷰 샘플이 활용되었습니다.`
+          : '분석 샘플 수가 별도로 제공되지 않아 Steam 리뷰 수와 분리해 해석해야 합니다.',
+      icon: '🧪',
     },
     {
       title: `${topGenre} 강세`,
@@ -653,6 +680,13 @@ function calculatePositiveRateFromCounts(
   return (positive / total) * 100
 }
 
+function calculateReviewCountFromRecord(value: unknown) {
+  return (
+    toNumber(readField(value, ['positive_reviews'])) +
+    toNumber(readField(value, ['negative_reviews']))
+  )
+}
+
 function getGameId(game: Game) {
   return readField(game, ['game_id', 'id', 'app_id', 'appid', 'steam_appid'])
 }
@@ -693,16 +727,16 @@ function getGameImage(game: Game) {
 }
 
 function getReliableReviewCount(game: Game) {
-  const positive = toNumber(readField(game, ['positive_reviews']))
-  const negative = toNumber(readField(game, ['negative_reviews']))
+  const positive = toNumber(readField(game, ['positive_reviews', 'positiveReviews']))
+  const negative = toNumber(readField(game, ['negative_reviews', 'negativeReviews']))
   const fallback = toNumber(readField(game, ['total_reviews', 'review_count']))
 
   return positive + negative || fallback
 }
 
 function getPositiveRate(game: Game) {
-  const positive = toNumber(readField(game, ['positive_reviews']))
-  const negative = toNumber(readField(game, ['negative_reviews']))
+  const positive = toNumber(readField(game, ['positive_reviews', 'positiveReviews']))
+  const negative = toNumber(readField(game, ['negative_reviews', 'negativeReviews']))
   const total = positive + negative
 
   if (total > 0) {

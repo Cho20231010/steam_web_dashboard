@@ -64,11 +64,13 @@
   display: block;
   margin-top: 16px;
   color: #071426;
-  font-size: 25px;
+  font-size: 24px;
   font-weight: 950;
   letter-spacing: -0.05em;
-  line-height: 1.18;
+  line-height: 1.22;
+  white-space: normal;
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .home-v2-metric-card p {
@@ -180,7 +182,7 @@
 .home-v2-table-head,
 .home-v2-table-row {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 74px 94px;
+  grid-template-columns: 42px minmax(0, 1fr) minmax(88px, 0.55fr) 94px;
   align-items: center;
   gap: 10px;
 }
@@ -194,7 +196,7 @@
 }
 
 .home-v2-table-row {
-  min-height: 42px;
+  min-height: 46px;
   padding: 8px 0;
   border-bottom: 1px solid #f0f2f6;
 }
@@ -277,7 +279,11 @@
   color: #071426;
   font-size: 12px;
   font-weight: 950;
+  line-height: 1.25;
   text-align: right;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .home-v2-rate-cell {
@@ -542,7 +548,7 @@
 }
 
 .home-v2-expanded-panel {
-  width: min(1080px, 100%);
+  width: min(1120px, 100%);
   max-height: min(820px, 88vh);
   display: flex;
   flex-direction: column;
@@ -624,7 +630,7 @@
 .home-v2-expanded-game-card {
   min-width: 0;
   display: grid;
-  grid-template-columns: 156px minmax(0, 1fr);
+  grid-template-columns: 148px minmax(0, 1fr);
   gap: 16px;
   padding: 16px;
   border: 1px solid #e6eaf2;
@@ -697,7 +703,7 @@
 
 .home-v2-expanded-info-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(96px, 1.1fr) minmax(92px, 1fr) minmax(82px, 0.9fr);
   gap: 10px;
 }
 
@@ -717,13 +723,14 @@
 
 .home-v2-expanded-info-grid strong {
   display: block;
-  overflow: hidden;
   margin-top: 5px;
   color: #071426;
   font-size: 13px;
   font-weight: 950;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .home-v2-expanded-rate-bar {
@@ -894,7 +901,7 @@ html.theme-dark .home-v2-insight-item p {
 
   .home-v2-table-head,
   .home-v2-table-row {
-    grid-template-columns: 36px minmax(0, 1fr) 70px;
+    grid-template-columns: 36px minmax(0, 1fr) minmax(76px, 0.6fr);
   }
 
   .home-v2-table-head span:nth-child(4),

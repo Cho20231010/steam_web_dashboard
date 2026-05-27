@@ -395,6 +395,10 @@ function GameDetailPage() {
   return (
     <div className="game-detail-page">
       <section className="game-detail-header">
+        <p className="game-detail-sample-note">
+          ※ 현재 분석 화면은 샘플 데이터 기준 50개 게임을 대상으로 제공합니다.
+        </p>
+
         <div className="game-detail-search-box">
           <input
             value={searchText}
@@ -1523,12 +1527,7 @@ const TOPIC_EN_MAP: Record<string, string> = {
 
 function extractParenthesesText(value: string) {
   const matched = value.match(/\(([^)]+)\)/)
-
-  if (!matched?.[1]) {
-    return ''
-  }
-
-  return matched[1].trim()
+  return matched?.[1]?.trim() ?? ''
 }
 
 function normalizeTopicEnglishKey(value: string) {
@@ -1654,12 +1653,7 @@ function createQuickSummaryItems(
 
 function compactSentence(text: string) {
   const cleaned = text.replace(/\s+/g, ' ').trim()
-
-  if (cleaned.length <= 42) {
-    return cleaned
-  }
-
-  return `${cleaned.slice(0, 42)}...`
+  return cleaned.length <= 42 ? cleaned : `${cleaned.slice(0, 42)}...`
 }
 
 function getGameId(game: ApiRecord) {

@@ -57,6 +57,7 @@ function HomePage() {
   const [correlations, setCorrelations] = useState<CorrelationResult[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isTopGamesExpanded, setIsTopGamesExpanded] = useState(false)
 
   useEffect(() => {
     async function loadHomeData() {
@@ -234,7 +235,9 @@ function HomePage() {
               <p>리뷰 수와 긍정 비율을 기준으로 상위 게임을 확인합니다.</p>
             </div>
 
-            <button type="button">더보기 →</button>
+            <button type="button" onClick={() => setIsTopGamesExpanded(true)}>
+              더보기 →
+            </button>
           </div>
 
           <div className="home-v2-table">
@@ -384,6 +387,82 @@ function HomePage() {
           ))}
         </div>
       </section>
+
+      {isTopGamesExpanded && (
+        <section
+          className="home-v2-expanded-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="인기 게임 TOP 10 확장 보기"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsTopGamesExpanded(false)
+            }
+          }}
+        >
+          <div className="home-v2-expanded-panel">
+            <div className="home-v2-expanded-header">
+              <div>
+                <h2>인기 게임 TOP 10 상세 보기</h2>
+                <p>리뷰 수 기준 상위 게임의 주요 정보를 확장 화면에서 확인합니다.</p>
+              </div>
+
+              <button
+                className="home-v2-expanded-close"
+                type="button"
+                onClick={() => setIsTopGamesExpanded(false)}
+                aria-label="닫기"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="home-v2-expanded-list">
+              {topGames.map((game) => (
+                <article className="home-v2-expanded-game-card" key={game.id}>
+                  <div className="home-v2-expanded-game-image">
+                    {game.image ? (
+                      <img src={game.image} alt={`${game.name} 이미지`} />
+                    ) : (
+                      <span>{game.name.slice(0, 2)}</span>
+                    )}
+                  </div>
+
+                  <div className="home-v2-expanded-game-content">
+                    <div className="home-v2-expanded-game-title">
+                      <span>#{game.rank}</span>
+                      <h3>{game.name}</h3>
+                    </div>
+
+                    <p className="home-v2-expanded-genre">{game.genre}</p>
+
+                    <div className="home-v2-expanded-info-grid">
+                      <div>
+                        <span>가격</span>
+                        <strong>{game.price}</strong>
+                      </div>
+
+                      <div>
+                        <span>리뷰 수</span>
+                        <strong>{formatNumber(game.reviewCount)}</strong>
+                      </div>
+
+                      <div>
+                        <span>긍정 비율</span>
+                        <strong>{game.positiveRate.toFixed(1)}%</strong>
+                      </div>
+                    </div>
+
+                    <div className="home-v2-expanded-rate-bar">
+                      <span style={{ width: `${Math.min(game.positiveRate, 100)}%` }} />
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

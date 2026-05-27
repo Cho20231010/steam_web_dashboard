@@ -154,6 +154,10 @@
   cursor: pointer;
 }
 
+.home-v2-card-header button:hover {
+  color: #3157ff;
+}
+
 .home-v2-card-header select {
   flex-shrink: 0;
   width: 150px;
@@ -525,6 +529,212 @@
   margin: 0;
 }
 
+/* TOP 10 확장 보기 */
+.home-v2-expanded-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(6px);
+}
+
+.home-v2-expanded-panel {
+  width: min(1080px, 100%);
+  max-height: min(820px, 88vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e6eaf2;
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.25);
+}
+
+.home-v2-expanded-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 26px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.home-v2-expanded-header h2 {
+  margin: 0;
+  color: #071426;
+  font-size: 25px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.home-v2-expanded-header p {
+  margin: 8px 0 0;
+  color: #617089;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.home-v2-expanded-close {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #f4f5fb;
+  color: #071426;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.home-v2-expanded-close:hover {
+  background: #edf0ff;
+  color: #4d58df;
+}
+
+.home-v2-expanded-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  overflow-y: auto;
+  padding: 22px 26px 26px;
+}
+
+.home-v2-expanded-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.home-v2-expanded-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.home-v2-expanded-game-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 156px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e6eaf2;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.home-v2-expanded-game-image {
+  width: 100%;
+  min-height: 88px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #edf0ff;
+  color: #5d63f1;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.home-v2-expanded-game-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-v2-expanded-game-content {
+  min-width: 0;
+}
+
+.home-v2-expanded-game-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-v2-expanded-game-title span {
+  min-width: 34px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #edf0ff;
+  color: #4d58df;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.home-v2-expanded-game-title h3 {
+  margin: 0;
+  color: #071426;
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.home-v2-expanded-genre {
+  margin: 8px 0 14px;
+  overflow: hidden;
+  color: #617089;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-v2-expanded-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.home-v2-expanded-info-grid div {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 13px;
+  background: #f8f9fc;
+}
+
+.home-v2-expanded-info-grid span {
+  display: block;
+  color: #617089;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.home-v2-expanded-info-grid strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 5px;
+  color: #071426;
+  font-size: 13px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-v2-expanded-rate-bar {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #e8ecf3;
+}
+
+.home-v2-expanded-rate-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #5d63f1;
+}
+
 /* 다크모드 대응 */
 html.theme-dark .home-v2-header h1,
 html.theme-dark .home-v2-card-header h2,
@@ -534,7 +744,11 @@ html.theme-dark .home-v2-game-text strong,
 html.theme-dark .home-v2-price,
 html.theme-dark .home-v2-donut strong,
 html.theme-dark .home-v2-genre-row p,
-html.theme-dark .home-v2-genre-row strong {
+html.theme-dark .home-v2-genre-row strong,
+html.theme-dark .home-v2-expanded-header h2,
+html.theme-dark .home-v2-expanded-game-title h3,
+html.theme-dark .home-v2-expanded-info-grid strong,
+html.theme-dark .home-v2-expanded-close {
   color: #f9fafb;
 }
 
@@ -546,15 +760,24 @@ html.theme-dark .home-v2-donut span,
 html.theme-dark .home-v2-donut em,
 html.theme-dark .bubble-label-y,
 html.theme-dark .bubble-label-x,
-html.theme-dark .home-v2-empty {
+html.theme-dark .home-v2-empty,
+html.theme-dark .home-v2-expanded-header p,
+html.theme-dark .home-v2-expanded-genre,
+html.theme-dark .home-v2-expanded-info-grid span {
   color: #cbd5e1;
 }
 
 html.theme-dark .home-v2-card,
 html.theme-dark .home-v2-insight-card,
 html.theme-dark .home-v2-metric-card,
-html.theme-dark .home-v2-insight-item {
+html.theme-dark .home-v2-insight-item,
+html.theme-dark .home-v2-expanded-panel,
+html.theme-dark .home-v2-expanded-game-card {
   background: #111827;
+  border-color: #334155;
+}
+
+html.theme-dark .home-v2-expanded-header {
   border-color: #334155;
 }
 
@@ -565,7 +788,9 @@ html.theme-dark .home-v2-card-header select {
 }
 
 html.theme-dark .home-v2-metric-card em,
-html.theme-dark .home-v2-donut > div {
+html.theme-dark .home-v2-donut > div,
+html.theme-dark .home-v2-expanded-close,
+html.theme-dark .home-v2-expanded-info-grid div {
   background: #1f2937;
 }
 
@@ -574,7 +799,8 @@ html.theme-dark .home-v2-table-row {
   border-color: #334155;
 }
 
-html.theme-dark .home-v2-rate-cell div {
+html.theme-dark .home-v2-rate-cell div,
+html.theme-dark .home-v2-expanded-rate-bar {
   background: #334155;
 }
 
@@ -589,7 +815,7 @@ html.theme-dark .home-v2-insight-item p {
   color: #cbd5e1;
 }
 
-/* 1240px 제한 유지: 넓은 화면에서도 1160px로 줄이지 않음 */
+/* 1240px 제한 유지 */
 @media (max-width: 1500px) {
   .home-page-v2 {
     max-width: 1240px;
@@ -637,6 +863,12 @@ html.theme-dark .home-v2-insight-item p {
   }
 }
 
+@media (max-width: 980px) {
+  .home-v2-expanded-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 860px) {
   .home-v2-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -670,5 +902,31 @@ html.theme-dark .home-v2-insight-item p {
   .home-v2-card-header select {
     width: 100%;
     max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-v2-expanded-overlay {
+    padding: 14px;
+  }
+
+  .home-v2-expanded-header {
+    padding: 20px;
+  }
+
+  .home-v2-expanded-list {
+    padding: 18px;
+  }
+
+  .home-v2-expanded-game-card {
+    grid-template-columns: 1fr;
+  }
+
+  .home-v2-expanded-game-image {
+    min-height: 132px;
+  }
+
+  .home-v2-expanded-info-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -113,6 +113,10 @@ function HomePage() {
     return normalizeTopGames(rankingGames).slice(0, 10)
   }, [rankingGames])
 
+  const expandedTopGameColumns = useMemo(() => {
+    return [topGames.slice(0, 5), topGames.slice(5, 10)]
+  }, [topGames])
+
   const genres = useMemo(() => {
     return normalizeGenres(genreStats, rankingGames).slice(0, 8)
   }, [genreStats, rankingGames])
@@ -404,7 +408,9 @@ function HomePage() {
             <div className="home-v2-expanded-header">
               <div>
                 <h2>인기 게임 TOP 10 상세 보기</h2>
-                <p>리뷰 수 기준 상위 게임의 주요 정보를 확장 화면에서 확인합니다.</p>
+                <p>
+                  왼쪽은 1~5위, 오른쪽은 6~10위 순서로 주요 정보를 확인합니다.
+                </p>
               </div>
 
               <button
@@ -418,46 +424,53 @@ function HomePage() {
             </div>
 
             <div className="home-v2-expanded-list">
-              {topGames.map((game) => (
-                <article className="home-v2-expanded-game-card" key={game.id}>
-                  <div className="home-v2-expanded-game-image">
-                    {game.image ? (
-                      <img src={game.image} alt={`${game.name} 이미지`} />
-                    ) : (
-                      <span>{game.name.slice(0, 2)}</span>
-                    )}
-                  </div>
-
-                  <div className="home-v2-expanded-game-content">
-                    <div className="home-v2-expanded-game-title">
-                      <span>#{game.rank}</span>
-                      <h3>{game.name}</h3>
-                    </div>
-
-                    <p className="home-v2-expanded-genre">{game.genre}</p>
-
-                    <div className="home-v2-expanded-info-grid">
-                      <div>
-                        <span>가격</span>
-                        <strong>{game.price}</strong>
+              {expandedTopGameColumns.map((columnGames, columnIndex) => (
+                <div
+                  className="home-v2-expanded-column"
+                  key={`top-games-column-${columnIndex}`}
+                >
+                  {columnGames.map((game) => (
+                    <article className="home-v2-expanded-game-card" key={game.id}>
+                      <div className="home-v2-expanded-game-image">
+                        {game.image ? (
+                          <img src={game.image} alt={`${game.name} 이미지`} />
+                        ) : (
+                          <span>{game.name.slice(0, 2)}</span>
+                        )}
                       </div>
 
-                      <div>
-                        <span>리뷰 수</span>
-                        <strong>{formatNumber(game.reviewCount)}</strong>
-                      </div>
+                      <div className="home-v2-expanded-game-content">
+                        <div className="home-v2-expanded-game-title">
+                          <span>#{game.rank}</span>
+                          <h3>{game.name}</h3>
+                        </div>
 
-                      <div>
-                        <span>긍정 비율</span>
-                        <strong>{game.positiveRate.toFixed(1)}%</strong>
-                      </div>
-                    </div>
+                        <p className="home-v2-expanded-genre">{game.genre}</p>
 
-                    <div className="home-v2-expanded-rate-bar">
-                      <span style={{ width: `${Math.min(game.positiveRate, 100)}%` }} />
-                    </div>
-                  </div>
-                </article>
+                        <div className="home-v2-expanded-info-grid">
+                          <div>
+                            <span>가격</span>
+                            <strong>{game.price}</strong>
+                          </div>
+
+                          <div>
+                            <span>리뷰 수</span>
+                            <strong>{formatNumber(game.reviewCount)}</strong>
+                          </div>
+
+                          <div>
+                            <span>긍정 비율</span>
+                            <strong>{game.positiveRate.toFixed(1)}%</strong>
+                          </div>
+                        </div>
+
+                        <div className="home-v2-expanded-rate-bar">
+                          <span style={{ width: `${Math.min(game.positiveRate, 100)}%` }} />
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               ))}
             </div>
           </div>

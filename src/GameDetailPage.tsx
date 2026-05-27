@@ -512,7 +512,7 @@ function GameDetailPage() {
       <section className="game-detail-layout">
         <aside className="game-detail-result-panel">
           <div className="game-detail-panel-title">
-            <strong>검색 결과</strong>
+            <strong>게임 목록</strong>
             <span>{filteredGames.length}개 표시</span>
           </div>
 

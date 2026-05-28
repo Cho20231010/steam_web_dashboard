@@ -44,6 +44,70 @@ type LinePoint = {
   month: string
 }
 
+const GENRE_LABEL_MAP: Record<string, string> = {
+  RPG: '역할수행게임 (RPG)',
+  Action: '액션 (Action)',
+  Adventure: '어드벤처 (Adventure)',
+  Casual: '캐주얼 (Casual)',
+  Indie: '인디 (Indie)',
+  Simulation: '시뮬레이션 (Simulation)',
+  Strategy: '전략 (Strategy)',
+  Sports: '스포츠 (Sports)',
+  Racing: '레이싱 (Racing)',
+  'Free to Play': '무료 플레이 (Free to Play)',
+  'Free To Play': '무료 플레이 (Free To Play)',
+  'Massively Multiplayer': '대규모 멀티플레이어 (Massively Multiplayer)',
+  'Early Access': '앞서 해보기 (Early Access)',
+  Utilities: '유틸리티 (Utilities)',
+  Education: '교육 (Education)',
+  'Game Development': '게임 개발 (Game Development)',
+  'Design & Illustration': '디자인 및 일러스트레이션 (Design & Illustration)',
+  'Animation & Modeling': '애니메이션 및 모델링 (Animation & Modeling)',
+  'Audio Production': '오디오 제작 (Audio Production)',
+  'Video Production': '비디오 제작 (Video Production)',
+  'Photo Editing': '사진 편집 (Photo Editing)',
+  'Web Publishing': '웹 퍼블리싱 (Web Publishing)',
+  Accounting: '회계 (Accounting)',
+  Other: '기타 (Other)',
+}
+
+const PRICE_BAND_LABEL_MAP: Record<string, string> = {
+  Free: '무료 (Free)',
+  Paid: '유료 (Paid)',
+  'Free to Play': '무료 플레이 (Free to Play)',
+  'Free To Play': '무료 플레이 (Free To Play)',
+  'Under $10': '$10 미만 (Under $10)',
+  '$50 or More': '$50 이상 ($50 or More)',
+  'Over $50': '$50 초과 (Over $50)',
+  Other: '기타 (Other)',
+}
+
+const MONTH_LABEL_MAP: Record<string, string> = {
+  January: '1월 (January)',
+  February: '2월 (February)',
+  March: '3월 (March)',
+  April: '4월 (April)',
+  May: '5월 (May)',
+  June: '6월 (June)',
+  July: '7월 (July)',
+  August: '8월 (August)',
+  September: '9월 (September)',
+  October: '10월 (October)',
+  November: '11월 (November)',
+  December: '12월 (December)',
+  Jan: '1월 (Jan)',
+  Feb: '2월 (Feb)',
+  Mar: '3월 (Mar)',
+  Apr: '4월 (Apr)',
+  Jun: '6월 (Jun)',
+  Jul: '7월 (Jul)',
+  Aug: '8월 (Aug)',
+  Sep: '9월 (Sep)',
+  Oct: '10월 (Oct)',
+  Nov: '11월 (Nov)',
+  Dec: '12월 (Dec)',
+}
+
 const DEFAULT_MONTHLY_TRENDS: MonthlyTrend[] = [
   {
     month: '11월',
@@ -91,27 +155,27 @@ const DEFAULT_MONTHLY_TRENDS: MonthlyTrend[] = [
 
 const DEFAULT_GENRE_TRENDS: GenreTrend[] = [
   {
-    genre: 'RPG',
+    genre: '역할수행게임 (RPG)',
     currentReviews: 24200000,
     previousReviews: 20100000,
   },
   {
-    genre: '액션',
+    genre: '액션 (Action)',
     currentReviews: 18700000,
     previousReviews: 15900000,
   },
   {
-    genre: '어드벤처',
+    genre: '어드벤처 (Adventure)',
     currentReviews: 9400000,
     previousReviews: 8700000,
   },
   {
-    genre: '전략',
+    genre: '전략 (Strategy)',
     currentReviews: 4200000,
     previousReviews: 3600000,
   },
   {
-    genre: '시뮬레이션',
+    genre: '시뮬레이션 (Simulation)',
     currentReviews: 3700000,
     previousReviews: 3100000,
   },
@@ -207,12 +271,8 @@ function TrendComparePage() {
   }, [compareMode, trendData.genreTrends])
 
   const priceTrends = useMemo(() => {
-    if (compareMode === 'price') {
-      return trendData.priceTrends.slice(0, 5)
-    }
-
     return trendData.priceTrends.slice(0, 5)
-  }, [compareMode, trendData.priceTrends])
+  }, [trendData.priceTrends])
 
   return (
     <section className="trend-compare-page" aria-label="트렌드 비교 화면">
@@ -305,7 +365,7 @@ function TrendComparePage() {
       </div>
 
       <div className="trend-compare-bottom-note">
-        <strong>{compareStandard === 'reviews' ? '리뷰 수' : '긍정 비율'} 기준 비교</strong>
+        <strong>{compareStandard === 'reviews' ? '리뷰 수 기준 비교' : '긍정 비율 기준 비교'}</strong>
         <span>
           현재 기간과 이전 기간의 변화 흐름을 한 화면에서 비교해 시장 반응, 장르별 성장률,
           가격대별 긍정 비율 차이를 빠르게 확인할 수 있습니다.
@@ -362,8 +422,14 @@ function TrendLineChart({ data, chartType }: { data: MonthlyTrend[]; chartType: 
             ))}
           </g>
 
-          <polyline className="trend-compare-line previous" points={convertPointsToSvg(previousPoints)} />
-          <polyline className="trend-compare-line current" points={convertPointsToSvg(currentPoints)} />
+          <polyline
+            className="trend-compare-line previous"
+            points={convertPointsToSvg(previousPoints)}
+          />
+          <polyline
+            className="trend-compare-line current"
+            points={convertPointsToSvg(currentPoints)}
+          />
 
           {previousPoints.map((point) => (
             <circle
@@ -500,12 +566,12 @@ function calculateChangeRate(currentValue: number, previousValue: number) {
 function formatCompactNumber(value: number) {
   if (value >= 1000000) {
     const compactValue = value / 1000000
-    return `${compactValue.toFixed(compactValue >= 10 ? 1 : 1)}M`
+    return `${compactValue.toFixed(1)}M`
   }
 
   if (value >= 1000) {
     const compactValue = value / 1000
-    return `${compactValue.toFixed(compactValue >= 10 ? 1 : 1)}K`
+    return `${compactValue.toFixed(1)}K`
   }
 
   return value.toLocaleString('ko-KR')
@@ -549,7 +615,7 @@ function normalizeMonthlyTrends(rawData: unknown): MonthlyTrend[] {
 
       return {
         month:
-          readString(item, ['month', 'label', 'period', 'date']) ||
+          formatMonthLabel(readString(item, ['month', 'label', 'period', 'date'])) ||
           DEFAULT_MONTHLY_TRENDS[index]?.month ||
           `${index + 1}월`,
         currentReviews: currentReviews || DEFAULT_MONTHLY_TRENDS[index]?.currentReviews || 0,
@@ -584,9 +650,9 @@ function normalizeGenreTrends(rawData: unknown): GenreTrend[] {
 
       return {
         genre:
-          readString(item, ['genre', 'name', 'label', 'category']) ||
+          formatGenreLabel(readString(item, ['genre', 'name', 'label', 'category'])) ||
           DEFAULT_GENRE_TRENDS[index]?.genre ||
-          '기타',
+          '기타 (Other)',
         currentReviews: currentReviews || DEFAULT_GENRE_TRENDS[index]?.currentReviews || 0,
         previousReviews:
           previousReviews ||
@@ -623,9 +689,9 @@ function normalizePriceTrends(rawData: unknown): PriceTrend[] {
 
       return {
         priceBand:
-          readString(item, ['price_band', 'priceBand', 'label', 'range', 'name']) ||
+          formatPriceBandLabel(readString(item, ['price_band', 'priceBand', 'label', 'range', 'name'])) ||
           DEFAULT_PRICE_TRENDS[index]?.priceBand ||
-          '기타',
+          '기타 (Other)',
         currentPositiveRate:
           currentPositiveRate || DEFAULT_PRICE_TRENDS[index]?.currentPositiveRate || 0,
         previousPositiveRate:
@@ -635,6 +701,98 @@ function normalizePriceTrends(rawData: unknown): PriceTrend[] {
     .filter((item) => item.currentPositiveRate > 0)
 
   return normalizedList.length > 0 ? normalizedList : DEFAULT_PRICE_TRENDS
+}
+
+function formatGenreLabel(rawLabel: string) {
+  const label = rawLabel.trim()
+
+  if (!label) {
+    return ''
+  }
+
+  if (containsKorean(label)) {
+    return label
+  }
+
+  const separators = /[,;/]/
+
+  if (separators.test(label)) {
+    return label
+      .split(separators)
+      .map((genre) => formatSingleGenreLabel(genre.trim()))
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  return formatSingleGenreLabel(label)
+}
+
+function formatSingleGenreLabel(rawLabel: string) {
+  const label = rawLabel.trim().replace(/\s+/g, ' ')
+
+  if (!label) {
+    return ''
+  }
+
+  const matchedKey = Object.keys(GENRE_LABEL_MAP).find(
+    (key) => key.toLowerCase() === label.toLowerCase(),
+  )
+
+  return matchedKey ? GENRE_LABEL_MAP[matchedKey] : label
+}
+
+function formatPriceBandLabel(rawLabel: string) {
+  const label = rawLabel.trim().replace(/\s+/g, ' ')
+
+  if (!label) {
+    return ''
+  }
+
+  if (containsKorean(label)) {
+    return label
+  }
+
+  const matchedKey = Object.keys(PRICE_BAND_LABEL_MAP).find(
+    (key) => key.toLowerCase() === label.toLowerCase(),
+  )
+
+  return matchedKey ? PRICE_BAND_LABEL_MAP[matchedKey] : label
+}
+
+function formatMonthLabel(rawLabel: string) {
+  const label = rawLabel.trim()
+
+  if (!label) {
+    return ''
+  }
+
+  if (containsKorean(label)) {
+    return label
+  }
+
+  const matchedKey = Object.keys(MONTH_LABEL_MAP).find(
+    (key) => key.toLowerCase() === label.toLowerCase(),
+  )
+
+  if (matchedKey) {
+    return MONTH_LABEL_MAP[matchedKey]
+  }
+
+  const dateMonthMatch = label.match(/^\d{4}-(\d{1,2})/)
+
+  if (dateMonthMatch) {
+    const month = Number(dateMonthMatch[1])
+
+    if (month >= 1 && month <= 12) {
+      return `${month}월`
+    }
+  }
+
+  return label
+}
+
+function containsKorean(value: string) {
+  return /[가-힣]/.test(value)
 }
 
 function unwrapListFromUnknown(rawData: unknown): Record<string, unknown>[] {
@@ -709,4 +867,3 @@ function normalizePercent(value: number) {
 }
 
 export default TrendComparePage
-

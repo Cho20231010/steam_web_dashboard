@@ -628,24 +628,35 @@ function GameDetailPage() {
               description={selectedGameId === ALL_GAME_ID ? '전체 게임 기준' : '선택 게임 기준'}
               type="positive"
             />
+
             <SummaryCard
               title="총 Steam 리뷰 수"
               value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
               description="긍정/부정 리뷰 집계"
               type="blue"
             />
+
             <SummaryCard
               title="분석 샘플 리뷰 수"
               value={analysisSampleSize > 0 ? formatNumber(analysisSampleSize) : '제공 없음'}
               description="감성·토픽 분석 기준"
               type="blue"
             />
+
             <SummaryCard
               title="평균 플레이타임"
               value={`${formatNumber(selectedGame.averagePlaytime)}분`}
               description={selectedGameId === ALL_GAME_ID ? '전체 평균 기준' : '제공 데이터 기준'}
               type="neutral"
             />
+
+            <SummaryCard
+              title="보유자 추정 수"
+              value={selectedGame.owners}
+              description={selectedGameId === ALL_GAME_ID ? 'SteamSpy 범위값 기준' : 'SteamSpy 기준'}
+              type="blue"
+            />
+
             <SummaryCard
               title={selectedGameId === ALL_GAME_ID ? '평균 가격' : '현재 가격'}
               value={selectedGame.priceLabel}
@@ -1125,7 +1136,7 @@ function normalizeAllGameDetail(
       averagePrice > 0 ? `평균 ${formatEstimatedKrw(averagePrice)}` : '평균 가격 기준',
     priceSubLabelLine1: '50개 게임 샘플 기준,',
     priceSubLabelLine2: '평균 가격',
-    owners: '전체 기준',
+    owners: '게임별 범위값 제공',
     positiveReviews,
     negativeReviews,
     totalReviews,

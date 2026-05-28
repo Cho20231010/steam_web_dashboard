@@ -4,11 +4,7 @@
 
 .review-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-  grid-template-areas:
-    'overall selected'
-    'sentiment keyword'
-    'positive negative';
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
   gap: 18px;
   align-items: stretch;
 }
@@ -33,34 +29,29 @@
 }
 
 .review-chart-card {
-  grid-area: overall;
   min-height: 330px;
 }
 
 .selected-game-card {
-  grid-area: selected;
   min-height: 330px;
 }
 
 .game-sentiment-card {
-  grid-area: sentiment;
   min-height: 300px;
 }
 
 .keyword-card {
-  grid-area: keyword;
+  min-width: 0;
   min-height: 300px;
   padding-left: 20px;
   padding-right: 20px;
 }
 
 .positive-ranking-card {
-  grid-area: positive;
   min-height: 330px;
 }
 
 .negative-ranking-card {
-  grid-area: negative;
   min-height: 330px;
 }
 
@@ -314,7 +305,7 @@
   flex-wrap: wrap;
   align-content: center;
   justify-content: center;
-  gap: 9px 14px;
+  gap: 8px 12px;
   text-align: center;
   overflow: hidden;
 }
@@ -499,13 +490,6 @@ html.theme-dark .stacked-bar {
 @media (max-width: 1200px) {
   .review-grid {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      'overall'
-      'selected'
-      'sentiment'
-      'keyword'
-      'positive'
-      'negative';
   }
 
   .review-donut-layout {

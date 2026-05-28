@@ -709,3 +709,4 @@ function normalizePercent(value: number) {
 }
 
 export default TrendComparePage
+

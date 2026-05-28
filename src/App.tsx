@@ -5,6 +5,7 @@ import GameDetailPage from './GameDetailPage'
 import ReviewPage from './ReviewPage'
 import RankingPage from './RankingPage'
 import SettingsPage from './SettingsPage'
+import TrendComparePage from './TrendComparePage'
 
 type PageType =
   | 'home'
@@ -109,15 +110,7 @@ function App() {
 
         {activePage === 'reviewInsight' && <ReviewPage />}
 
-        {activePage === 'trendCompare' && (
-          <section className="status-card">
-            <strong>트렌드 비교 화면 준비 중</strong>
-            <p>
-              /analysis/trends, /analysis/genre-trends, /analysis/price-trends API를
-              연결해서 기간별 시장 변화를 비교하는 화면으로 구성할 수 있습니다.
-            </p>
-          </section>
-        )}
+        {activePage === 'trendCompare' && <TrendComparePage />}
 
         {activePage === 'topicAnalysis' && (
           <section className="status-card">

@@ -8,22 +8,22 @@ type CompareMode = 'all' | 'platform' | 'price'
 
 type MonthlyTrend = {
   month: string
-  currentReviews: number
-  previousReviews: number
-  currentPositiveRate: number
-  previousPositiveRate: number
+  currentReviews: number | null
+  previousReviews: number | null
+  currentPositiveRate: number | null
+  previousPositiveRate: number | null
 }
 
 type GenreTrend = {
   genre: string
   currentReviews: number
-  previousReviews: number
+  previousReviews: number | null
 }
 
 type PriceTrend = {
   priceBand: string
   currentPositiveRate: number
-  previousPositiveRate: number
+  previousPositiveRate: number | null
 }
 
 type TrendCompareData = {
@@ -42,6 +42,14 @@ type LinePoint = {
   x: number
   y: number
   month: string
+}
+
+type PriceTrendCandidate = {
+  priceBand: string
+  currentPositiveRate: number
+  previousPositiveRate: number | null
+  currentWeight: number
+  previousWeight: number | null
 }
 
 const INITIAL_TREND_DATA: TrendCompareData = {
@@ -184,9 +192,7 @@ function TrendComparePage() {
         <div className="trend-compare-loading">트렌드 비교 데이터를 불러오는 중입니다.</div>
       )}
 
-      {!isLoading && errorMessage && (
-        <div className="trend-compare-loading">{errorMessage}</div>
-      )}
+      {!isLoading && errorMessage && <div className="trend-compare-loading">{errorMessage}</div>}
 
       <div className="trend-compare-grid">
         <article className="trend-compare-card">
@@ -260,11 +266,10 @@ function TrendLineChart({
   const previousKey: TrendValueKey =
     chartType === 'reviews' ? 'previousReviews' : 'previousPositiveRate'
 
-  const hasDrawableData = data.some(
-    (item) => Number(item[currentKey]) > 0 || Number(item[previousKey]) > 0,
-  )
+  const hasCurrentData = data.some((item) => getNumberOrNull(item[currentKey]) !== null)
+  const hasPreviousData = data.some((item) => getNumberOrNull(item[previousKey]) !== null)
 
-  if (data.length === 0 || !hasDrawableData) {
+  if (data.length === 0 || (!hasCurrentData && !hasPreviousData)) {
     return (
       <div className="trend-compare-loading">
         표시할 {chartType === 'reviews' ? '리뷰 수' : '긍정 비율'} 추이 데이터가 없습니다.
@@ -277,8 +282,8 @@ function TrendLineChart({
       ? 100
       : getRoundedMaxValue(
           Math.max(
-            ...data.map((item) => Number(item.currentReviews) || 0),
-            ...data.map((item) => Number(item.previousReviews) || 0),
+            ...data.map((item) => getNumberOrNull(item.currentReviews) ?? 0),
+            ...data.map((item) => getNumberOrNull(item.previousReviews) ?? 0),
             1,
           ),
         )
@@ -307,14 +312,19 @@ function TrendLineChart({
             ))}
           </g>
 
-          <polyline
-            className="trend-compare-line previous"
-            points={convertPointsToSvg(previousPoints)}
-          />
-          <polyline
-            className="trend-compare-line current"
-            points={convertPointsToSvg(currentPoints)}
-          />
+          {previousPoints.length > 0 && (
+            <polyline
+              className="trend-compare-line previous"
+              points={convertPointsToSvg(previousPoints)}
+            />
+          )}
+
+          {currentPoints.length > 0 && (
+            <polyline
+              className="trend-compare-line current"
+              points={convertPointsToSvg(currentPoints)}
+            />
+          )}
 
           {previousPoints.map((point) => (
             <circle
@@ -371,9 +381,11 @@ function GenreReviewChangeTable({ data }: { data: GenreTrend[] }) {
           <div className="trend-compare-genre-row" key={item.genre}>
             <strong>{item.genre}</strong>
             <span>{formatCompactNumber(item.currentReviews)}</span>
-            <span>{formatCompactNumber(item.previousReviews)}</span>
-            <em className={changeRate >= 0 ? 'up' : 'down'}>
-              {changeRate >= 0 ? '▲' : '▼'} {Math.abs(changeRate).toFixed(1)}%
+            <span>{item.previousReviews === null ? '-' : formatCompactNumber(item.previousReviews)}</span>
+            <em className={changeRate === null ? 'up' : changeRate >= 0 ? 'up' : 'down'}>
+              {changeRate === null
+                ? '-'
+                : `${changeRate >= 0 ? '▲' : '▼'} ${Math.abs(changeRate).toFixed(1)}%`}
             </em>
           </div>
         )
@@ -394,10 +406,13 @@ function PricePositiveRateBars({ data }: { data: PriceTrend[] }) {
           <span className="trend-compare-price-label">{item.priceBand}</span>
 
           <div className="trend-compare-price-track">
-            <div
-              className="trend-compare-price-bar previous"
-              style={{ width: `${item.previousPositiveRate}%` }}
-            />
+            {item.previousPositiveRate !== null && (
+              <div
+                className="trend-compare-price-bar previous"
+                style={{ width: `${item.previousPositiveRate}%` }}
+              />
+            )}
+
             <div
               className="trend-compare-price-bar current"
               style={{ width: `${item.currentPositiveRate}%` }}
@@ -422,16 +437,24 @@ function createLinePoints(
   const bottom = 184
   const xGap = data.length > 1 ? (right - left) / (data.length - 1) : 0
 
-  return data.map((item, index) => {
-    const value = Math.max(0, Math.min(Number(item[valueKey]) || 0, maxValue))
-    const ratio = maxValue > 0 ? value / maxValue : 0
+  return data
+    .map((item, index) => {
+      const rawValue = getNumberOrNull(item[valueKey])
 
-    return {
-      x: left + xGap * index,
-      y: bottom - ratio * (bottom - top),
-      month: item.month,
-    }
-  })
+      if (rawValue === null) {
+        return null
+      }
+
+      const value = Math.max(0, Math.min(rawValue, maxValue))
+      const ratio = maxValue > 0 ? value / maxValue : 0
+
+      return {
+        x: left + xGap * index,
+        y: bottom - ratio * (bottom - top),
+        month: item.month,
+      }
+    })
+    .filter((point): point is LinePoint => point !== null)
 }
 
 function convertPointsToSvg(points: LinePoint[]) {
@@ -448,9 +471,9 @@ function getPeriodLimitedMonthlyTrends(data: MonthlyTrend[], period: PeriodOptio
   return data.slice(-limitMap[period])
 }
 
-function calculateChangeRate(currentValue: number, previousValue: number) {
-  if (previousValue <= 0) {
-    return 0
+function calculateChangeRate(currentValue: number, previousValue: number | null) {
+  if (previousValue === null || previousValue <= 0) {
+    return null
   }
 
   return ((currentValue - previousValue) / previousValue) * 100
@@ -505,7 +528,7 @@ function normalizeMonthlyTrends(rawData: unknown): MonthlyTrend[] {
 
       return {
         month,
-        currentReviews: readNumber(item, [
+        currentReviews: readOptionalNumber(item, [
           'current_reviews',
           'currentReviews',
           'current_review_count',
@@ -515,7 +538,7 @@ function normalizeMonthlyTrends(rawData: unknown): MonthlyTrend[] {
           'review_count',
           'total_reviews',
         ]),
-        previousReviews: readNumber(item, [
+        previousReviews: readOptionalNumber(item, [
           'previous_reviews',
           'previousReviews',
           'previous_review_count',
@@ -523,8 +546,8 @@ function normalizeMonthlyTrends(rawData: unknown): MonthlyTrend[] {
           'review_count_previous',
           'previous_total_reviews',
         ]),
-        currentPositiveRate: normalizePercent(
-          readNumber(item, [
+        currentPositiveRate: normalizeOptionalPercent(
+          readOptionalNumber(item, [
             'current_positive_rate',
             'currentPositiveRate',
             'positive_rate_current',
@@ -533,8 +556,8 @@ function normalizeMonthlyTrends(rawData: unknown): MonthlyTrend[] {
             'positive_ratio',
           ]),
         ),
-        previousPositiveRate: normalizePercent(
-          readNumber(item, [
+        previousPositiveRate: normalizeOptionalPercent(
+          readOptionalNumber(item, [
             'previous_positive_rate',
             'previousPositiveRate',
             'positive_rate_previous',
@@ -547,17 +570,17 @@ function normalizeMonthlyTrends(rawData: unknown): MonthlyTrend[] {
     .filter(
       (item) =>
         item.month.trim().length > 0 &&
-        (item.currentReviews > 0 ||
-          item.previousReviews > 0 ||
-          item.currentPositiveRate > 0 ||
-          item.previousPositiveRate > 0),
+        (item.currentReviews !== null ||
+          item.previousReviews !== null ||
+          item.currentPositiveRate !== null ||
+          item.previousPositiveRate !== null),
     )
 }
 
 function normalizeGenreTrends(rawData: unknown): GenreTrend[] {
   const rawList = unwrapListFromUnknown(rawData)
 
-  return rawList
+  const normalizedList = rawList
     .map((item) => {
       const genre = readDisplayLabel(
         item,
@@ -567,17 +590,18 @@ function normalizeGenreTrends(rawData: unknown): GenreTrend[] {
 
       return {
         genre,
-        currentReviews: readNumber(item, [
-          'current_reviews',
-          'currentReviews',
-          'current_review_count',
-          'reviews_current',
-          'review_count_current',
-          'current_total_reviews',
-          'review_count',
-          'total_reviews',
-        ]),
-        previousReviews: readNumber(item, [
+        currentReviews:
+          readOptionalNumber(item, [
+            'current_reviews',
+            'currentReviews',
+            'current_review_count',
+            'reviews_current',
+            'review_count_current',
+            'current_total_reviews',
+            'review_count',
+            'total_reviews',
+          ]) ?? 0,
+        previousReviews: readOptionalNumber(item, [
           'previous_reviews',
           'previousReviews',
           'previous_review_count',
@@ -588,12 +612,14 @@ function normalizeGenreTrends(rawData: unknown): GenreTrend[] {
       }
     })
     .filter((item) => item.genre.trim().length > 0)
+
+  return aggregateGenreTrends(normalizedList)
 }
 
 function normalizePriceTrends(rawData: unknown): PriceTrend[] {
   const rawList = unwrapListFromUnknown(rawData)
 
-  return rawList
+  const normalizedList: PriceTrendCandidate[] = rawList
     .map((item) => {
       const priceBand = readDisplayLabel(
         item,
@@ -601,30 +627,126 @@ function normalizePriceTrends(rawData: unknown): PriceTrend[] {
         ['price_band', 'priceBand', 'label', 'range', 'name'],
       )
 
+      const currentPositiveRate = normalizeOptionalPercent(
+        readOptionalNumber(item, [
+          'current_positive_rate',
+          'currentPositiveRate',
+          'positive_rate_current',
+          'current_positive_ratio',
+          'positive_ratio_current',
+          'positive_ratio',
+        ]),
+      )
+
+      const previousPositiveRate = normalizeOptionalPercent(
+        readOptionalNumber(item, [
+          'previous_positive_rate',
+          'previousPositiveRate',
+          'positive_rate_previous',
+          'previous_positive_ratio',
+          'positive_ratio_previous',
+        ]),
+      )
+
+      const currentWeight =
+        readOptionalNumber(item, [
+          'current_reviews',
+          'currentReviews',
+          'current_review_count',
+          'reviews_current',
+          'review_count_current',
+          'review_count',
+          'total_reviews',
+        ]) ?? 1
+
+      const previousWeight = readOptionalNumber(item, [
+        'previous_reviews',
+        'previousReviews',
+        'previous_review_count',
+        'reviews_previous',
+        'review_count_previous',
+      ])
+
       return {
         priceBand,
-        currentPositiveRate: normalizePercent(
-          readNumber(item, [
-            'current_positive_rate',
-            'currentPositiveRate',
-            'positive_rate_current',
-            'current_positive_ratio',
-            'positive_ratio_current',
-            'positive_ratio',
-          ]),
-        ),
-        previousPositiveRate: normalizePercent(
-          readNumber(item, [
-            'previous_positive_rate',
-            'previousPositiveRate',
-            'positive_rate_previous',
-            'previous_positive_ratio',
-            'positive_ratio_previous',
-          ]),
-        ),
+        currentPositiveRate: currentPositiveRate ?? 0,
+        previousPositiveRate,
+        currentWeight,
+        previousWeight,
       }
     })
     .filter((item) => item.priceBand.trim().length > 0)
+
+  return aggregatePriceTrends(normalizedList)
+}
+
+function aggregateGenreTrends(data: GenreTrend[]) {
+  const map = new Map<string, GenreTrend>()
+
+  data.forEach((item) => {
+    const savedItem = map.get(item.genre)
+
+    if (!savedItem) {
+      map.set(item.genre, { ...item })
+      return
+    }
+
+    savedItem.currentReviews += item.currentReviews
+
+    if (item.previousReviews !== null) {
+      savedItem.previousReviews = (savedItem.previousReviews ?? 0) + item.previousReviews
+    }
+  })
+
+  return Array.from(map.values()).sort((a, b) => b.currentReviews - a.currentReviews)
+}
+
+function aggregatePriceTrends(data: PriceTrendCandidate[]) {
+  const map = new Map<
+    string,
+    {
+      currentWeightedSum: number
+      currentWeightSum: number
+      previousWeightedSum: number
+      previousWeightSum: number
+    }
+  >()
+
+  data.forEach((item) => {
+    const savedItem =
+      map.get(item.priceBand) ??
+      {
+        currentWeightedSum: 0,
+        currentWeightSum: 0,
+        previousWeightedSum: 0,
+        previousWeightSum: 0,
+      }
+
+    const currentWeight = item.currentWeight > 0 ? item.currentWeight : 1
+
+    savedItem.currentWeightedSum += item.currentPositiveRate * currentWeight
+    savedItem.currentWeightSum += currentWeight
+
+    if (item.previousPositiveRate !== null) {
+      const previousWeight =
+        item.previousWeight !== null && item.previousWeight > 0 ? item.previousWeight : 1
+
+      savedItem.previousWeightedSum += item.previousPositiveRate * previousWeight
+      savedItem.previousWeightSum += previousWeight
+    }
+
+    map.set(item.priceBand, savedItem)
+  })
+
+  return Array.from(map.entries())
+    .map(([priceBand, value]) => ({
+      priceBand,
+      currentPositiveRate:
+        value.currentWeightSum > 0 ? value.currentWeightedSum / value.currentWeightSum : 0,
+      previousPositiveRate:
+        value.previousWeightSum > 0 ? value.previousWeightedSum / value.previousWeightSum : null,
+    }))
+    .sort((a, b) => b.currentPositiveRate - a.currentPositiveRate)
 }
 
 function readDisplayLabel(
@@ -686,6 +808,8 @@ function unwrapListFromUnknown(rawData: unknown): Record<string, unknown>[] {
     'trends',
     'monthly_trends',
     'monthlyTrends',
+    'review_trends',
+    'reviewTrends',
     'genre_trends',
     'genreTrends',
     'price_trends',
@@ -709,7 +833,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function readNumber(item: Record<string, unknown>, keys: string[]) {
+function readOptionalNumber(item: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
     const value = item[key]
 
@@ -727,7 +851,7 @@ function readNumber(item: Record<string, unknown>, keys: string[]) {
     }
   }
 
-  return 0
+  return null
 }
 
 function readString(item: Record<string, unknown>, keys: string[]) {
@@ -753,7 +877,11 @@ function readString(item: Record<string, unknown>, keys: string[]) {
   return ''
 }
 
-function normalizePercent(value: number) {
+function normalizeOptionalPercent(value: number | null) {
+  if (value === null) {
+    return null
+  }
+
   if (value <= 0) {
     return 0
   }
@@ -763,6 +891,14 @@ function normalizePercent(value: number) {
   }
 
   return Math.min(value, 100)
+}
+
+function getNumberOrNull(value: number | null) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  return null
 }
 
 export default TrendComparePage

@@ -44,175 +44,10 @@ type LinePoint = {
   month: string
 }
 
-const GENRE_LABEL_MAP: Record<string, string> = {
-  RPG: '역할수행게임 (RPG)',
-  Action: '액션 (Action)',
-  Adventure: '어드벤처 (Adventure)',
-  Casual: '캐주얼 (Casual)',
-  Indie: '인디 (Indie)',
-  Simulation: '시뮬레이션 (Simulation)',
-  Strategy: '전략 (Strategy)',
-  Sports: '스포츠 (Sports)',
-  Racing: '레이싱 (Racing)',
-  'Free to Play': '무료 플레이 (Free to Play)',
-  'Free To Play': '무료 플레이 (Free To Play)',
-  'Massively Multiplayer': '대규모 멀티플레이어 (Massively Multiplayer)',
-  'Early Access': '앞서 해보기 (Early Access)',
-  Utilities: '유틸리티 (Utilities)',
-  Education: '교육 (Education)',
-  'Game Development': '게임 개발 (Game Development)',
-  'Design & Illustration': '디자인 및 일러스트레이션 (Design & Illustration)',
-  'Animation & Modeling': '애니메이션 및 모델링 (Animation & Modeling)',
-  'Audio Production': '오디오 제작 (Audio Production)',
-  'Video Production': '비디오 제작 (Video Production)',
-  'Photo Editing': '사진 편집 (Photo Editing)',
-  'Web Publishing': '웹 퍼블리싱 (Web Publishing)',
-  Accounting: '회계 (Accounting)',
-  Other: '기타 (Other)',
-}
-
-const PRICE_BAND_LABEL_MAP: Record<string, string> = {
-  Free: '무료 (Free)',
-  Paid: '유료 (Paid)',
-  'Free to Play': '무료 플레이 (Free to Play)',
-  'Free To Play': '무료 플레이 (Free To Play)',
-  'Under $10': '$10 미만 (Under $10)',
-  '$50 or More': '$50 이상 ($50 or More)',
-  'Over $50': '$50 초과 (Over $50)',
-  Other: '기타 (Other)',
-}
-
-const MONTH_LABEL_MAP: Record<string, string> = {
-  January: '1월 (January)',
-  February: '2월 (February)',
-  March: '3월 (March)',
-  April: '4월 (April)',
-  May: '5월 (May)',
-  June: '6월 (June)',
-  July: '7월 (July)',
-  August: '8월 (August)',
-  September: '9월 (September)',
-  October: '10월 (October)',
-  November: '11월 (November)',
-  December: '12월 (December)',
-  Jan: '1월 (Jan)',
-  Feb: '2월 (Feb)',
-  Mar: '3월 (Mar)',
-  Apr: '4월 (Apr)',
-  Jun: '6월 (Jun)',
-  Jul: '7월 (Jul)',
-  Aug: '8월 (Aug)',
-  Sep: '9월 (Sep)',
-  Oct: '10월 (Oct)',
-  Nov: '11월 (Nov)',
-  Dec: '12월 (Dec)',
-}
-
-const DEFAULT_MONTHLY_TRENDS: MonthlyTrend[] = [
-  {
-    month: '11월',
-    currentReviews: 2200000,
-    previousReviews: 1450000,
-    currentPositiveRate: 84,
-    previousPositiveRate: 36,
-  },
-  {
-    month: '12월',
-    currentReviews: 2850000,
-    previousReviews: 1720000,
-    currentPositiveRate: 88,
-    previousPositiveRate: 34,
-  },
-  {
-    month: '1월',
-    currentReviews: 2050000,
-    previousReviews: 1380000,
-    currentPositiveRate: 78,
-    previousPositiveRate: 31,
-  },
-  {
-    month: '2월',
-    currentReviews: 2460000,
-    previousReviews: 1620000,
-    currentPositiveRate: 82,
-    previousPositiveRate: 33,
-  },
-  {
-    month: '3월',
-    currentReviews: 2920000,
-    previousReviews: 2080000,
-    currentPositiveRate: 85,
-    previousPositiveRate: 32,
-  },
-  {
-    month: '4월',
-    currentReviews: 3240000,
-    previousReviews: 2320000,
-    currentPositiveRate: 86,
-    previousPositiveRate: 36,
-  },
-]
-
-const DEFAULT_GENRE_TRENDS: GenreTrend[] = [
-  {
-    genre: '역할수행게임 (RPG)',
-    currentReviews: 24200000,
-    previousReviews: 20100000,
-  },
-  {
-    genre: '액션 (Action)',
-    currentReviews: 18700000,
-    previousReviews: 15900000,
-  },
-  {
-    genre: '어드벤처 (Adventure)',
-    currentReviews: 9400000,
-    previousReviews: 8700000,
-  },
-  {
-    genre: '전략 (Strategy)',
-    currentReviews: 4200000,
-    previousReviews: 3600000,
-  },
-  {
-    genre: '시뮬레이션 (Simulation)',
-    currentReviews: 3700000,
-    previousReviews: 3100000,
-  },
-]
-
-const DEFAULT_PRICE_TRENDS: PriceTrend[] = [
-  {
-    priceBand: '$0 - $10',
-    currentPositiveRate: 78,
-    previousPositiveRate: 72,
-  },
-  {
-    priceBand: '$10 - $20',
-    currentPositiveRate: 73,
-    previousPositiveRate: 68,
-  },
-  {
-    priceBand: '$20 - $30',
-    currentPositiveRate: 69,
-    previousPositiveRate: 64,
-  },
-  {
-    priceBand: '$30 - $50',
-    currentPositiveRate: 62,
-    previousPositiveRate: 58,
-  },
-  {
-    priceBand: '$50 이상',
-    currentPositiveRate: 64,
-    previousPositiveRate: 60,
-  },
-]
-
 const INITIAL_TREND_DATA: TrendCompareData = {
-  monthlyTrends: DEFAULT_MONTHLY_TRENDS,
-  genreTrends: DEFAULT_GENRE_TRENDS,
-  priceTrends: DEFAULT_PRICE_TRENDS,
+  monthlyTrends: [],
+  genreTrends: [],
+  priceTrends: [],
 }
 
 function TrendComparePage() {
@@ -221,11 +56,13 @@ function TrendComparePage() {
   const [compareMode, setCompareMode] = useState<CompareMode>('all')
   const [trendData, setTrendData] = useState<TrendCompareData>(INITIAL_TREND_DATA)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     async function loadTrendCompareData() {
       try {
         setIsLoading(true)
+        setErrorMessage('')
 
         const [monthlyResult, genreResult, priceResult] = await Promise.allSettled([
           getAnalysisTrends(),
@@ -233,23 +70,34 @@ function TrendComparePage() {
           getPriceTrends(),
         ])
 
+        const monthlyTrends =
+          monthlyResult.status === 'fulfilled'
+            ? normalizeMonthlyTrends(monthlyResult.value)
+            : []
+
+        const genreTrends =
+          genreResult.status === 'fulfilled' ? normalizeGenreTrends(genreResult.value) : []
+
+        const priceTrends =
+          priceResult.status === 'fulfilled' ? normalizePriceTrends(priceResult.value) : []
+
         setTrendData({
-          monthlyTrends:
-            monthlyResult.status === 'fulfilled'
-              ? normalizeMonthlyTrends(monthlyResult.value)
-              : DEFAULT_MONTHLY_TRENDS,
-          genreTrends:
-            genreResult.status === 'fulfilled'
-              ? normalizeGenreTrends(genreResult.value)
-              : DEFAULT_GENRE_TRENDS,
-          priceTrends:
-            priceResult.status === 'fulfilled'
-              ? normalizePriceTrends(priceResult.value)
-              : DEFAULT_PRICE_TRENDS,
+          monthlyTrends,
+          genreTrends,
+          priceTrends,
         })
+
+        if (
+          monthlyResult.status === 'rejected' &&
+          genreResult.status === 'rejected' &&
+          priceResult.status === 'rejected'
+        ) {
+          setErrorMessage('트렌드 비교 데이터를 불러오지 못했습니다.')
+        }
       } catch (error) {
         console.error('트렌드 비교 데이터를 불러오지 못했습니다.', error)
         setTrendData(INITIAL_TREND_DATA)
+        setErrorMessage('트렌드 비교 데이터를 불러오지 못했습니다.')
       } finally {
         setIsLoading(false)
       }
@@ -263,11 +111,7 @@ function TrendComparePage() {
   }, [period, trendData.monthlyTrends])
 
   const genreTrends = useMemo(() => {
-    if (compareMode === 'platform') {
-      return trendData.genreTrends.slice(0, 4)
-    }
-
-    return trendData.genreTrends.slice(0, 5)
+    return trendData.genreTrends.slice(0, compareMode === 'platform' ? 4 : 5)
   }, [compareMode, trendData.genreTrends])
 
   const priceTrends = useMemo(() => {
@@ -337,9 +181,11 @@ function TrendComparePage() {
       </div>
 
       {isLoading && (
-        <div className="trend-compare-loading">
-          트렌드 비교 데이터를 불러오는 중입니다. API 응답이 없으면 기본 예시 데이터로 표시됩니다.
-        </div>
+        <div className="trend-compare-loading">트렌드 비교 데이터를 불러오는 중입니다.</div>
+      )}
+
+      {!isLoading && errorMessage && (
+        <div className="trend-compare-loading">{errorMessage}</div>
       )}
 
       <div className="trend-compare-grid">
@@ -365,7 +211,9 @@ function TrendComparePage() {
       </div>
 
       <div className="trend-compare-bottom-note">
-        <strong>{compareStandard === 'reviews' ? '리뷰 수 기준 비교' : '긍정 비율 기준 비교'}</strong>
+        <strong>
+          {compareStandard === 'reviews' ? '리뷰 수 기준 비교' : '긍정 비율 기준 비교'}
+        </strong>
         <span>
           현재 기간과 이전 기간의 변화 흐름을 한 화면에서 비교해 시장 반응, 장르별 성장률,
           가격대별 긍정 비율 차이를 빠르게 확인할 수 있습니다.
@@ -375,7 +223,13 @@ function TrendComparePage() {
   )
 }
 
-function TrendCardHeader({ title, hideLegend = false }: { title: string; hideLegend?: boolean }) {
+function TrendCardHeader({
+  title,
+  hideLegend = false,
+}: {
+  title: string
+  hideLegend?: boolean
+}) {
   return (
     <div className="trend-compare-card-header">
       <h2>{title}</h2>
@@ -394,14 +248,45 @@ function TrendCardHeader({ title, hideLegend = false }: { title: string; hideLeg
   )
 }
 
-function TrendLineChart({ data, chartType }: { data: MonthlyTrend[]; chartType: LineChartType }) {
+function TrendLineChart({
+  data,
+  chartType,
+}: {
+  data: MonthlyTrend[]
+  chartType: LineChartType
+}) {
   const currentKey: TrendValueKey =
     chartType === 'reviews' ? 'currentReviews' : 'currentPositiveRate'
   const previousKey: TrendValueKey =
     chartType === 'reviews' ? 'previousReviews' : 'previousPositiveRate'
-  const maxValue = chartType === 'reviews' ? 4000000 : 100
+
+  const hasDrawableData = data.some(
+    (item) => Number(item[currentKey]) > 0 || Number(item[previousKey]) > 0,
+  )
+
+  if (data.length === 0 || !hasDrawableData) {
+    return (
+      <div className="trend-compare-loading">
+        표시할 {chartType === 'reviews' ? '리뷰 수' : '긍정 비율'} 추이 데이터가 없습니다.
+      </div>
+    )
+  }
+
+  const maxValue =
+    chartType === 'positiveRate'
+      ? 100
+      : getRoundedMaxValue(
+          Math.max(
+            ...data.map((item) => Number(item.currentReviews) || 0),
+            ...data.map((item) => Number(item.previousReviews) || 0),
+            1,
+          ),
+        )
+
   const yAxisLabels =
-    chartType === 'reviews' ? ['4M', '3M', '2M', '1M', '0'] : ['100%', '75%', '50%', '25%', '0%']
+    chartType === 'positiveRate'
+      ? ['100%', '75%', '50%', '25%', '0%']
+      : createReviewYAxisLabels(maxValue)
 
   const currentPoints = createLinePoints(data, currentKey, maxValue)
   const previousPoints = createLinePoints(data, previousKey, maxValue)
@@ -466,6 +351,10 @@ function TrendLineChart({ data, chartType }: { data: MonthlyTrend[]; chartType: 
 }
 
 function GenreReviewChangeTable({ data }: { data: GenreTrend[] }) {
+  if (data.length === 0) {
+    return <div className="trend-compare-loading">표시할 장르별 리뷰 수 데이터가 없습니다.</div>
+  }
+
   return (
     <div className="trend-compare-genre-table">
       <div className="trend-compare-genre-head">
@@ -494,6 +383,10 @@ function GenreReviewChangeTable({ data }: { data: GenreTrend[] }) {
 }
 
 function PricePositiveRateBars({ data }: { data: PriceTrend[] }) {
+  if (data.length === 0) {
+    return <div className="trend-compare-loading">표시할 가격대별 긍정 비율 데이터가 없습니다.</div>
+  }
+
   return (
     <div className="trend-compare-price-list">
       {data.map((item) => (
@@ -530,7 +423,7 @@ function createLinePoints(
   const xGap = data.length > 1 ? (right - left) / (data.length - 1) : 0
 
   return data.map((item, index) => {
-    const value = Math.max(0, Math.min(Number(item[valueKey]), maxValue))
+    const value = Math.max(0, Math.min(Number(item[valueKey]) || 0, maxValue))
     const ratio = maxValue > 0 ? value / maxValue : 0
 
     return {
@@ -563,6 +456,25 @@ function calculateChangeRate(currentValue: number, previousValue: number) {
   return ((currentValue - previousValue) / previousValue) * 100
 }
 
+function getRoundedMaxValue(value: number) {
+  if (value <= 0) {
+    return 1
+  }
+
+  if (value <= 1000) {
+    return 1000
+  }
+
+  const exponent = Math.pow(10, Math.floor(Math.log10(value)))
+  return Math.ceil(value / exponent) * exponent
+}
+
+function createReviewYAxisLabels(maxValue: number) {
+  return [maxValue, maxValue * 0.75, maxValue * 0.5, maxValue * 0.25, 0].map((value) =>
+    formatCompactNumber(value),
+  )
+}
+
 function formatCompactNumber(value: number) {
   if (value >= 1000000) {
     const compactValue = value / 1000000
@@ -574,189 +486,168 @@ function formatCompactNumber(value: number) {
     return `${compactValue.toFixed(1)}K`
   }
 
-  return value.toLocaleString('ko-KR')
+  return Math.round(value).toLocaleString('ko-KR')
 }
 
 function normalizeMonthlyTrends(rawData: unknown): MonthlyTrend[] {
   const rawList = unwrapListFromUnknown(rawData)
-  const normalizedList = rawList
+
+  return rawList
     .map((item, index) => {
-      const currentReviews = readNumber(item, [
-        'current_reviews',
-        'currentReviews',
-        'reviews_current',
-        'current_review_count',
-        'review_count',
-        'total_reviews',
-      ])
-      const previousReviews = readNumber(item, [
-        'previous_reviews',
-        'previousReviews',
-        'reviews_previous',
-        'previous_review_count',
-      ])
-      const currentPositiveRate = normalizePercent(
-        readNumber(item, [
-          'current_positive_rate',
-          'currentPositiveRate',
-          'positive_rate_current',
-          'current_positive_ratio',
-          'positive_ratio',
-        ]),
-      )
-      const previousPositiveRate = normalizePercent(
-        readNumber(item, [
-          'previous_positive_rate',
-          'previousPositiveRate',
-          'positive_rate_previous',
-          'previous_positive_ratio',
-        ]),
-      )
+      const month =
+        formatMonthLabel(
+          readDisplayLabel(
+            item,
+            ['month_ko', 'label_ko', 'period_ko', 'date_ko'],
+            ['month', 'label', 'period', 'date', 'year_month', 'release_month'],
+          ),
+        ) || `기간 ${index + 1}`
 
       return {
-        month:
-          formatMonthLabel(readString(item, ['month', 'label', 'period', 'date'])) ||
-          DEFAULT_MONTHLY_TRENDS[index]?.month ||
-          `${index + 1}월`,
-        currentReviews: currentReviews || DEFAULT_MONTHLY_TRENDS[index]?.currentReviews || 0,
-        previousReviews: previousReviews || DEFAULT_MONTHLY_TRENDS[index]?.previousReviews || 0,
-        currentPositiveRate:
-          currentPositiveRate || DEFAULT_MONTHLY_TRENDS[index]?.currentPositiveRate || 0,
-        previousPositiveRate:
-          previousPositiveRate || DEFAULT_MONTHLY_TRENDS[index]?.previousPositiveRate || 0,
+        month,
+        currentReviews: readNumber(item, [
+          'current_reviews',
+          'currentReviews',
+          'current_review_count',
+          'reviews_current',
+          'review_count_current',
+          'current_total_reviews',
+          'review_count',
+          'total_reviews',
+        ]),
+        previousReviews: readNumber(item, [
+          'previous_reviews',
+          'previousReviews',
+          'previous_review_count',
+          'reviews_previous',
+          'review_count_previous',
+          'previous_total_reviews',
+        ]),
+        currentPositiveRate: normalizePercent(
+          readNumber(item, [
+            'current_positive_rate',
+            'currentPositiveRate',
+            'positive_rate_current',
+            'current_positive_ratio',
+            'positive_ratio_current',
+            'positive_ratio',
+          ]),
+        ),
+        previousPositiveRate: normalizePercent(
+          readNumber(item, [
+            'previous_positive_rate',
+            'previousPositiveRate',
+            'positive_rate_previous',
+            'previous_positive_ratio',
+            'positive_ratio_previous',
+          ]),
+        ),
       }
     })
-    .filter((item) => item.currentReviews > 0 || item.currentPositiveRate > 0)
-
-  return normalizedList.length > 0 ? normalizedList : DEFAULT_MONTHLY_TRENDS
+    .filter(
+      (item) =>
+        item.month.trim().length > 0 &&
+        (item.currentReviews > 0 ||
+          item.previousReviews > 0 ||
+          item.currentPositiveRate > 0 ||
+          item.previousPositiveRate > 0),
+    )
 }
 
 function normalizeGenreTrends(rawData: unknown): GenreTrend[] {
   const rawList = unwrapListFromUnknown(rawData)
-  const normalizedList = rawList
-    .map((item, index) => {
-      const currentReviews = readNumber(item, [
-        'current_reviews',
-        'currentReviews',
-        'reviews_current',
-        'review_count',
-        'total_reviews',
-      ])
-      const previousReviews = readNumber(item, [
-        'previous_reviews',
-        'previousReviews',
-        'reviews_previous',
-      ])
+
+  return rawList
+    .map((item) => {
+      const genre = readDisplayLabel(
+        item,
+        ['genre_ko', 'genre_kor', 'korean_genre', 'name_ko', 'label_ko', 'category_ko'],
+        ['genre', 'name', 'label', 'category'],
+      )
 
       return {
-        genre:
-          formatGenreLabel(readString(item, ['genre', 'name', 'label', 'category'])) ||
-          DEFAULT_GENRE_TRENDS[index]?.genre ||
-          '기타 (Other)',
-        currentReviews: currentReviews || DEFAULT_GENRE_TRENDS[index]?.currentReviews || 0,
-        previousReviews:
-          previousReviews ||
-          DEFAULT_GENRE_TRENDS[index]?.previousReviews ||
-          Math.round(currentReviews * 0.85),
+        genre,
+        currentReviews: readNumber(item, [
+          'current_reviews',
+          'currentReviews',
+          'current_review_count',
+          'reviews_current',
+          'review_count_current',
+          'current_total_reviews',
+          'review_count',
+          'total_reviews',
+        ]),
+        previousReviews: readNumber(item, [
+          'previous_reviews',
+          'previousReviews',
+          'previous_review_count',
+          'reviews_previous',
+          'review_count_previous',
+          'previous_total_reviews',
+        ]),
       }
     })
-    .filter((item) => item.currentReviews > 0)
-
-  return normalizedList.length > 0 ? normalizedList : DEFAULT_GENRE_TRENDS
+    .filter((item) => item.genre.trim().length > 0)
 }
 
 function normalizePriceTrends(rawData: unknown): PriceTrend[] {
   const rawList = unwrapListFromUnknown(rawData)
-  const normalizedList = rawList
-    .map((item, index) => {
-      const currentPositiveRate = normalizePercent(
-        readNumber(item, [
-          'current_positive_rate',
-          'currentPositiveRate',
-          'positive_rate_current',
-          'current_positive_ratio',
-          'positive_ratio',
-        ]),
-      )
-      const previousPositiveRate = normalizePercent(
-        readNumber(item, [
-          'previous_positive_rate',
-          'previousPositiveRate',
-          'positive_rate_previous',
-          'previous_positive_ratio',
-        ]),
+
+  return rawList
+    .map((item) => {
+      const priceBand = readDisplayLabel(
+        item,
+        ['price_band_ko', 'priceBandKo', 'label_ko', 'range_ko', 'name_ko'],
+        ['price_band', 'priceBand', 'label', 'range', 'name'],
       )
 
       return {
-        priceBand:
-          formatPriceBandLabel(readString(item, ['price_band', 'priceBand', 'label', 'range', 'name'])) ||
-          DEFAULT_PRICE_TRENDS[index]?.priceBand ||
-          '기타 (Other)',
-        currentPositiveRate:
-          currentPositiveRate || DEFAULT_PRICE_TRENDS[index]?.currentPositiveRate || 0,
-        previousPositiveRate:
-          previousPositiveRate || DEFAULT_PRICE_TRENDS[index]?.previousPositiveRate || 0,
+        priceBand,
+        currentPositiveRate: normalizePercent(
+          readNumber(item, [
+            'current_positive_rate',
+            'currentPositiveRate',
+            'positive_rate_current',
+            'current_positive_ratio',
+            'positive_ratio_current',
+            'positive_ratio',
+          ]),
+        ),
+        previousPositiveRate: normalizePercent(
+          readNumber(item, [
+            'previous_positive_rate',
+            'previousPositiveRate',
+            'positive_rate_previous',
+            'previous_positive_ratio',
+            'positive_ratio_previous',
+          ]),
+        ),
       }
     })
-    .filter((item) => item.currentPositiveRate > 0)
-
-  return normalizedList.length > 0 ? normalizedList : DEFAULT_PRICE_TRENDS
+    .filter((item) => item.priceBand.trim().length > 0)
 }
 
-function formatGenreLabel(rawLabel: string) {
-  const label = rawLabel.trim()
+function readDisplayLabel(
+  item: Record<string, unknown>,
+  koreanKeys: string[],
+  englishKeys: string[],
+) {
+  const koreanLabel = readString(item, koreanKeys)
+  const englishLabel = readString(item, englishKeys)
 
-  if (!label) {
-    return ''
+  if (koreanLabel && englishLabel && !isSameLabel(koreanLabel, englishLabel)) {
+    if (koreanLabel.includes(`(${englishLabel})`)) {
+      return koreanLabel
+    }
+
+    return `${koreanLabel} (${englishLabel})`
   }
 
-  if (containsKorean(label)) {
-    return label
-  }
-
-  const separators = /[,;/]/
-
-  if (separators.test(label)) {
-    return label
-      .split(separators)
-      .map((genre) => formatSingleGenreLabel(genre.trim()))
-      .filter(Boolean)
-      .join(', ')
-  }
-
-  return formatSingleGenreLabel(label)
+  return koreanLabel || englishLabel
 }
 
-function formatSingleGenreLabel(rawLabel: string) {
-  const label = rawLabel.trim().replace(/\s+/g, ' ')
-
-  if (!label) {
-    return ''
-  }
-
-  const matchedKey = Object.keys(GENRE_LABEL_MAP).find(
-    (key) => key.toLowerCase() === label.toLowerCase(),
-  )
-
-  return matchedKey ? GENRE_LABEL_MAP[matchedKey] : label
-}
-
-function formatPriceBandLabel(rawLabel: string) {
-  const label = rawLabel.trim().replace(/\s+/g, ' ')
-
-  if (!label) {
-    return ''
-  }
-
-  if (containsKorean(label)) {
-    return label
-  }
-
-  const matchedKey = Object.keys(PRICE_BAND_LABEL_MAP).find(
-    (key) => key.toLowerCase() === label.toLowerCase(),
-  )
-
-  return matchedKey ? PRICE_BAND_LABEL_MAP[matchedKey] : label
+function isSameLabel(firstLabel: string, secondLabel: string) {
+  return firstLabel.trim().toLowerCase() === secondLabel.trim().toLowerCase()
 }
 
 function formatMonthLabel(rawLabel: string) {
@@ -766,19 +657,7 @@ function formatMonthLabel(rawLabel: string) {
     return ''
   }
 
-  if (containsKorean(label)) {
-    return label
-  }
-
-  const matchedKey = Object.keys(MONTH_LABEL_MAP).find(
-    (key) => key.toLowerCase() === label.toLowerCase(),
-  )
-
-  if (matchedKey) {
-    return MONTH_LABEL_MAP[matchedKey]
-  }
-
-  const dateMonthMatch = label.match(/^\d{4}-(\d{1,2})/)
+  const dateMonthMatch = label.match(/^\d{4}[-./](\d{1,2})/)
 
   if (dateMonthMatch) {
     const month = Number(dateMonthMatch[1])
@@ -791,10 +670,6 @@ function formatMonthLabel(rawLabel: string) {
   return label
 }
 
-function containsKorean(value: string) {
-  return /[가-힣]/.test(value)
-}
-
 function unwrapListFromUnknown(rawData: unknown): Record<string, unknown>[] {
   if (Array.isArray(rawData)) {
     return rawData.filter(isRecord)
@@ -804,7 +679,20 @@ function unwrapListFromUnknown(rawData: unknown): Record<string, unknown>[] {
     return []
   }
 
-  const listKeys = ['items', 'data', 'results', 'trends', 'genres', 'prices']
+  const listKeys = [
+    'items',
+    'data',
+    'results',
+    'trends',
+    'monthly_trends',
+    'monthlyTrends',
+    'genre_trends',
+    'genreTrends',
+    'price_trends',
+    'priceTrends',
+    'genres',
+    'prices',
+  ]
 
   for (const key of listKeys) {
     const value = rawData[key]
@@ -848,6 +736,17 @@ function readString(item: Record<string, unknown>, keys: string[]) {
 
     if (typeof value === 'string' && value.trim().length > 0) {
       return value.trim()
+    }
+
+    if (Array.isArray(value)) {
+      const textList = value
+        .filter((entry): entry is string => typeof entry === 'string')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+
+      if (textList.length > 0) {
+        return textList.join(', ')
+      }
     }
   }
 

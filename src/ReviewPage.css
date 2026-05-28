@@ -1,552 +1,441 @@
 .review-page {
   width: 100%;
-}
-
-.review-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
-  align-items: stretch;
 }
 
 .review-card {
+  background: #ffffff;
+  border: 1px solid #e6eaf4;
+  border-radius: 24px;
+  box-shadow: 0 8px 28px rgba(16, 24, 40, 0.04);
+}
+
+.review-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 18px 20px;
+}
+
+.review-toolbar-meta {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 6px;
+}
+
+.review-toolbar-current-target {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2a44;
+}
+
+.review-toolbar-meta small {
+  font-size: 12px;
+  color: #7a849a;
+}
+
+.review-toolbar-controls {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.review-toolbar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.review-toolbar-field span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5f6b85;
+}
+
+.review-toolbar-field select {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #d6dceb;
+  border-radius: 14px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2a44;
   background: #ffffff;
-  border: 1px solid #e6eaf2;
-  border-radius: 20px;
-  padding: 22px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  outline: none;
 }
 
-.review-card h2 {
-  margin: 0 0 18px;
-  color: #111827;
-  font-size: 18px;
-  font-weight: 900;
-  text-align: left;
+.review-error {
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #d14343;
 }
 
-.review-chart-card {
-  min-height: 330px;
+.review-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.selected-game-card {
-  min-height: 330px;
+.review-summary-card {
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.game-sentiment-card {
-  min-height: 300px;
+.review-summary-label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6d7892;
 }
 
-.keyword-card {
-  min-width: 0;
-  min-height: 300px;
-  padding-left: 20px;
-  padding-right: 20px;
+.review-summary-value {
+  font-size: 38px;
+  line-height: 1;
+  font-weight: 800;
+  color: #0f1b38;
 }
 
-.positive-ranking-card {
-  min-height: 330px;
+.review-summary-value.positive {
+  color: #2f9a56;
 }
 
-.negative-ranking-card {
-  min-height: 330px;
+.review-summary-value.negative {
+  color: #d64e4e;
 }
 
-.review-donut-layout {
-  flex: 1;
+.review-summary-value.score {
+  color: #4c5bff;
+}
+
+.review-summary-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a94aa;
+}
+
+.review-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.28fr);
+  gap: 16px;
+}
+
+.review-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.review-card-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #111a32;
+}
+
+.review-distribution-card,
+.review-factors-card {
+  padding: 24px;
+}
+
+.review-distribution-content {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 42px;
-  min-height: 220px;
+  gap: 24px;
+  min-height: 300px;
 }
 
 .review-donut {
   width: 190px;
   height: 190px;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.review-donut-hole {
-  width: 98px;
-  height: 98px;
+.review-donut-center {
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
   background: #ffffff;
-}
-
-.review-legend {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-
-.review-legend-item {
-  display: grid;
-  grid-template-columns: 14px 1fr;
-  gap: 12px;
-  align-items: start;
-}
-
-.review-dot {
-  width: 13px;
-  height: 13px;
-  border-radius: 999px;
-  margin-top: 4px;
-}
-
-.review-dot.green {
-  background: var(--green);
-}
-
-.review-dot.gray {
-  background: var(--gray);
-}
-
-.review-dot.red {
-  background: var(--red);
-}
-
-.review-legend-item strong {
-  display: block;
-  color: #374151;
-  font-size: 15px;
-  font-weight: 900;
-}
-
-.review-legend-item p {
-  margin: 4px 0 0;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.game-search-input {
-  width: 100%;
-  height: 44px;
-  border: 1px solid #dfe4ee;
-  border-radius: 10px;
-  padding: 0 14px;
-  margin-bottom: 10px;
-  color: #111827;
-  background: #ffffff;
-  font-size: 15px;
-  font-weight: 700;
-  outline: none;
-}
-
-.game-search-input::placeholder {
-  color: #9ca3af;
-  font-weight: 700;
-}
-
-.game-select {
-  width: 100%;
-  height: 46px;
-  border: 1px solid #dfe4ee;
-  border-radius: 10px;
-  padding: 0 14px;
-  color: #111827;
-  background: #ffffff;
-  font-size: 15px;
-  font-weight: 800;
-  outline: none;
-}
-
-.game-search-input:focus,
-.game-select:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(93, 99, 241, 0.12);
-}
-
-.selected-game-image {
-  width: 100%;
-  height: 180px;
-  margin-top: 16px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #edf0f7;
-}
-
-.selected-game-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.selected-game-fallback {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  color: var(--blue);
-  background: var(--blue-soft);
-  font-size: 28px;
-  font-weight: 900;
-}
-
-.selected-game-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  margin-top: auto;
-  padding-top: 14px;
-}
-
-.selected-game-meta span {
-  display: block;
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.selected-game-meta strong {
-  display: block;
-  margin-top: 6px;
-  color: #111827;
-  font-size: 22px;
-  font-weight: 900;
-}
-
-.selected-game-meta div:last-child {
-  text-align: right;
-}
-
-.game-sentiment-name {
-  margin-bottom: 12px;
-  color: #374151;
-  font-size: 15px;
-  font-weight: 900;
-}
-
-.stacked-bar {
-  display: flex;
-  width: 100%;
-  height: 58px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #edf0f5;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.stacked-positive,
-.stacked-neutral,
-.stacked-negative {
-  display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  box-shadow: inset 0 0 0 1px #ebeff8;
+}
+
+.review-donut-center span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7c879d;
+}
+
+.review-donut-center strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: #121d38;
+}
+
+.review-sentiment-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   min-width: 0;
 }
 
-.stacked-positive {
-  background: #66c97b;
-}
-
-.stacked-neutral {
-  background: #c9cbd1;
-  color: #374151;
-}
-
-.stacked-negative {
-  background: #f07d72;
-}
-
-.stacked-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 14px;
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.sentiment-rate-grid {
+.review-sentiment-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin-top: auto;
-  padding-top: 22px;
-  gap: 12px;
-}
-
-.sentiment-rate-grid div {
-  padding: 12px;
-  border-radius: 12px;
-  background: #f7f8fc;
-  text-align: center;
-}
-
-.sentiment-rate-grid span {
-  display: block;
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.sentiment-rate-grid strong {
-  display: block;
-  margin-top: 5px;
-  color: #111827;
-  font-size: 17px;
-  font-weight: 900;
-}
-
-.keyword-cloud {
-  flex: 1;
-  min-height: 190px;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-  gap: 8px 12px;
-  text-align: center;
-  overflow: hidden;
-}
-
-.keyword-cloud span {
-  display: inline-block;
-  font-weight: 900;
-  line-height: 1.2;
-  word-break: keep-all;
-  white-space: nowrap;
-}
-
-.keyword-size-5 {
-  color: #5d63f1;
-  font-size: 33px;
-}
-
-.keyword-size-4 {
-  color: #63b3ed;
-  font-size: 28px;
-}
-
-.keyword-size-3 {
-  color: #6ecf8d;
-  font-size: 23px;
-}
-
-.keyword-size-2 {
-  color: #65b78a;
-  font-size: 19px;
-}
-
-.keyword-size-1 {
-  color: #9ca3af;
-  font-size: 15px;
-}
-
-.ranking-card {
-  width: 100%;
-  min-height: 330px;
-}
-
-.review-ranking-list {
-  flex: 1;
-  display: grid;
-  grid-template-rows: repeat(5, 1fr);
-  gap: 12px;
-}
-
-.review-ranking-item {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 90px;
+  grid-template-columns: 14px minmax(54px, auto) minmax(70px, auto) 1fr;
   align-items: center;
-  gap: 14px;
-  min-height: 58px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #f7f8fc;
-  color: #111827;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #24314f;
 }
 
-.review-ranking-item span {
+.review-sentiment-row strong {
+  color: #0f1b38;
+}
+
+.review-sentiment-row span:last-child {
+  justify-self: end;
+  color: #5f6b85;
+}
+
+.review-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.review-dot.positive {
+  background: #69b36d;
+}
+
+.review-dot.neutral {
+  background: #cfd4de;
+}
+
+.review-dot.negative {
+  background: #e05a5a;
+}
+
+.review-factors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  min-height: 300px;
+}
+
+.review-factor-row {
+  padding: 15px 15px 13px;
+  border-radius: 18px;
+  background: #f8faff;
+  border: 1px solid #e7edf9;
+}
+
+.review-factor-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.review-factor-title-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.review-factor-rank {
   width: 28px;
   height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: #edf0ff;
-  color: var(--blue);
+  border-radius: 999px;
+  background: #eef1ff;
+  color: #4c5bff;
   font-size: 14px;
-  font-weight: 900;
-}
-
-.review-ranking-item strong {
-  color: #374151;
-  font-size: 15px;
   font-weight: 800;
-  line-height: 1.35;
-  word-break: keep-all;
-  white-space: normal;
-
-  display: -webkit-box;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.review-ranking-item em {
-  color: #111827;
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 900;
-  text-align: right;
+.review-factor-texts {
+  min-width: 0;
+}
+
+.review-factor-texts strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: #111a32;
+  margin-bottom: 4px;
+}
+
+.review-factor-texts p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.42;
+  color: #707b93;
+  word-break: keep-all;
+}
+
+.review-factor-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #3141ff;
   white-space: nowrap;
 }
 
-.review-status-card {
-  background: #ffffff;
-  border: 1px solid #e6eaf2;
-  border-radius: 18px;
-  padding: 18px;
-  color: #6b7280;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+.review-factor-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #e8ecf7;
+  overflow: hidden;
 }
 
-.review-status-card strong {
+.review-factor-bar span {
   display: block;
-  color: #111827;
-  font-size: 17px;
-  font-weight: 900;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6d79ff 0%, #4c5bff 100%);
 }
 
-.review-status-card p {
-  margin: 8px 0 0;
-  line-height: 1.6;
-}
-
-.review-status-card.error {
-  background: #fff5f5;
-  border-color: #f2c7c7;
-}
-
-.review-empty-text {
-  margin: 8px 0 0;
-  color: #6b7280;
-  line-height: 1.6;
+.review-empty {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7d879d;
+  font-size: 15px;
   font-weight: 700;
-  text-align: center;
 }
 
-/* 다크모드 */
-html.theme-dark .review-card,
-html.theme-dark .review-status-card {
-  background: #111827;
-  border-color: #334155;
+.review-bottom-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
-html.theme-dark .review-card h2,
-html.theme-dark .review-status-card strong,
-html.theme-dark .review-legend-item strong,
-html.theme-dark .selected-game-meta strong,
-html.theme-dark .game-sentiment-name,
-html.theme-dark .sentiment-rate-grid strong,
-html.theme-dark .review-ranking-item,
-html.theme-dark .review-ranking-item strong,
-html.theme-dark .review-ranking-item em {
-  color: #f9fafb;
+.review-insight-card {
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
 }
 
-html.theme-dark .review-legend-item p,
-html.theme-dark .selected-game-meta span,
-html.theme-dark .stacked-labels,
-html.theme-dark .sentiment-rate-grid span,
-html.theme-dark .review-status-card p,
-html.theme-dark .review-empty-text {
-  color: #cbd5e1;
+.review-insight-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
 }
 
-html.theme-dark .game-search-input,
-html.theme-dark .game-select,
-html.theme-dark .sentiment-rate-grid div,
-html.theme-dark .review-ranking-item {
-  background: #1f2937;
-  border-color: #475569;
-  color: #f9fafb;
+.review-insight-icon.positive {
+  background: #eef7f0;
 }
 
-html.theme-dark .review-donut-hole {
-  background: #111827;
+.review-insight-icon.negative {
+  background: #fff1f1;
 }
 
-html.theme-dark .selected-game-image {
-  background: #1f2937;
+.review-insight-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
 
-html.theme-dark .stacked-bar {
-  background: #334155;
+.review-insight-content h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #111a32;
 }
 
-/* 반응형 */
-@media (max-width: 1200px) {
-  .review-grid {
+.review-insight-content p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #5d6882;
+  word-break: keep-all;
+}
+
+@media (max-width: 1180px) {
+  .review-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .review-main-grid {
     grid-template-columns: 1fr;
   }
 
-  .review-donut-layout {
-    justify-content: flex-start;
+  .review-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .review-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .positive-ranking-card,
-  .negative-ranking-card {
-    min-height: 330px;
+  .review-toolbar-controls {
+    width: 100%;
+    margin-left: 0;
+    flex-direction: column;
   }
 
-  .keyword-card {
-    padding-left: 22px;
-    padding-right: 22px;
+  .review-toolbar-field {
+    min-width: 0;
   }
 
-  .keyword-cloud {
-    overflow: visible;
+  .review-distribution-content {
+    flex-direction: column;
+  }
+
+  .review-sentiment-row {
+    grid-template-columns: 14px minmax(54px, auto) auto 1fr;
   }
 }
 
 @media (max-width: 640px) {
-  .review-card {
-    padding: 18px;
-  }
-
-  .review-donut-layout {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 22px;
-  }
-
-  .selected-game-meta {
+  .review-summary-grid {
     grid-template-columns: 1fr;
   }
 
-  .selected-game-meta div:last-child {
-    text-align: left;
+  .review-summary-value {
+    font-size: 32px;
   }
 
-  .sentiment-rate-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .review-ranking-item {
-    grid-template-columns: 28px minmax(0, 1fr) 70px;
-  }
-
-  .keyword-size-5 {
-    font-size: 30px;
-  }
-
-  .keyword-size-4 {
-    font-size: 25px;
-  }
-
-  .keyword-size-3 {
-    font-size: 21px;
+  .review-card-header h3,
+  .review-insight-content h3 {
+    font-size: 20px;
   }
 }

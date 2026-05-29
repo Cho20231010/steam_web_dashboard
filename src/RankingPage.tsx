@@ -4,7 +4,8 @@ import './RankingPage.css'
 type SortOption =
   | 'popular'
   | 'positive'
-  | 'latest'
+  | 'playtimeHigh'
+  | 'playtimeLow'
   | 'priceLow'
   | 'priceHigh'
   | 'name'
@@ -21,7 +22,7 @@ type SearchGame = {
   platforms: string[]
   positiveRatio: number | null
   reviewCount: number | null
-  releaseDate: string
+  averagePlaytime: number | null
   imageUrl: string
 }
 
@@ -94,9 +95,12 @@ function RankingPage() {
 
   const filteredGames = useMemo(() => {
     return games.filter((game) => {
+      const normalizedSearchText = appliedSearchText.trim().toLowerCase()
+
       const matchesSearch =
-        !appliedSearchText.trim() ||
-        game.name.toLowerCase().includes(appliedSearchText.trim().toLowerCase())
+        !normalizedSearchText ||
+        game.name.toLowerCase().includes(normalizedSearchText) ||
+        game.genres.some((genre) => genre.toLowerCase().includes(normalizedSearchText))
 
       const matchesGenre =
         selectedGenre === 'all' ||
@@ -126,8 +130,12 @@ function RankingPage() {
         return (b.positiveRatio ?? 0) - (a.positiveRatio ?? 0)
       }
 
-      if (sortBy === 'latest') {
-        return getDateValue(b.releaseDate) - getDateValue(a.releaseDate)
+      if (sortBy === 'playtimeHigh') {
+        return (b.averagePlaytime ?? 0) - (a.averagePlaytime ?? 0)
+      }
+
+      if (sortBy === 'playtimeLow') {
+        return (a.averagePlaytime ?? 0) - (b.averagePlaytime ?? 0)
       }
 
       if (sortBy === 'priceLow') {
@@ -262,7 +270,8 @@ function RankingPage() {
           <select id="sort-filter" value={sortBy} onChange={handleSortChange}>
             <option value="popular">인기순</option>
             <option value="positive">긍정률순</option>
-            <option value="latest">최신 출시순</option>
+            <option value="playtimeHigh">평균 플레이시간 높은순</option>
+            <option value="playtimeLow">평균 플레이시간 낮은순</option>
             <option value="priceLow">가격 낮은순</option>
             <option value="priceHigh">가격 높은순</option>
             <option value="name">이름순</option>
@@ -299,7 +308,7 @@ function RankingPage() {
                     <th>가격(USD)</th>
                     <th>리뷰 수</th>
                     <th>긍정 비율</th>
-                    <th>출시일</th>
+                    <th>평균 플레이시간</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -335,7 +344,7 @@ function RankingPage() {
                         {game.positiveRatio === null ? '-' : `${game.positiveRatio.toFixed(1)}%`}
                       </td>
 
-                      <td>{formatReleaseDate(game.releaseDate)}</td>
+                      <td>{formatPlaytime(game.averagePlaytime)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -420,8 +429,12 @@ function normalizeGames(rawData: unknown): SearchGame[] {
         'num_reviews',
       ])
 
-      const releaseDate =
-        readString(item, ['release_date', 'releaseDate', 'released_at', 'releasedAt']) || ''
+      const averagePlaytime = readOptionalNumber(item, [
+        'average_playtime',
+        'averagePlaytime',
+        'avg_playtime',
+        'avgPlaytime',
+      ])
 
       const imageUrl =
         readString(item, [
@@ -447,7 +460,7 @@ function normalizeGames(rawData: unknown): SearchGame[] {
         platforms,
         positiveRatio,
         reviewCount,
-        releaseDate,
+        averagePlaytime,
         imageUrl,
       }
     })
@@ -466,15 +479,15 @@ function normalizePlatforms(item: Record<string, unknown>): string[] {
     }
   })
 
-  if (readBoolean(item, ['windows'])) {
+  if (readBoolean(item, ['windows', 'is_windows'])) {
     result.add('Windows')
   }
 
-  if (readBoolean(item, ['mac', 'macos'])) {
+  if (readBoolean(item, ['mac', 'macos', 'is_mac'])) {
     result.add('macOS')
   }
 
-  if (readBoolean(item, ['linux'])) {
+  if (readBoolean(item, ['linux', 'is_linux'])) {
     result.add('Linux')
   }
 
@@ -564,11 +577,7 @@ function formatGenreLabel(genre: string): string {
     return genre
   }
 
-  if (korean === genre) {
-    return genre
-  }
-
-  return `${korean}`
+  return korean
 }
 
 function formatPlatformLabel(platform: string): string {
@@ -601,6 +610,25 @@ function formatCount(value: number): string {
   return value.toLocaleString('en-US')
 }
 
+function formatPlaytime(value: number | null): string {
+  if (value === null || !Number.isFinite(value) || value <= 0) {
+    return '-'
+  }
+
+  if (value < 60) {
+    return `${Math.round(value)}분`
+  }
+
+  const hours = Math.floor(value / 60)
+  const minutes = Math.round(value % 60)
+
+  if (minutes === 0) {
+    return `${hours.toLocaleString('ko-KR')}시간`
+  }
+
+  return `${hours.toLocaleString('ko-KR')}시간 ${minutes}분`
+}
+
 function normalizePrice(value: number): number {
   if (!Number.isFinite(value)) {
     return 0
@@ -626,39 +654,11 @@ function normalizeRatio(value: number | null): number | null {
     return value * 100
   }
 
+  if (value > 100) {
+    return 100
+  }
+
   return value
-}
-
-function formatReleaseDate(dateText: string): string {
-  if (!dateText) {
-    return '-'
-  }
-
-  const parsed = new Date(dateText)
-
-  if (Number.isNaN(parsed.getTime())) {
-    return dateText
-  }
-
-  const year = parsed.getFullYear()
-  const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
-  const date = `${parsed.getDate()}`.padStart(2, '0')
-
-  return `${year}.${month}.${date}`
-}
-
-function getDateValue(dateText: string): number {
-  if (!dateText) {
-    return 0
-  }
-
-  const parsed = new Date(dateText)
-
-  if (Number.isNaN(parsed.getTime())) {
-    return 0
-  }
-
-  return parsed.getTime()
 }
 
 function unwrapList(rawData: unknown): Record<string, unknown>[] {

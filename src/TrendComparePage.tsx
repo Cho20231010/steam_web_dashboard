@@ -294,13 +294,13 @@ function renderCompareContent({
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="가격대별 리뷰 수 추이" />
+          <TrendCardHeader title="가격대별 리뷰 수 추이" hideLegend />
           <PriceReviewTrendBars data={priceTrends} />
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="가격대별 긍정 비율 추이" />
-          <PricePositiveRateTrendTable data={priceTrends} />
+          <TrendCardHeader title="가격대별 긍정 비율 추이" hideLegend />
+          <PricePositiveRateTrendBars data={priceTrends} />
         </article>
       </div>
     )
@@ -720,33 +720,49 @@ function PriceReviewTrendBars({ data }: { data: PriceTrend[] }) {
   )
 
   return (
-    <div className="trend-compare-price-list">
-      {data.map((item) => (
-        <div className="trend-compare-price-item" key={item.priceBand}>
-          <span className="trend-compare-price-label">{item.priceBand}</span>
+    <div className="trend-compare-stacked-list">
+      {data.map((item) => {
+        const previousReviews = item.previousReviews ?? 0
+        const previousWidth = (previousReviews / maxReviewCount) * 100
+        const currentWidth = (item.currentReviews / maxReviewCount) * 100
 
-          <div className="trend-compare-price-track">
-            {item.previousReviews !== null && (
-              <div
-                className="trend-compare-price-bar previous"
-                style={{ width: `${(item.previousReviews / maxReviewCount) * 100}%` }}
-              />
-            )}
+        return (
+          <div className="trend-compare-stacked-item" key={item.priceBand}>
+            <strong className="trend-compare-stacked-title">{item.priceBand}</strong>
 
-            <div
-              className="trend-compare-price-bar current"
-              style={{ width: `${(item.currentReviews / maxReviewCount) * 100}%` }}
-            />
+            <div className="trend-compare-stacked-row">
+              <span className="trend-compare-stacked-period">이전 기간</span>
+              <div className="trend-compare-stacked-track">
+                <div
+                  className="trend-compare-stacked-bar previous"
+                  style={{ width: `${previousWidth}%` }}
+                />
+              </div>
+              <span className="trend-compare-stacked-value">
+                {formatCompactNumber(previousReviews)}
+              </span>
+            </div>
+
+            <div className="trend-compare-stacked-row">
+              <span className="trend-compare-stacked-period">현재 기간</span>
+              <div className="trend-compare-stacked-track">
+                <div
+                  className="trend-compare-stacked-bar current"
+                  style={{ width: `${currentWidth}%` }}
+                />
+              </div>
+              <span className="trend-compare-stacked-value current">
+                {formatCompactNumber(item.currentReviews)}
+              </span>
+            </div>
           </div>
-
-          <strong>{formatCompactNumber(item.currentReviews)}</strong>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
-function PricePositiveRateTrendTable({ data }: { data: PriceTrend[] }) {
+function PricePositiveRateTrendBars({ data }: { data: PriceTrend[] }) {
   if (data.length === 0) {
     return (
       <div className="trend-compare-loading">
@@ -756,27 +772,38 @@ function PricePositiveRateTrendTable({ data }: { data: PriceTrend[] }) {
   }
 
   return (
-    <div className="trend-compare-genre-table">
-      <div className="trend-compare-genre-head">
-        <span>가격대</span>
-        <span>현재 긍정률</span>
-        <span>이전 긍정률</span>
-        <span>변화폭</span>
-      </div>
-
+    <div className="trend-compare-stacked-list">
       {data.map((item) => {
         const currentRate = item.currentPositiveRate
         const previousRate = item.previousPositiveRate ?? 0
-        const changePoint = currentRate - previousRate
 
         return (
-          <div className="trend-compare-genre-row" key={item.priceBand}>
-            <strong>{item.priceBand}</strong>
-            <span>{currentRate.toFixed(1)}%</span>
-            <span>{item.previousPositiveRate === null ? '-' : `${previousRate.toFixed(1)}%`}</span>
-            <em className={changePoint >= 0 ? 'up' : 'down'}>
-              {changePoint >= 0 ? '▲' : '▼'} {Math.abs(changePoint).toFixed(1)}%p
-            </em>
+          <div className="trend-compare-stacked-item" key={item.priceBand}>
+            <strong className="trend-compare-stacked-title">{item.priceBand}</strong>
+
+            <div className="trend-compare-stacked-row">
+              <span className="trend-compare-stacked-period">이전 기간</span>
+              <div className="trend-compare-stacked-track">
+                <div
+                  className="trend-compare-stacked-bar previous"
+                  style={{ width: `${previousRate}%` }}
+                />
+              </div>
+              <span className="trend-compare-stacked-value">{previousRate.toFixed(1)}%</span>
+            </div>
+
+            <div className="trend-compare-stacked-row">
+              <span className="trend-compare-stacked-period">현재 기간</span>
+              <div className="trend-compare-stacked-track">
+                <div
+                  className="trend-compare-stacked-bar current"
+                  style={{ width: `${currentRate}%` }}
+                />
+              </div>
+              <span className="trend-compare-stacked-value current">
+                {currentRate.toFixed(1)}%
+              </span>
+            </div>
           </div>
         )
       })}

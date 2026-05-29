@@ -69,7 +69,7 @@ export function saveFavoriteGame(game: FavoriteGame) {
       savedAt: game.savedAt ?? new Date().toISOString(),
       priceAlertEnabled: game.priceAlertEnabled ?? true,
       reviewAlertEnabled: game.reviewAlertEnabled ?? true,
-      targetPriceLabel: game.targetPriceLabel ?? game.priceLabel,
+      targetPriceLabel: game.targetPriceLabel ?? '',
     }),
     ...favoriteGames,
   ]
@@ -130,6 +130,6 @@ function normalizeFavoriteGame(game: FavoriteGame): FavoriteGame {
     savedAt: game.savedAt ?? new Date().toISOString(),
     priceAlertEnabled: game.priceAlertEnabled ?? true,
     reviewAlertEnabled: game.reviewAlertEnabled ?? true,
-    targetPriceLabel: game.targetPriceLabel ?? game.priceLabel ?? '-',
+    targetPriceLabel: game.targetPriceLabel ?? '',
   }
 }

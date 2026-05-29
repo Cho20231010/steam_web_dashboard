@@ -44,8 +44,6 @@ type GamesApiMeta = {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 const ITEMS_PER_PAGE = 5
 
-// 원화 표시는 프론트 임시 환율 기준입니다.
-// 필요하면 프로젝트 기준 환율에 맞게 숫자만 바꾸면 됩니다.
 const USD_TO_KRW_RATE = 1350
 
 function RankingPage() {
@@ -496,7 +494,7 @@ function RankingPage() {
 
                         <td>{game.primaryGenre || '-'}</td>
 
-                        <td>{formatPriceText(game.price, game.isFree)}</td>
+                        <td className="price-cell">{formatPriceContent(game.price, game.isFree)}</td>
 
                         <td>{game.reviewCount === null ? '-' : formatCount(game.reviewCount)}</td>
 
@@ -845,14 +843,19 @@ function formatPlatformLabel(platform: string): string {
   return platform.trim()
 }
 
-function formatPriceText(price: number, isFree: boolean): string {
+function formatPriceContent(price: number, isFree: boolean) {
   if (isFree || price === 0) {
-    return '무료'
+    return <span className="price-free">무료</span>
   }
 
   const krwPrice = Math.round(price * USD_TO_KRW_RATE)
 
-  return `₩${krwPrice.toLocaleString('ko-KR')} ($${price.toFixed(2)})`
+  return (
+    <span className="price-stack">
+      <span className="price-krw">₩{krwPrice.toLocaleString('ko-KR')}</span>
+      <span className="price-usd">(${price.toFixed(2)})</span>
+    </span>
+  )
 }
 
 function formatCount(value: number): string {

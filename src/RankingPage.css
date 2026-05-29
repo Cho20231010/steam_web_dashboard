@@ -397,15 +397,15 @@
   display: -webkit-box;
   overflow: hidden;
   color: #172033;
-  font-size: 14px;
-  font-weight: 900;
-  line-height: 1.5;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: normal;
   word-break: keep-all;
   overflow-wrap: anywhere;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
+  line-clamp: 4;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
 }
 

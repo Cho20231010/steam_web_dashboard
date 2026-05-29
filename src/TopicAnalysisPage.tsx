@@ -440,6 +440,11 @@ function TopicClusterView({
 
         <article className="topic-analysis-card">
           <h2>토픽-키워드 연결 구조</h2>
+          <p className="topic-card-caption">
+            노드는 토픽과 키워드를 각각 하나의 항목으로 표현한 것이며, 연결은 특정 토픽과
+            해당 토픽을 구성하는 키워드 사이의 관계를 의미합니다.
+          </p>
+
           <TopicClusterConnectionView
             clusterData={clusterData}
             representativeTopics={representativeTopics}

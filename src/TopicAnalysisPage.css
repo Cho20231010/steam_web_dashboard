@@ -82,6 +82,15 @@
   font-weight: 950;
 }
 
+.topic-card-caption {
+  margin: -8px 0 14px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
 .topic-analysis-empty {
   padding: 28px 18px;
   border: 1px solid #dfe4f1;
@@ -764,6 +773,7 @@ html.theme-dark .genre-topic-item h3 {
   color: #f8fafc;
 }
 
+html.theme-dark .topic-card-caption,
 html.theme-dark .topic-overview-header p,
 html.theme-dark .topic-overview-metrics span,
 html.theme-dark .representative-topic-body p,

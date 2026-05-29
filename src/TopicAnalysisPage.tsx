@@ -41,55 +41,6 @@ type BubbleLayout = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
-const TOPIC_LABEL_MAP: Record<string, string> = {
-  gameplay: '게임플레이',
-  game: '게임플레이',
-  play: '게임플레이',
-  fun: '재미 요소',
-  story: '스토리',
-  narrative: '스토리',
-  feel: '몰입감',
-  graphic: '그래픽',
-  graphics: '그래픽',
-  art: '아트',
-  design: '디자인',
-  sound: '사운드',
-  music: '음악',
-  bug: '버그/성능',
-  bugs: '버그/성능',
-  performance: '성능',
-  optimization: '최적화',
-  fps: 'FPS/성능',
-  price: '가격/과금',
-  payment: '가격/과금',
-  dlc: 'DLC',
-  content: '콘텐츠',
-  update: '업데이트',
-  multiplayer: '멀티플레이',
-  online: '온라인',
-  server: '서버',
-  community: '커뮤니티',
-  control: '조작감',
-  controls: '조작감',
-  ui: 'UI/UX',
-  ux: 'UI/UX',
-  players: '플레이어 접근성',
-  player: '플레이어',
-  access: '접근성',
-  war: '전쟁',
-  quest: '퀘스트',
-  quests: '퀘스트',
-  character: '캐릭터',
-  characters: '캐릭터',
-  weapon: '무기',
-  weapons: '무기',
-  map: '맵',
-  mode: '모드',
-  system: '시스템',
-  difficulty: '난이도',
-  level: '레벨',
-}
-
 const KEYWORD_LABEL_MAP: Record<string, string> = {
   gameplay: '게임플레이',
   game: '게임',
@@ -150,6 +101,8 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   review: '리뷰',
   reviews: '리뷰',
   steam: '스팀',
+  nt: '기타',
+  de: '기타',
 }
 
 const BUBBLE_LAYOUTS: BubbleLayout[] = [
@@ -691,8 +644,7 @@ function mergeTopicSentimentData(
       sentimentType: sentiment.type,
       sentimentLabel: sentiment.label,
       hasSentimentData: true,
-      highlight:
-        topic.highlight || createHighlightText(topic.name, topic.keywords, sentiment.label),
+      highlight: createHighlightText(topic.name, topic.keywords, sentiment.label),
     }
   })
 }
@@ -918,43 +870,14 @@ function formatTopicName(rawName: string, keywords: string[]) {
     return name
   }
 
-  const lowerName = normalizeToken(name)
-  const matchedKoreanLabel = findTopicKoreanLabel(lowerName, keywords)
-
-  if (matchedKoreanLabel) {
-    return `${matchedKoreanLabel} (${name})`
-  }
-
-  return translateEnglishPhrase(name)
+  return formatEnglishPhraseByToken(name)
 }
 
-function findTopicKoreanLabel(lowerName: string, keywords: string[]) {
-  for (const [english, korean] of Object.entries(TOPIC_LABEL_MAP)) {
-    if (lowerName.includes(english)) {
-      return korean
-    }
-  }
-
-  const keywordText = keywords.map((keyword) => normalizeToken(keyword)).join(' ')
-
-  for (const [english, korean] of Object.entries(TOPIC_LABEL_MAP)) {
-    if (keywordText.includes(english)) {
-      return korean
-    }
-  }
-
-  return ''
-}
-
-function translateEnglishPhrase(text: string) {
+function formatEnglishPhraseByToken(text: string) {
   const trimmedText = text.trim()
 
   if (!trimmedText) {
     return ''
-  }
-
-  if (/[가-힣]/.test(trimmedText)) {
-    return trimmedText
   }
 
   const tokens = splitEnglishTokens(trimmedText)
@@ -963,10 +886,7 @@ function translateEnglishPhrase(text: string) {
     return `기타 (${trimmedText})`
   }
 
-  const translatedTokens = tokens.map((token) => getKoreanKeywordLabel(token))
-  const koreanText = translatedTokens.join(', ')
-
-  return `${koreanText} (${trimmedText})`
+  return tokens.map((token) => formatKeyword(token)).join(' / ')
 }
 
 function formatKeywordList(keywords: string[]) {
@@ -1005,12 +925,6 @@ function getKoreanKeywordLabel(keyword: string) {
 
   if (KEYWORD_LABEL_MAP[normalizedKeyword]) {
     return KEYWORD_LABEL_MAP[normalizedKeyword]
-  }
-
-  for (const [english, korean] of Object.entries(KEYWORD_LABEL_MAP)) {
-    if (normalizedKeyword.includes(english)) {
-      return korean
-    }
   }
 
   return '기타'

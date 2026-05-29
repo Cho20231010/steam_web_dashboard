@@ -296,7 +296,7 @@
 
 .search-table {
   width: 100%;
-  min-width: 1380px;
+  min-width: 1400px;
   border-collapse: collapse;
   table-layout: auto;
 }
@@ -312,8 +312,8 @@
 }
 
 .search-table thead th:first-child {
-  width: 42%;
-  min-width: 560px;
+  width: 44%;
+  min-width: 600px;
   text-align: left;
 }
 
@@ -349,37 +349,37 @@
   text-align: left;
 }
 
-/* 이미지 영역과 게임명 영역을 분리하되, 게임명 공간은 줄임 */
+/* 이미지 영역과 게임명 영역을 분리하되, 게임명 공간은 유지 */
 .game-cell {
   display: grid;
-  grid-template-columns: 240px 280px;
+  grid-template-columns: 260px 280px;
   align-items: center;
   column-gap: 14px;
   min-width: 0;
 }
 
 .game-thumb-wrap {
-  width: 240px;
+  width: 260px;
   flex-shrink: 0;
 }
 
 .game-thumb {
-  width: 240px;
-  height: 112px;
+  width: 260px;
+  height: 122px;
   object-fit: cover;
-  border-radius: 13px;
+  border-radius: 14px;
   background: #eef2f7;
   display: block;
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
 }
 
 .game-thumb.placeholder {
-  width: 240px;
-  height: 112px;
+  width: 260px;
+  height: 122px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 13px;
+  border-radius: 14px;
   background: #eef2f7;
   color: #94a3b8;
   font-size: 12px;
@@ -387,7 +387,7 @@
   box-shadow: none;
 }
 
-/* 게임명 텍스트 영역은 줄이고, 글자 크기는 이전 값으로 복구 */
+/* 게임명 텍스트 영역은 기존 크기 유지 */
 .game-info {
   width: 280px;
   min-width: 0;
@@ -621,6 +621,6 @@ html.theme-dark .sample-cursor-note {
   }
 
   .search-table {
-    min-width: 1380px;
+    min-width: 1400px;
   }
 }

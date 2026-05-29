@@ -59,6 +59,13 @@ type TrendPoint = {
   value: number
 }
 
+type VerticalBarItem = {
+  label: string
+  value: number
+  valueText: string
+  subText?: string
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const INITIAL_SUMMARY: SummaryStat = {
@@ -272,13 +279,59 @@ function MarketSummaryBar({ summary }: { summary: SummaryStat }) {
 }
 
 function GenreDistributionView({ genres }: { genres: GenreStat[] }) {
+  const topGenres = genres.slice(0, 8)
+  const positiveGenres = genres
+    .filter((genre) => genre.avgPositiveRatio !== null)
+    .sort((a, b) => (b.avgPositiveRatio ?? 0) - (a.avgPositiveRatio ?? 0))
+    .slice(0, 8)
+
+  const priceGenres = genres
+    .filter((genre) => genre.avgPrice !== null)
+    .sort((a, b) => (b.avgPrice ?? 0) - (a.avgPrice ?? 0))
+    .slice(0, 8)
+
   return (
     <div className="market-dashboard-grid">
       <GenreDistributionCard genres={genres} />
 
-      <GenrePositiveRankingCard genres={genres} />
+      <VerticalBarCard
+        title="대표 장르별 게임 수"
+        tag="게임 수"
+        description="게임 수가 많은 대표 장르를 세로 막대 그래프로 비교합니다."
+        items={topGenres.map((genre) => ({
+          label: getShortLabel(genre.label),
+          value: genre.gameCount,
+          valueText: genre.gameCount.toLocaleString('ko-KR'),
+          subText: `${genre.share.toFixed(1)}%`,
+        }))}
+        maxValue={Math.max(...topGenres.map((genre) => genre.gameCount), 1)}
+      />
 
-      <GenreAveragePriceCard genres={genres} />
+      <VerticalBarCard
+        title="장르별 평균 긍정률"
+        tag="긍정률"
+        description="평균 긍정률이 높은 장르를 세로 막대 그래프로 비교합니다."
+        items={positiveGenres.map((genre) => ({
+          label: getShortLabel(genre.label),
+          value: genre.avgPositiveRatio ?? 0,
+          valueText: `${(genre.avgPositiveRatio ?? 0).toFixed(1)}%`,
+          subText: `${genre.gameCount.toLocaleString('ko-KR')}개`,
+        }))}
+        maxValue={100}
+      />
+
+      <VerticalBarCard
+        title="장르별 평균 가격"
+        tag="평균 가격"
+        description="평균 가격이 높은 장르를 세로 막대 그래프로 비교합니다."
+        items={priceGenres.map((genre) => ({
+          label: getShortLabel(genre.label),
+          value: genre.avgPrice ?? 0,
+          valueText: Math.round(genre.avgPrice ?? 0).toLocaleString('ko-KR'),
+          subText: `${genre.gameCount.toLocaleString('ko-KR')}개`,
+        }))}
+        maxValue={Math.max(...priceGenres.map((genre) => genre.avgPrice ?? 0), 1)}
+      />
     </div>
   )
 }
@@ -286,11 +339,49 @@ function GenreDistributionView({ genres }: { genres: GenreStat[] }) {
 function PriceDistributionView({ priceBands }: { priceBands: PriceBandStat[] }) {
   return (
     <div className="market-dashboard-grid">
-      <PriceBandDistributionCard priceBands={priceBands} />
+      <VerticalBarCard
+        title="가격대별 게임 수 분포"
+        tag="게임 수"
+        description="가격대별 게임 수를 세로 막대 그래프로 비교합니다."
+        items={priceBands.map((item) => ({
+          label: item.label,
+          value: item.gameCount,
+          valueText: item.gameCount.toLocaleString('ko-KR'),
+          subText: `${item.share.toFixed(1)}%`,
+        }))}
+        maxValue={Math.max(...priceBands.map((item) => item.gameCount), 1)}
+        wide
+      />
 
-      <PricePositiveRatioCard priceBands={priceBands} />
+      <VerticalBarCard
+        title="가격대별 평균 긍정률"
+        tag="긍정률"
+        description="가격대별 평균 긍정률을 비교해 가격 구간별 평가 차이를 확인합니다."
+        items={priceBands
+          .filter((item) => item.avgPositiveRatio !== null)
+          .map((item) => ({
+            label: item.label,
+            value: item.avgPositiveRatio ?? 0,
+            valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
+            subText: `${item.gameCount.toLocaleString('ko-KR')}개`,
+          }))}
+        maxValue={100}
+      />
 
-      <PriceReviewCountCard priceBands={priceBands} />
+      <VerticalBarCard
+        title="가격대별 평균 리뷰 수"
+        tag="리뷰 수"
+        description="가격대별 평균 리뷰 수를 비교해 반응 규모를 확인합니다."
+        items={priceBands
+          .filter((item) => item.avgReviewCount !== null)
+          .map((item) => ({
+            label: item.label,
+            value: item.avgReviewCount ?? 0,
+            valueText: Math.round(item.avgReviewCount ?? 0).toLocaleString('ko-KR'),
+            subText: `${item.gameCount.toLocaleString('ko-KR')}개`,
+          }))}
+        maxValue={Math.max(...priceBands.map((item) => item.avgReviewCount ?? 0), 1)}
+      />
     </div>
   )
 }
@@ -298,9 +389,35 @@ function PriceDistributionView({ priceBands }: { priceBands: PriceBandStat[] }) 
 function PlatformDistributionView({ platforms }: { platforms: PlatformStat[] }) {
   return (
     <div className="market-dashboard-grid">
-      <PlatformDistributionCard platforms={platforms} />
+      <VerticalBarCard
+        title="플랫폼별 게임 수"
+        tag="게임 수"
+        description="플랫폼 정보가 있는 게임을 기준으로 플랫폼별 게임 수를 비교합니다."
+        items={platforms.map((platform) => ({
+          label: platform.label,
+          value: platform.gameCount,
+          valueText: platform.gameCount.toLocaleString('ko-KR'),
+          subText: `${platform.share.toFixed(1)}%`,
+        }))}
+        maxValue={Math.max(...platforms.map((platform) => platform.gameCount), 1)}
+      />
 
-      <PlatformPositiveRatioCard platforms={platforms} />
+      <VerticalBarCard
+        title="플랫폼별 평균 긍정률"
+        tag="긍정률"
+        description="플랫폼별 평균 긍정률을 세로 막대 그래프로 비교합니다."
+        items={platforms
+          .filter((platform) => platform.avgPositiveRatio !== null)
+          .map((platform) => ({
+            label: platform.label,
+            value: platform.avgPositiveRatio ?? 0,
+            valueText: `${(platform.avgPositiveRatio ?? 0).toFixed(1)}%`,
+            subText: `${platform.gameCount.toLocaleString('ko-KR')}개`,
+          }))}
+        maxValue={100}
+      />
+
+      <PlatformDistributionCard platforms={platforms} />
     </div>
   )
 }
@@ -357,166 +474,11 @@ function GenreDistributionCard({ genres }: { genres: GenreStat[] }) {
   )
 }
 
-function GenrePositiveRankingCard({ genres }: { genres: GenreStat[] }) {
-  const items = genres
-    .filter((genre) => genre.avgPositiveRatio !== null)
-    .sort((a, b) => (b.avgPositiveRatio ?? 0) - (a.avgPositiveRatio ?? 0))
-    .slice(0, 8)
-
-  return (
-    <article className="market-card">
-      <div className="market-card-header">
-        <h2>장르별 평균 긍정률</h2>
-        <span>긍정률</span>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="market-empty inside">장르별 긍정률 데이터가 없습니다.</div>
-      ) : (
-        <MetricList
-          items={items.map((item) => ({
-            label: item.label,
-            value: item.avgPositiveRatio ?? 0,
-            valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
-            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
-          }))}
-          maxValue={100}
-        />
-      )}
-    </article>
-  )
-}
-
-function GenreAveragePriceCard({ genres }: { genres: GenreStat[] }) {
-  const items = genres
-    .filter((genre) => genre.avgPrice !== null)
-    .sort((a, b) => (b.avgPrice ?? 0) - (a.avgPrice ?? 0))
-    .slice(0, 8)
-
-  const maxValue = Math.max(...items.map((item) => item.avgPrice ?? 0), 1)
-
-  return (
-    <article className="market-card">
-      <div className="market-card-header">
-        <h2>장르별 평균 가격</h2>
-        <span>평균 가격</span>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="market-empty inside">장르별 평균 가격 데이터가 없습니다.</div>
-      ) : (
-        <MetricList
-          items={items.map((item) => ({
-            label: item.label,
-            value: item.avgPrice ?? 0,
-            valueText: Math.round(item.avgPrice ?? 0).toLocaleString('ko-KR'),
-            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
-          }))}
-          maxValue={maxValue}
-        />
-      )}
-    </article>
-  )
-}
-
-function PriceBandDistributionCard({ priceBands }: { priceBands: PriceBandStat[] }) {
-  const maxCount = Math.max(...priceBands.map((item) => item.gameCount), 1)
-
-  return (
-    <article className="market-card market-card--large">
-      <div className="market-card-header">
-        <h2>가격대별 게임 수 분포</h2>
-        <span>가격대</span>
-      </div>
-
-      {priceBands.length === 0 ? (
-        <div className="market-empty inside">가격대 분포 데이터가 없습니다.</div>
-      ) : (
-        <div className="market-bar-list">
-          {priceBands.map((item) => {
-            const width = (item.gameCount / maxCount) * 100
-
-            return (
-              <div className="market-bar-row" key={item.priceBand}>
-                <div className="market-bar-label">
-                  <strong>{item.label}</strong>
-                  <span>{item.share.toFixed(1)}%</span>
-                </div>
-
-                <div className="market-bar-track">
-                  <div style={{ width: `${width}%` }} />
-                </div>
-
-                <em>{item.gameCount.toLocaleString('ko-KR')}</em>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </article>
-  )
-}
-
-function PricePositiveRatioCard({ priceBands }: { priceBands: PriceBandStat[] }) {
-  const items = priceBands.filter((item) => item.avgPositiveRatio !== null)
-
-  return (
-    <article className="market-card">
-      <div className="market-card-header">
-        <h2>가격대별 평균 긍정률</h2>
-        <span>긍정률</span>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="market-empty inside">가격대별 긍정률 데이터가 없습니다.</div>
-      ) : (
-        <MetricList
-          items={items.map((item) => ({
-            label: item.label,
-            value: item.avgPositiveRatio ?? 0,
-            valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
-            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
-          }))}
-          maxValue={100}
-        />
-      )}
-    </article>
-  )
-}
-
-function PriceReviewCountCard({ priceBands }: { priceBands: PriceBandStat[] }) {
-  const items = priceBands.filter((item) => item.avgReviewCount !== null)
-  const maxValue = Math.max(...items.map((item) => item.avgReviewCount ?? 0), 1)
-
-  return (
-    <article className="market-card">
-      <div className="market-card-header">
-        <h2>가격대별 평균 리뷰 수</h2>
-        <span>리뷰 수</span>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="market-empty inside">가격대별 평균 리뷰 수 데이터가 없습니다.</div>
-      ) : (
-        <MetricList
-          items={items.map((item) => ({
-            label: item.label,
-            value: item.avgReviewCount ?? 0,
-            valueText: Math.round(item.avgReviewCount ?? 0).toLocaleString('ko-KR'),
-            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
-          }))}
-          maxValue={maxValue}
-        />
-      )}
-    </article>
-  )
-}
-
 function PlatformDistributionCard({ platforms }: { platforms: PlatformStat[] }) {
   return (
-    <article className="market-card market-card--large">
+    <article className="market-card">
       <div className="market-card-header">
-        <h2>플랫폼별 비중</h2>
+        <h2>플랫폼별 요약</h2>
         <span>플랫폼 정보 기준</span>
       </div>
 
@@ -543,33 +505,6 @@ function PlatformDistributionCard({ platforms }: { platforms: PlatformStat[] }) 
             ))}
           </div>
         </>
-      )}
-    </article>
-  )
-}
-
-function PlatformPositiveRatioCard({ platforms }: { platforms: PlatformStat[] }) {
-  const items = platforms.filter((platform) => platform.avgPositiveRatio !== null)
-
-  return (
-    <article className="market-card market-card--wide">
-      <div className="market-card-header">
-        <h2>플랫폼별 평균 긍정률 비교</h2>
-        <span>긍정률</span>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="market-empty inside">플랫폼별 긍정률 데이터가 없습니다.</div>
-      ) : (
-        <MetricList
-          items={items.map((item) => ({
-            label: item.label,
-            value: item.avgPositiveRatio ?? 0,
-            valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
-            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
-          }))}
-          maxValue={100}
-        />
       )}
     </article>
   )
@@ -772,39 +707,55 @@ function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearS
   )
 }
 
-function MetricList({
+function VerticalBarCard({
+  title,
+  tag,
+  description,
   items,
   maxValue,
+  wide = false,
 }: {
-  items: Array<{
-    label: string
-    value: number
-    valueText: string
-    subText: string
-  }>
+  title: string
+  tag: string
+  description: string
+  items: VerticalBarItem[]
   maxValue: number
+  wide?: boolean
 }) {
   return (
-    <div className="metric-list">
-      {items.map((item) => {
-        const width = maxValue <= 0 ? 0 : Math.max((item.value / maxValue) * 100, 2)
+    <article className={`market-card ${wide ? 'market-card--wide' : ''}`}>
+      <div className="market-card-header">
+        <div>
+          <h2>{title}</h2>
+          <p className="market-card-caption">{description}</p>
+        </div>
+        <span>{tag}</span>
+      </div>
 
-        return (
-          <div className="metric-list-row" key={item.label}>
-            <div className="metric-list-label">
-              <strong>{item.label}</strong>
-              <span>{item.subText}</span>
-            </div>
+      {items.length === 0 ? (
+        <div className="market-empty inside">표시할 데이터가 없습니다.</div>
+      ) : (
+        <div className="vertical-bar-chart">
+          {items.map((item) => {
+            const height = maxValue <= 0 ? 0 : Math.max((item.value / maxValue) * 100, 3)
 
-            <div className="metric-list-track">
-              <div style={{ width: `${width}%` }} />
-            </div>
+            return (
+              <div className="vertical-bar-item" key={`${item.label}-${item.valueText}`}>
+                <div className="vertical-bar-value">{item.valueText}</div>
 
-            <em>{item.valueText}</em>
-          </div>
-        )
-      })}
-    </div>
+                <div className="vertical-bar-track">
+                  <div className="vertical-bar-fill" style={{ height: `${height}%` }} />
+                </div>
+
+                <strong title={item.label}>{item.label}</strong>
+
+                {item.subText && <span>{item.subText}</span>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </article>
   )
 }
 
@@ -1154,6 +1105,10 @@ function formatLargeNumber(value: number): string {
   if (value >= 1000) return `${(value / 1000).toFixed(1)}K`
 
   return value.toLocaleString('ko-KR')
+}
+
+function getShortLabel(label: string): string {
+  return label.split(' (')[0].trim()
 }
 
 function unwrapList(rawData: unknown): Record<string, unknown>[] {

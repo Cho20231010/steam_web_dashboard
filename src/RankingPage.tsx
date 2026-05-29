@@ -625,9 +625,10 @@ function normalizeGames(rawData: unknown): SearchGame[] {
           'thumbnailUrl',
           'cover_image',
           'coverImage',
+          'image',
         ])
 
-      const imageUrl = normalizeImageUrl(rawImageUrl)
+      const imageUrl = normalizeImageUrl(rawImageUrl) || buildSteamHeaderImageUrl(id)
 
       return {
         id,
@@ -929,6 +930,14 @@ function normalizeImageUrl(imageUrl: string): string {
   }
 
   return trimmed
+}
+
+function buildSteamHeaderImageUrl(gameId: number): string {
+  if (!Number.isFinite(gameId) || gameId <= 0) {
+    return ''
+  }
+
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${Math.trunc(gameId)}/header.jpg`
 }
 
 function unwrapList(rawData: unknown): Record<string, unknown>[] {

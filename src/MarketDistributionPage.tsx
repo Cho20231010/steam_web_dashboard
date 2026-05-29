@@ -521,11 +521,11 @@ function GenrePricePositiveScatterPlot({
   }>
 }) {
   const width = 920
-  const height = 380
+  const height = 400
   const margin = {
-    top: 32,
+    top: 58,
     right: 34,
-    bottom: 58,
+    bottom: 46,
     left: 72,
   }
 
@@ -548,6 +548,24 @@ function GenrePricePositiveScatterPlot({
         role="img"
         aria-label="장르별 평균 가격 대비 평균 긍정 비율 산점도"
       >
+        <text
+          x={margin.left}
+          y={24}
+          textAnchor="start"
+          className="scatter-axis-label"
+        >
+          Y축: 평균 긍정 비율
+        </text>
+
+        <text
+          x={width - margin.right}
+          y={24}
+          textAnchor="end"
+          className="scatter-axis-label"
+        >
+          X축: 평균 가격
+        </text>
+
         {yTicks.map((tick) => (
           <g key={tick}>
             <line
@@ -572,7 +590,7 @@ function GenrePricePositiveScatterPlot({
               y2={height - margin.bottom}
               className="scatter-grid-line vertical"
             />
-            <text x={xScale(tick)} y={height - 24} textAnchor="middle">
+            <text x={xScale(tick)} y={height - 20} textAnchor="middle">
               {formatPriceTick(tick)}
             </text>
           </g>
@@ -602,20 +620,6 @@ function GenrePricePositiveScatterPlot({
             className="scatter-regression-line"
           />
         )}
-
-        <text x={width / 2} y={height - 5} textAnchor="middle" className="scatter-axis-label">
-          평균 가격
-        </text>
-
-        <text
-          x="18"
-          y={height / 2}
-          textAnchor="middle"
-          className="scatter-axis-label"
-          transform={`rotate(-90 18 ${height / 2})`}
-        >
-          평균 긍정 비율
-        </text>
       </svg>
 
       <div className="scatter-note">

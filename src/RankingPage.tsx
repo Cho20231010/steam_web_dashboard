@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } fr
 import './RankingPage.css'
 
 type SortOption =
+  | 'default'
   | 'reviewHigh'
   | 'reviewLow'
   | 'positiveHigh'
@@ -63,7 +64,7 @@ function RankingPage() {
   const [selectedGenre, setSelectedGenre] = useState('all')
   const [selectedPrice, setSelectedPrice] = useState<PriceFilter>('all')
   const [selectedPlatform, setSelectedPlatform] = useState('all')
-  const [sortBy, setSortBy] = useState<SortOption>('reviewHigh')
+  const [sortBy, setSortBy] = useState<SortOption>('default')
   const [onlyFree, setOnlyFree] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -173,47 +174,33 @@ function RankingPage() {
   const sortedGames = useMemo(() => {
     const copied = [...filteredGames]
 
+    if (sortBy === 'default') {
+      return copied
+    }
+
     copied.sort((a, b) => {
       if (sortBy === 'reviewHigh') {
-        return (
-          getNullableNumberForSort(b.reviewCount, 'high') -
-          getNullableNumberForSort(a.reviewCount, 'high')
-        )
+        return compareNullableNumber(a.reviewCount, b.reviewCount, 'desc')
       }
 
       if (sortBy === 'reviewLow') {
-        return (
-          getNullableNumberForSort(a.reviewCount, 'low') -
-          getNullableNumberForSort(b.reviewCount, 'low')
-        )
+        return compareNullableNumber(a.reviewCount, b.reviewCount, 'asc')
       }
 
       if (sortBy === 'positiveHigh') {
-        return (
-          getNullableNumberForSort(b.positiveRatio, 'high') -
-          getNullableNumberForSort(a.positiveRatio, 'high')
-        )
+        return compareNullableNumber(a.positiveRatio, b.positiveRatio, 'desc')
       }
 
       if (sortBy === 'positiveLow') {
-        return (
-          getNullableNumberForSort(a.positiveRatio, 'low') -
-          getNullableNumberForSort(b.positiveRatio, 'low')
-        )
+        return compareNullableNumber(a.positiveRatio, b.positiveRatio, 'asc')
       }
 
       if (sortBy === 'playtimeHigh') {
-        return (
-          getNullableNumberForSort(b.averagePlaytime, 'high') -
-          getNullableNumberForSort(a.averagePlaytime, 'high')
-        )
+        return compareNullableNumber(a.averagePlaytime, b.averagePlaytime, 'desc')
       }
 
       if (sortBy === 'playtimeLow') {
-        return (
-          getNullableNumberForSort(a.averagePlaytime, 'low') -
-          getNullableNumberForSort(b.averagePlaytime, 'low')
-        )
+        return compareNullableNumber(a.averagePlaytime, b.averagePlaytime, 'asc')
       }
 
       if (sortBy === 'priceLow') {
@@ -419,6 +406,7 @@ function RankingPage() {
         <div className="search-filter-item">
           <label htmlFor="sort-filter">정렬</label>
           <select id="sort-filter" value={sortBy} onChange={handleSortChange}>
+            <option value="default">기본순</option>
             <option value="reviewHigh">리뷰 수 많은순</option>
             <option value="reviewLow">리뷰 수 적은순</option>
             <option value="positiveHigh">리뷰 긍정률 높은순</option>
@@ -775,12 +763,27 @@ function calculatePositiveRatio(
   return normalizeRatio(fallbackRatio)
 }
 
-function getNullableNumberForSort(value: number | null, direction: 'high' | 'low'): number {
-  if (value === null || !Number.isFinite(value)) {
-    return direction === 'high' ? -1 : Number.POSITIVE_INFINITY
+function compareNullableNumber(
+  firstValue: number | null,
+  secondValue: number | null,
+  direction: 'asc' | 'desc',
+): number {
+  const firstMissing = firstValue === null || !Number.isFinite(firstValue)
+  const secondMissing = secondValue === null || !Number.isFinite(secondValue)
+
+  if (firstMissing && secondMissing) {
+    return 0
   }
 
-  return value
+  if (firstMissing) {
+    return 1
+  }
+
+  if (secondMissing) {
+    return -1
+  }
+
+  return direction === 'asc' ? firstValue - secondValue : secondValue - firstValue
 }
 
 function compareGameName(

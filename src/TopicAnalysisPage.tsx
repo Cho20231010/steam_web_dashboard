@@ -3,60 +3,87 @@ import './TopicAnalysisPage.css'
 
 type TopicTab = 'cluster' | 'sentiment' | 'trend' | 'genre'
 
-type TopicSentimentType = 'positive' | 'mixed' | 'negative' | 'neutral'
+type SentimentType = 'positive' | 'mixed' | 'negative' | 'neutral'
 
-type TopicItem = {
+type RepresentativeTopic = {
   id: string
-  rawName: string
+  topicId: number | null
   name: string
   keywords: string[]
-  lookupKeys: string[]
-  share: number | null
-  positiveRate: number | null
-  negativeRate: number | null
-  neutralRate: number | null
-  mentionCount: number | null
-  sentimentType: TopicSentimentType
+  weight: number | null
+  weightPercent: number | null
+  sampleSize: number | null
+  minSampleSize: number | null
+  reliability: string
+  warning: string | null
+}
+
+type TopicClusterNode = {
+  id: string
+  label: string
+  displayLabel: string
+  type: string
+  value: number | null
+}
+
+type TopicClusterLink = {
+  source: string
+  target: string
+  value: number | null
+}
+
+type TopicClusterData = {
+  nodes: TopicClusterNode[]
+  links: TopicClusterLink[]
+}
+
+type TopicSentimentCategory = {
+  category: string
+  label: string
+  keywords: string[]
+  positiveCount: number
+  neutralCount: number
+  negativeCount: number
+  totalCount: number
+  positiveRatio: number
+  neutralRatio: number
+  negativeRatio: number
+  sentimentType: SentimentType
   sentimentLabel: string
-  hasSentimentData: boolean
-  highlight: string
+}
+
+type GenreTopicItem = {
   genre: string
+  topicId: number | null
+  name: string
+  keywords: string[]
+  weight: number | null
+  gameCount: number | null
 }
 
-type TopicSentimentItem = {
-  lookupKeys: string[]
-  positiveRate: number | null
-  negativeRate: number | null
-  sentimentType: TopicSentimentType
-  sentimentLabel: string
-  hasSentimentData: boolean
-}
-
-type TopicOverallInsight = {
-  topTopicName: string
-  topTopicShare: number | null
-  topKeywordText: string
-  topFiveShare: number | null
-  averagePositiveRate: number | null
-  positiveTopicCount: number
-  sentimentTopicCount: number
-  resultTitle: string
-  mainSummary: string
-  sentimentSummary: string
-  actionSummary: string
-}
-
-type BubbleLayout = {
-  x: number
-  y: number
-  size: number
-  tone: 'blue' | 'purple' | 'red' | 'orange' | 'indigo' | 'sky'
+type TopicPageData = {
+  representativeTopics: RepresentativeTopic[]
+  clusterData: TopicClusterData
+  sentimentCategories: TopicSentimentCategory[]
+  genreTopics: GenreTopicItem[]
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
+const INITIAL_TOPIC_PAGE_DATA: TopicPageData = {
+  representativeTopics: [],
+  clusterData: {
+    nodes: [],
+    links: [],
+  },
+  sentimentCategories: [],
+  genreTopics: [],
+}
+
 const KEYWORD_LABEL_MAP: Record<string, string> = {
   gameplay: '게임플레이',
+  mechanic: '게임 시스템',
+  mechanics: '게임 시스템',
   game: '게임',
   games: '게임',
   play: '플레이',
@@ -64,25 +91,44 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   fun: '재미',
   good: '긍정',
   great: '훌륭함',
+  bad: '부정',
   like: '선호',
   likes: '선호',
   don: '부정 표현',
+  time: '플레이 시간',
   story: '스토리',
   narrative: '서사',
+  dialogue: '대사',
+  ending: '엔딩',
   feel: '몰입감',
   feeling: '몰입감',
+  combat: '전투',
   graphic: '그래픽',
   graphics: '그래픽',
+  visual: '비주얼',
+  visuals: '비주얼',
   art: '아트',
+  animation: '애니메이션',
+  beautiful: '아름다움',
   design: '디자인',
   sound: '사운드',
   music: '음악',
   bug: '버그',
   bugs: '버그',
+  crash: '크래시',
+  glitch: '오류',
+  broken: '고장',
+  error: '에러',
   performance: '성능',
   optimization: '최적화',
+  stutter: '끊김',
+  lag: '렉',
   fps: 'FPS',
   price: '가격',
+  value: '가치',
+  worth: '가성비',
+  expensive: '비쌈',
+  cheap: '저렴함',
   payment: '과금',
   paid: '유료',
   free: '무료',
@@ -90,8 +136,10 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   content: '콘텐츠',
   update: '업데이트',
   multiplayer: '멀티플레이',
+  coop: '협동 플레이',
   online: '온라인',
   server: '서버',
+  matchmaking: '매칭',
   community: '커뮤니티',
   control: '조작감',
   controls: '조작감',
@@ -117,59 +165,77 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   steam: '스팀',
   nt: '기타',
   de: '기타',
+  doi: '기타',
 }
 
-const BUBBLE_LAYOUTS: BubbleLayout[] = [
-  { x: 42, y: 39, size: 106, tone: 'blue' },
-  { x: 70, y: 55, size: 88, tone: 'purple' },
-  { x: 30, y: 68, size: 76, tone: 'red' },
-  { x: 55, y: 78, size: 72, tone: 'indigo' },
-  { x: 76, y: 78, size: 66, tone: 'orange' },
-  { x: 50, y: 58, size: 58, tone: 'sky' },
-]
+const CATEGORY_LABEL_MAP: Record<string, string> = {
+  gameplay: '게임플레이',
+  graphics: '그래픽',
+  story: '스토리',
+  price: '가격',
+  bugs: '버그',
+  multiplayer: '멀티플레이',
+  performance: '성능',
+}
 
 function TopicAnalysisPage() {
   const [activeTab, setActiveTab] = useState<TopicTab>('cluster')
-  const [topics, setTopics] = useState<TopicItem[]>([])
+  const [topicPageData, setTopicPageData] = useState<TopicPageData>(INITIAL_TOPIC_PAGE_DATA)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
-    async function loadTopicAnalysis() {
+    async function loadTopicAnalysisData() {
       try {
         setIsLoading(true)
         setErrorMessage('')
 
-        const topicData = await fetchRequiredJson('/analysis/topics')
-        const sentimentData = await fetchOptionalJson('/analysis/topics/sentiment')
+        const [topicsResult, clustersResult, sentimentResult, genreResult] =
+          await Promise.allSettled([
+            fetchRequiredJson('/analysis/topics'),
+            fetchOptionalJson('/analysis/topics/clusters'),
+            fetchOptionalJson('/analysis/topics/sentiment'),
+            fetchOptionalJson('/analysis/topics/by-genre'),
+          ])
 
-        const normalizedTopics = normalizeTopicData(topicData)
-        const normalizedSentiments = sentimentData ? normalizeTopicSentimentData(sentimentData) : []
+        if (topicsResult.status === 'rejected') {
+          throw topicsResult.reason
+        }
 
-        setTopics(mergeTopicSentimentData(normalizedTopics, normalizedSentiments))
+        setTopicPageData({
+          representativeTopics: normalizeRepresentativeTopics(topicsResult.value),
+          clusterData:
+            clustersResult.status === 'fulfilled' && clustersResult.value
+              ? normalizeTopicClusterData(clustersResult.value)
+              : {
+                  nodes: [],
+                  links: [],
+                },
+          sentimentCategories:
+            sentimentResult.status === 'fulfilled' && sentimentResult.value
+              ? normalizeTopicSentimentCategories(sentimentResult.value)
+              : [],
+          genreTopics:
+            genreResult.status === 'fulfilled' && genreResult.value
+              ? normalizeGenreTopicItems(genreResult.value)
+              : [],
+        })
       } catch (error) {
         console.error('토픽 분석 데이터를 불러오지 못했습니다.', error)
-        setTopics([])
+        setTopicPageData(INITIAL_TOPIC_PAGE_DATA)
         setErrorMessage('토픽 분석 데이터를 불러오지 못했습니다.')
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadTopicAnalysis()
+    loadTopicAnalysisData()
   }, [])
 
-  const representativeTopics = useMemo(() => {
-    return topics.slice(0, 6)
-  }, [topics])
-
-  const sentimentSummary = useMemo(() => {
-    return createSentimentSummary(topics)
-  }, [topics])
-
-  const genreSummary = useMemo(() => {
-    return createGenreSummary(topics)
-  }, [topics])
+  const hasAnyTopicData =
+    topicPageData.representativeTopics.length > 0 ||
+    topicPageData.sentimentCategories.length > 0 ||
+    topicPageData.genreTopics.length > 0
 
   return (
     <section className="topic-analysis-page" aria-label="토픽 분석 화면">
@@ -211,23 +277,34 @@ function TopicAnalysisPage() {
 
       {!isLoading && errorMessage && <div className="topic-analysis-empty">{errorMessage}</div>}
 
-      {!isLoading && !errorMessage && topics.length === 0 && (
+      {!isLoading && !errorMessage && !hasAnyTopicData && (
         <div className="topic-analysis-empty">표시할 토픽 분석 데이터가 없습니다.</div>
       )}
 
-      {!isLoading && !errorMessage && topics.length > 0 && (
+      {!isLoading && !errorMessage && hasAnyTopicData && (
         <>
           {activeTab === 'cluster' && (
-            <TopicClusterView topics={representativeTopics} allTopics={topics} />
+            <TopicClusterView
+              representativeTopics={topicPageData.representativeTopics}
+              clusterData={topicPageData.clusterData}
+            />
           )}
 
           {activeTab === 'sentiment' && (
-            <TopicSentimentView topics={topics} sentimentSummary={sentimentSummary} />
+            <TopicSentimentCategoryView
+              sentimentCategories={topicPageData.sentimentCategories}
+            />
           )}
 
-          {activeTab === 'trend' && <TopicTrendView topics={topics} />}
+          {activeTab === 'trend' && (
+            <TopicWeightCompareView
+              representativeTopics={topicPageData.representativeTopics}
+            />
+          )}
 
-          {activeTab === 'genre' && <TopicGenreView genreSummary={genreSummary} />}
+          {activeTab === 'genre' && (
+            <GenreTopicDistributionView genreTopics={topicPageData.genreTopics} />
+          )}
         </>
       )}
     </section>
@@ -235,31 +312,74 @@ function TopicAnalysisPage() {
 }
 
 function TopicClusterView({
-  topics,
-  allTopics,
+  representativeTopics,
+  clusterData,
 }: {
-  topics: TopicItem[]
-  allTopics: TopicItem[]
+  representativeTopics: RepresentativeTopic[]
+  clusterData: TopicClusterData
 }) {
+  const totalSampleSize = representativeTopics[0]?.sampleSize ?? null
+  const reliableTopicCount = representativeTopics.filter((topic) =>
+    topic.reliability.toLowerCase().includes('high'),
+  ).length
+
   return (
     <div className="topic-analysis-content">
+      <article className="topic-analysis-card topic-analysis-card--wide topic-overview-card">
+        <div className="topic-overview-header">
+          <div>
+            <h2>대표 토픽 5개 분석</h2>
+            <p>
+              전체 리뷰 토픽 모델링 결과를 대표 토픽 단위로 요약한 화면입니다. 현재 백엔드는
+              대표 토픽 5개를 제공합니다.
+            </p>
+          </div>
+
+          <span>대표 토픽 기준</span>
+        </div>
+
+        <div className="topic-overview-metrics">
+          <div>
+            <span>대표 토픽 수</span>
+            <strong>{representativeTopics.length}개</strong>
+          </div>
+
+          <div>
+            <span>분석 샘플 수</span>
+            <strong>
+              {totalSampleSize === null ? '-' : totalSampleSize.toLocaleString('ko-KR')}
+            </strong>
+          </div>
+
+          <div>
+            <span>High 신뢰도</span>
+            <strong>{reliableTopicCount}개</strong>
+          </div>
+
+          <div>
+            <span>연결 노드</span>
+            <strong>{clusterData.nodes.length}개</strong>
+          </div>
+        </div>
+      </article>
+
       <div className="topic-analysis-main-grid">
-        <article className="topic-analysis-card topic-analysis-card--cluster">
-          <h2>주요 토픽 클러스터</h2>
-          <TopicBubbleCluster topics={topics} />
+        <article className="topic-analysis-card">
+          <h2>대표 토픽 목록</h2>
+          <RepresentativeTopicList topics={representativeTopics} />
         </article>
 
         <article className="topic-analysis-card">
-          <h2>토픽별 감성 경향</h2>
-          <TopicSentimentTable topics={allTopics.slice(0, 7)} />
+          <h2>토픽-키워드 연결 구조</h2>
+          <TopicClusterConnectionView clusterData={clusterData} />
         </article>
       </div>
 
       <article className="topic-analysis-card topic-analysis-card--wide">
-        <h2>토픽 하이라이트</h2>
+        <h2>대표 토픽 하이라이트</h2>
         <div className="topic-highlight-grid">
-          {allTopics.slice(0, 4).map((topic) => (
-            <TopicHighlightCard key={topic.id} topic={topic} />
+          {representativeTopics.map((topic) => (
+            <RepresentativeTopicHighlightCard key={topic.id} topic={topic} />
           ))}
         </div>
       </article>
@@ -267,178 +387,380 @@ function TopicClusterView({
   )
 }
 
-function TopicSentimentView({
-  topics,
-  sentimentSummary,
-}: {
-  topics: TopicItem[]
-  sentimentSummary: Array<{
-    label: string
-    count: number
-    type: TopicSentimentType
-  }>
-}) {
-  const overallInsight = createTopicOverallInsight(topics)
+function RepresentativeTopicList({ topics }: { topics: RepresentativeTopic[] }) {
+  if (topics.length === 0) {
+    return <div className="topic-analysis-empty inside">대표 토픽 데이터가 없습니다.</div>
+  }
 
   return (
-    <div className="topic-analysis-content">
-      <TopicOverallResult insight={overallInsight} />
+    <div className="representative-topic-list">
+      {topics.map((topic, index) => (
+        <div className="representative-topic-item" key={topic.id}>
+          <div className="representative-topic-rank">{index + 1}</div>
 
-      <div className="topic-analysis-main-grid">
-        <article className="topic-analysis-card">
-          <h2>감성 경향 요약</h2>
-          <div className="topic-summary-list">
-            {sentimentSummary.map((item) => (
-              <div className="topic-summary-item" key={item.label}>
-                <span className={`topic-status-dot ${item.type}`} />
-                <strong>{item.label}</strong>
-                <em>{item.count}개 토픽</em>
-              </div>
-            ))}
+          <div className="representative-topic-body">
+            <div className="representative-topic-title">
+              <strong>{topic.name}</strong>
+              <span>
+                {topic.weightPercent === null ? '-' : `${topic.weightPercent.toFixed(1)}%`}
+              </span>
+            </div>
+
+            <p>{formatKeywordList(topic.keywords)}</p>
+
+            <div className="representative-topic-meta">
+              <em>{topic.reliability || '신뢰도 정보 없음'}</em>
+              <span>
+                샘플 {topic.sampleSize === null ? '-' : topic.sampleSize.toLocaleString('ko-KR')}
+              </span>
+            </div>
           </div>
-        </article>
-
-        <article className="topic-analysis-card">
-          <h2>토픽별 긍정 비율 순위</h2>
-          <TopicPositiveRanking topics={topics} />
-        </article>
-      </div>
-
-      <article className="topic-analysis-card topic-analysis-card--wide">
-        <h2>토픽 감성 상세</h2>
-        <TopicSentimentTable topics={topics} />
-      </article>
+        </div>
+      ))}
     </div>
   )
 }
 
-function TopicOverallResult({ insight }: { insight: TopicOverallInsight }) {
+function TopicClusterConnectionView({ clusterData }: { clusterData: TopicClusterData }) {
+  const nodeLabelMap = useMemo(() => {
+    const map = new Map<string, string>()
+
+    clusterData.nodes.forEach((node) => {
+      map.set(node.id, node.displayLabel)
+    })
+
+    return map
+  }, [clusterData.nodes])
+
+  if (clusterData.nodes.length === 0 && clusterData.links.length === 0) {
+    return <div className="topic-analysis-empty inside">토픽 클러스터 연결 데이터가 없습니다.</div>
+  }
+
   return (
-    <article className="topic-analysis-card topic-analysis-card--wide topic-overall-result-card">
-      <div className="topic-overall-header">
+    <div className="topic-cluster-connection">
+      <div className="topic-cluster-connection-stats">
         <div>
-          <h2>전체 토픽 분석 결과</h2>
-          <p>{insight.resultTitle}</p>
+          <span>노드</span>
+          <strong>{clusterData.nodes.length}</strong>
         </div>
 
-        <span className="topic-overall-badge">종합 결과</span>
-      </div>
-
-      <div className="topic-overall-metric-grid">
-        <div className="topic-overall-metric">
-          <span>대표 토픽</span>
-          <strong>{insight.topTopicName}</strong>
-        </div>
-
-        <div className="topic-overall-metric">
-          <span>TOP5 토픽 비중</span>
-          <strong>{insight.topFiveShare === null ? '-' : `${insight.topFiveShare.toFixed(1)}%`}</strong>
-        </div>
-
-        <div className="topic-overall-metric">
-          <span>평균 긍정률</span>
-          <strong>
-            {insight.averagePositiveRate === null
-              ? '-'
-              : `${insight.averagePositiveRate.toFixed(0)}%`}
-          </strong>
-        </div>
-
-        <div className="topic-overall-metric">
-          <span>긍정 토픽</span>
-          <strong>
-            {insight.sentimentTopicCount === 0
-              ? '-'
-              : `${insight.positiveTopicCount}/${insight.sentimentTopicCount}개`}
-          </strong>
+        <div>
+          <span>연결</span>
+          <strong>{clusterData.links.length}</strong>
         </div>
       </div>
 
-      <div className="topic-overall-insight-grid">
-        <div className="topic-overall-insight">
-          <strong>핵심 관심사</strong>
-          <p>{insight.mainSummary}</p>
-        </div>
-
-        <div className="topic-overall-insight">
-          <strong>감성 해석</strong>
-          <p>{insight.sentimentSummary}</p>
-        </div>
-
-        <div className="topic-overall-insight">
-          <strong>활용 방향</strong>
-          <p>{insight.actionSummary}</p>
-        </div>
-      </div>
-    </article>
-  )
-}
-
-function TopicTrendView({ topics }: { topics: TopicItem[] }) {
-  return (
-    <div className="topic-analysis-content">
-      <article className="topic-analysis-card topic-analysis-card--wide">
-        <h2>토픽별 언급 비중</h2>
-        <div className="topic-trend-list">
-          {topics.slice(0, 8).map((topic) => (
-            <div className="topic-trend-item" key={topic.id}>
-              <div className="topic-trend-title">
-                <strong>{topic.name}</strong>
-                <span>{formatKeywordList(topic.keywords.slice(0, 4)) || '키워드 없음'}</span>
-              </div>
-
-              <div className="topic-trend-track">
-                <div
-                  className={`topic-trend-bar ${topic.sentimentType}`}
-                  style={{ width: `${topic.share ?? 8}%` }}
-                />
-              </div>
-
-              <em>{topic.share === null ? '-' : `${topic.share.toFixed(1)}%`}</em>
+      {clusterData.links.length > 0 ? (
+        <div className="topic-cluster-link-list">
+          {clusterData.links.slice(0, 10).map((link, index) => (
+            <div className="topic-cluster-link-item" key={`${link.source}-${link.target}-${index}`}>
+              <span>{nodeLabelMap.get(link.source) ?? link.source}</span>
+              <i />
+              <span>{nodeLabelMap.get(link.target) ?? link.target}</span>
+              <em>{link.value === null ? '' : link.value.toFixed(2)}</em>
             </div>
           ))}
         </div>
+      ) : (
+        <div className="topic-cluster-node-list">
+          {clusterData.nodes.slice(0, 10).map((node) => (
+            <span key={node.id}>{node.displayLabel}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RepresentativeTopicHighlightCard({ topic }: { topic: RepresentativeTopic }) {
+  return (
+    <div className="topic-highlight-card neutral">
+      <div className="topic-highlight-title">
+        <span className="topic-highlight-dot" aria-hidden="true" />
+        <strong>{topic.name}</strong>
+      </div>
+
+      <p>
+        {formatKeywordList(topic.keywords.slice(0, 3))} 키워드가 함께 나타나는 대표 토픽입니다.
+        {topic.weightPercent === null
+          ? ''
+          : ` 전체 토픽 비중은 ${topic.weightPercent.toFixed(1)}%입니다.`}
+      </p>
+    </div>
+  )
+}
+
+function TopicSentimentCategoryView({
+  sentimentCategories,
+}: {
+  sentimentCategories: TopicSentimentCategory[]
+}) {
+  const summary = createSentimentCategorySummary(sentimentCategories)
+
+  return (
+    <div className="topic-analysis-content">
+      <article className="topic-analysis-card topic-analysis-card--wide topic-overview-card">
+        <div className="topic-overview-header">
+          <div>
+            <h2>키워드 카테고리별 감성 분석</h2>
+            <p>
+              이 화면은 대표 토픽 5개의 실제 감성이 아니라, 키워드 카테고리 매칭 기반의 감성
+              분석 결과를 보여줍니다.
+            </p>
+          </div>
+
+          <span>category fallback</span>
+        </div>
+
+        <div className="topic-overview-metrics">
+          <div>
+            <span>가장 긍정적인 카테고리</span>
+            <strong>{summary.topPositiveCategory}</strong>
+          </div>
+
+          <div>
+            <span>개선 필요 카테고리</span>
+            <strong>{summary.topNegativeCategory}</strong>
+          </div>
+
+          <div>
+            <span>전체 평균 긍정률</span>
+            <strong>
+              {summary.averagePositiveRatio === null
+                ? '-'
+                : `${summary.averagePositiveRatio.toFixed(1)}%`}
+            </strong>
+          </div>
+
+          <div>
+            <span>총 분석 건수</span>
+            <strong>{summary.totalCount.toLocaleString('ko-KR')}</strong>
+          </div>
+        </div>
       </article>
 
       <article className="topic-analysis-card topic-analysis-card--wide">
-        <h2>해석</h2>
-        <p className="topic-analysis-description">
-          현재 백엔드 응답에 기간별 토픽 변화 데이터가 포함되어 있지 않은 경우, 이 영역은
-          토픽별 현재 언급 비중을 기준으로 표시됩니다. 월별 토픽 추이를 별도로 보여주려면
-          백엔드에서 period, topic, ratio 또는 count 형태의 기간별 데이터가 추가로 필요합니다.
-        </p>
+        <h2>카테고리별 긍정·중립·부정 비율</h2>
+        <SentimentCategoryBars categories={sentimentCategories} />
+      </article>
+
+      <article className="topic-analysis-card topic-analysis-card--wide">
+        <h2>카테고리별 감성 상세</h2>
+        <SentimentCategoryTable categories={sentimentCategories} />
       </article>
     </div>
   )
 }
 
-function TopicGenreView({
-  genreSummary,
+function SentimentCategoryBars({ categories }: { categories: TopicSentimentCategory[] }) {
+  if (categories.length === 0) {
+    return <div className="topic-analysis-empty inside">카테고리별 감성 데이터가 없습니다.</div>
+  }
+
+  return (
+    <div className="sentiment-category-bar-list">
+      {categories.map((category) => (
+        <div className="sentiment-category-bar-item" key={category.category}>
+          <div className="sentiment-category-bar-title">
+            <strong>{category.label}</strong>
+            <span>{category.totalCount.toLocaleString('ko-KR')}건</span>
+          </div>
+
+          <div className="sentiment-stacked-bar">
+            <div
+              className="positive"
+              style={{
+                width: `${category.positiveRatio}%`,
+              }}
+            />
+            <div
+              className="neutral"
+              style={{
+                width: `${category.neutralRatio}%`,
+              }}
+            />
+            <div
+              className="negative"
+              style={{
+                width: `${category.negativeRatio}%`,
+              }}
+            />
+          </div>
+
+          <div className="sentiment-category-bar-values">
+            <span className="positive">긍정 {category.positiveRatio.toFixed(1)}%</span>
+            <span className="neutral">중립 {category.neutralRatio.toFixed(1)}%</span>
+            <span className="negative">부정 {category.negativeRatio.toFixed(1)}%</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SentimentCategoryTable({ categories }: { categories: TopicSentimentCategory[] }) {
+  if (categories.length === 0) {
+    return <div className="topic-analysis-empty inside">카테고리별 감성 데이터가 없습니다.</div>
+  }
+
+  return (
+    <div className="topic-sentiment-table sentiment-category-table">
+      <div className="topic-sentiment-head">
+        <span>카테고리</span>
+        <span>긍정 비율</span>
+        <span>부정 비율</span>
+        <span>감성 경향</span>
+      </div>
+
+      {categories.map((category) => (
+        <div className="topic-sentiment-row" key={category.category}>
+          <strong>{category.label}</strong>
+          <span>{category.positiveRatio.toFixed(1)}%</span>
+          <span>{category.negativeRatio.toFixed(1)}%</span>
+          <em className={category.sentimentType}>
+            <i />
+            {category.sentimentLabel}
+          </em>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TopicWeightCompareView({
+  representativeTopics,
 }: {
-  genreSummary: Array<{
-    genre: string
-    topics: TopicItem[]
-  }>
+  representativeTopics: RepresentativeTopic[]
 }) {
+  const maxWeightPercent = Math.max(
+    ...representativeTopics.map((topic) => topic.weightPercent ?? 0),
+    1,
+  )
+
   return (
     <div className="topic-analysis-content">
-      <article className="topic-analysis-card topic-analysis-card--wide">
-        <h2>장르별 토픽 분포</h2>
-
-        {genreSummary.length === 0 ? (
-          <div className="topic-analysis-empty inside">
-            장르 정보가 포함된 토픽 데이터가 없습니다.
+      <article className="topic-analysis-card topic-analysis-card--wide topic-overview-card">
+        <div className="topic-overview-header">
+          <div>
+            <h2>대표 토픽 비중 비교</h2>
+            <p>
+              현재 API에는 월별 토픽 변화 데이터가 없기 때문에, 이 탭에서는 대표 토픽 5개의
+              현재 비중을 비교합니다.
+            </p>
           </div>
-        ) : (
-          <div className="topic-genre-list">
-            {genreSummary.map((genreGroup) => (
-              <div className="topic-genre-item" key={genreGroup.genre}>
-                <h3>{genreGroup.genre}</h3>
 
-                <div className="topic-genre-tags">
-                  {genreGroup.topics.slice(0, 5).map((topic) => (
-                    <span key={topic.id}>{topic.name}</span>
-                  ))}
+          <span>weight 기준</span>
+        </div>
+      </article>
+
+      <article className="topic-analysis-card topic-analysis-card--wide">
+        <h2>대표 토픽별 비중</h2>
+
+        {representativeTopics.length === 0 ? (
+          <div className="topic-analysis-empty inside">대표 토픽 데이터가 없습니다.</div>
+        ) : (
+          <div className="topic-weight-list">
+            {representativeTopics.map((topic) => {
+              const width =
+                topic.weightPercent === null ? 0 : (topic.weightPercent / maxWeightPercent) * 100
+
+              return (
+                <div className="topic-weight-item" key={topic.id}>
+                  <div className="topic-weight-title">
+                    <strong>{topic.name}</strong>
+                    <span>
+                      {topic.weightPercent === null ? '-' : `${topic.weightPercent.toFixed(1)}%`}
+                    </span>
+                  </div>
+
+                  <div className="topic-weight-track">
+                    <div
+                      style={{
+                        width: `${width}%`,
+                      }}
+                    />
+                  </div>
+
+                  <p>{formatKeywordList(topic.keywords)}</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </article>
+    </div>
+  )
+}
+
+function GenreTopicDistributionView({ genreTopics }: { genreTopics: GenreTopicItem[] }) {
+  const genres = useMemo(() => {
+    return Array.from(new Set(genreTopics.map((item) => item.genre))).sort()
+  }, [genreTopics])
+
+  const [selectedGenre, setSelectedGenre] = useState('all')
+
+  const currentGenre = selectedGenre === 'all' || genres.includes(selectedGenre) ? selectedGenre : 'all'
+
+  const filteredGenreTopics = useMemo(() => {
+    const filteredItems =
+      currentGenre === 'all' ? genreTopics : genreTopics.filter((item) => item.genre === currentGenre)
+
+    return [...filteredItems].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
+  }, [currentGenre, genreTopics])
+
+  return (
+    <div className="topic-analysis-content">
+      <article className="topic-analysis-card topic-analysis-card--wide topic-overview-card">
+        <div className="topic-overview-header">
+          <div>
+            <h2>장르별 토픽 분포</h2>
+            <p>
+              장르별 토픽 가중치와 게임 수를 기준으로 어떤 주제가 특정 장르에서 두드러지는지
+              확인합니다.
+            </p>
+          </div>
+
+          <div className="topic-genre-filter">
+            <label htmlFor="topic-genre-select">장르 선택</label>
+            <select
+              id="topic-genre-select"
+              value={currentGenre}
+              onChange={(event) => setSelectedGenre(event.target.value)}
+            >
+              <option value="all">전체 장르</option>
+              {genres.map((genre) => (
+                <option key={genre} value={genre}>
+                  {genre}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </article>
+
+      <article className="topic-analysis-card topic-analysis-card--wide">
+        <h2>{currentGenre === 'all' ? '전체 장르 토픽 목록' : `${currentGenre} 토픽 목록`}</h2>
+
+        {filteredGenreTopics.length === 0 ? (
+          <div className="topic-analysis-empty inside">장르별 토픽 데이터가 없습니다.</div>
+        ) : (
+          <div className="genre-topic-list">
+            {filteredGenreTopics.slice(0, 20).map((item, index) => (
+              <div className="genre-topic-item" key={`${item.genre}-${item.topicId}-${index}`}>
+                <div className="genre-topic-title">
+                  <strong>{item.genre}</strong>
+                  <span>Topic {item.topicId ?? '-'}</span>
+                </div>
+
+                <h3>{item.name}</h3>
+                <p>{formatKeywordList(item.keywords)}</p>
+
+                <div className="genre-topic-meta">
+                  <span>weight {item.weight === null ? '-' : item.weight.toFixed(3)}</span>
+                  <span>
+                    game count{' '}
+                    {item.gameCount === null ? '-' : item.gameCount.toLocaleString('ko-KR')}
+                  </span>
                 </div>
               </div>
             ))}
@@ -449,130 +771,7 @@ function TopicGenreView({
   )
 }
 
-function TopicBubbleCluster({ topics }: { topics: TopicItem[] }) {
-  const maxShare = Math.max(...topics.map((topic) => topic.share ?? 0), 1)
-
-  return (
-    <div className="topic-cluster-layout">
-      <div className="topic-bubble-stage" aria-label="토픽 클러스터 버블 차트">
-        {topics.map((topic, index) => {
-          const layout = BUBBLE_LAYOUTS[index] ?? BUBBLE_LAYOUTS[BUBBLE_LAYOUTS.length - 1]
-          const share = topic.share ?? 0
-          const sizeRatio = topic.share === null ? 0.74 : Math.max(0.68, share / maxShare)
-          const size = Math.max(58, Math.round(layout.size * sizeRatio))
-
-          return (
-            <div
-              className={`topic-bubble ${layout.tone}`}
-              key={topic.id}
-              style={{
-                left: `${layout.x}%`,
-                top: `${layout.y}%`,
-                width: `${size}px`,
-                height: `${size}px`,
-              }}
-              title={`${topic.name} ${topic.share === null ? '' : `${topic.share.toFixed(1)}%`}`}
-            >
-              <strong>{index + 1}</strong>
-              <span>{topic.share === null ? '-' : `${topic.share.toFixed(1)}%`}</span>
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="topic-cluster-info-list" aria-label="토픽 클러스터 설명">
-        {topics.map((topic, index) => {
-          const layout = BUBBLE_LAYOUTS[index] ?? BUBBLE_LAYOUTS[BUBBLE_LAYOUTS.length - 1]
-
-          return (
-            <div className={`topic-cluster-info-item ${layout.tone}`} key={topic.id}>
-              <div className="topic-cluster-info-index">{index + 1}</div>
-
-              <div className="topic-cluster-info-body">
-                <div className="topic-cluster-info-title">
-                  <strong>{topic.name}</strong>
-                  <span>{topic.share === null ? '비중 없음' : `${topic.share.toFixed(1)}%`}</span>
-                </div>
-
-                <p>{formatKeywordList(topic.keywords.slice(0, 4)) || '키워드 데이터 없음'}</p>
-
-                {topic.hasSentimentData && (
-                  <em className={topic.sentimentType}>{topic.sentimentLabel}</em>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function TopicSentimentTable({ topics }: { topics: TopicItem[] }) {
-  return (
-    <div className="topic-sentiment-table">
-      <div className="topic-sentiment-head">
-        <span>토픽</span>
-        <span>비중</span>
-        <span>긍정 비율</span>
-        <span>감성 경향</span>
-      </div>
-
-      {topics.map((topic) => (
-        <div className="topic-sentiment-row" key={topic.id}>
-          <strong>{topic.name}</strong>
-          <span>{topic.share === null ? '-' : `${topic.share.toFixed(1)}%`}</span>
-          <span>{topic.positiveRate === null ? '-' : `${topic.positiveRate.toFixed(0)}%`}</span>
-          <em className={topic.hasSentimentData ? topic.sentimentType : 'neutral'}>
-            <i />
-            {topic.hasSentimentData ? topic.sentimentLabel : '-'}
-          </em>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function TopicPositiveRanking({ topics }: { topics: TopicItem[] }) {
-  const sortedTopics = [...topics]
-    .filter((topic) => topic.positiveRate !== null)
-    .sort((a, b) => (b.positiveRate ?? 0) - (a.positiveRate ?? 0))
-    .slice(0, 6)
-
-  if (sortedTopics.length === 0) {
-    return <div className="topic-analysis-empty inside">긍정 비율 데이터가 없습니다.</div>
-  }
-
-  return (
-    <div className="topic-positive-ranking">
-      {sortedTopics.map((topic) => (
-        <div className="topic-positive-item" key={topic.id}>
-          <div>
-            <strong>{topic.name}</strong>
-            <span>{formatKeywordList(topic.keywords.slice(0, 3))}</span>
-          </div>
-
-          <em>{topic.positiveRate?.toFixed(0)}%</em>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function TopicHighlightCard({ topic }: { topic: TopicItem }) {
-  return (
-    <div className={`topic-highlight-card ${topic.sentimentType}`}>
-      <div className="topic-highlight-title">
-        <span className="topic-highlight-dot" aria-hidden="true" />
-        <strong>{topic.name}</strong>
-      </div>
-
-      <p>{topic.highlight}</p>
-    </div>
-  )
-}
-
-async function fetchRequiredJson(path: string) {
+async function fetchRequiredJson(path: string): Promise<unknown> {
   const response = await fetch(`${API_BASE_URL}${path}`)
 
   if (!response.ok) {
@@ -582,7 +781,7 @@ async function fetchRequiredJson(path: string) {
   return response.json()
 }
 
-async function fetchOptionalJson(path: string) {
+async function fetchOptionalJson(path: string): Promise<unknown | null> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`)
 
@@ -596,540 +795,245 @@ async function fetchOptionalJson(path: string) {
   }
 }
 
-function normalizeTopicData(rawData: unknown): TopicItem[] {
-  const rawList = unwrapTopicList(rawData)
+function normalizeRepresentativeTopics(rawData: unknown): RepresentativeTopic[] {
+  const rawList = unwrapList(rawData)
 
   return rawList
-    .map((item, index) => normalizeTopicItem(item, index))
-    .filter((topic): topic is TopicItem => topic !== null)
-    .sort((a, b) => (b.share ?? 0) - (a.share ?? 0))
+    .map((item, index) => {
+      const keywords = readStringList(item, ['keywords', 'keyword', 'terms', 'words'])
+      const topicId = readOptionalNumber(item, ['topic_id', 'topicId', 'id'])
+      const weight = readOptionalNumber(item, ['weight', 'score', 'value'])
+      const rawWeightPercent = readOptionalNumber(item, [
+        'weight_percent',
+        'weightPercent',
+        'ratio',
+        'percentage',
+      ])
+      const weightPercent = normalizeOptionalPercent(rawWeightPercent ?? weight)
+
+      return {
+        id: topicId === null ? `topic-${index + 1}` : `topic-${topicId}`,
+        topicId,
+        name: createTopicNameFromKeywords(keywords, topicId),
+        keywords,
+        weight,
+        weightPercent,
+        sampleSize: readOptionalNumber(item, ['sample_size', 'sampleSize']),
+        minSampleSize: readOptionalNumber(item, ['min_sample_size', 'minSampleSize']),
+        reliability: readString(item, ['reliability', 'confidence', 'quality']) || '정보 없음',
+        warning: readString(item, ['warning', 'message']) || null,
+      }
+    })
+    .filter((item) => item.keywords.length > 0 || item.topicId !== null)
+    .sort((a, b) => (b.weightPercent ?? 0) - (a.weightPercent ?? 0))
 }
 
-function normalizeTopicSentimentData(rawData: unknown): TopicSentimentItem[] {
-  const rawList = unwrapTopicList(rawData)
+function normalizeTopicClusterData(rawData: unknown): TopicClusterData {
+  if (!isRecord(rawData)) {
+    return {
+      nodes: [],
+      links: [],
+    }
+  }
+
+  const nodes = readNestedList(rawData, ['nodes', 'vertices']).map((item, index) => {
+    const id = readString(item, ['id', 'node_id', 'nodeId']) || `node-${index + 1}`
+    const rawLabel = readString(item, ['label', 'name', 'keyword', 'topic', 'category']) || id
+    const type = readString(item, ['type', 'group', 'kind']) || 'node'
+
+    return {
+      id,
+      label: rawLabel,
+      displayLabel: formatClusterNodeLabel(rawLabel, type),
+      type,
+      value: readOptionalNumber(item, ['value', 'weight', 'score']),
+    }
+  })
+
+  const links = readNestedList(rawData, ['links', 'edges']).map((item) => ({
+    source: readNodeReference(item.source),
+    target: readNodeReference(item.target),
+    value: readOptionalNumber(item, ['value', 'weight', 'score']),
+  }))
+
+  return {
+    nodes,
+    links: links.filter((link) => link.source && link.target),
+  }
+}
+
+function normalizeTopicSentimentCategories(rawData: unknown): TopicSentimentCategory[] {
+  const rawList = readNestedListFromUnknown(rawData, ['items', 'data', 'results'])
 
   return rawList
     .map((item) => {
-      const keywords = readStringList(item, [
-        'keywords',
-        'keyword',
-        'terms',
-        'words',
-        'top_words',
-        'topWords',
-        'topic_words',
-        'topicWords',
-      ])
+      const category = readString(item, ['category', 'topic', 'name', 'label'])
+      const positiveCount = readOptionalNumber(item, ['positive_count', 'positiveCount']) ?? 0
+      const neutralCount = readOptionalNumber(item, ['neutral_count', 'neutralCount']) ?? 0
+      const negativeCount = readOptionalNumber(item, ['negative_count', 'negativeCount']) ?? 0
+      const totalCount =
+        readOptionalNumber(item, ['total_count', 'totalCount', 'count']) ??
+        positiveCount + neutralCount + negativeCount
 
-      const rawName =
-        readString(item, [
-          'topic',
-          'topic_name',
-          'topicName',
-          'name',
-          'label',
-          'cluster',
-          'cluster_name',
-          'title',
-          'category',
-        ]) || keywords.slice(0, 2).join(' / ')
+      const positiveRatio =
+        normalizeOptionalPercent(readOptionalNumber(item, ['positive_ratio', 'positiveRatio'])) ??
+        calculateRatio(positiveCount, totalCount)
+      const neutralRatio =
+        normalizeOptionalPercent(readOptionalNumber(item, ['neutral_ratio', 'neutralRatio'])) ??
+        calculateRatio(neutralCount, totalCount)
+      const negativeRatio =
+        normalizeOptionalPercent(readOptionalNumber(item, ['negative_ratio', 'negativeRatio'])) ??
+        calculateRatio(negativeCount, totalCount)
 
-      const positiveRate = normalizeOptionalPercent(
-        readOptionalNumber(item, [
-          'positive_ratio',
-          'positiveRatio',
-          'positive_rate',
-          'positiveRate',
-          'positive',
-          'positive_percent',
-          'positivePercent',
-        ]),
-      )
-
-      const negativeRate = normalizeOptionalPercent(
-        readOptionalNumber(item, [
-          'negative_ratio',
-          'negativeRatio',
-          'negative_rate',
-          'negativeRate',
-          'negative',
-          'negative_percent',
-          'negativePercent',
-        ]),
-      )
-
-      const rawSentiment = readString(item, [
-        'sentiment',
-        'sentiment_label',
-        'sentimentLabel',
-        'tone',
-        'status',
-        'sentiment_type',
-        'sentimentType',
-      ])
-
-      const hasSentimentData = positiveRate !== null || negativeRate !== null || rawSentiment !== ''
-      const sentiment = getSentimentInfo(positiveRate, negativeRate, rawSentiment)
+      const sentiment = getSentimentInfo(positiveRatio, negativeRatio)
 
       return {
-        lookupKeys: createTopicLookupKeys(rawName, keywords),
-        positiveRate,
-        negativeRate,
+        category,
+        label: formatCategoryName(category),
+        keywords: readStringList(item, ['keywords', 'keyword', 'terms', 'words']),
+        positiveCount,
+        neutralCount,
+        negativeCount,
+        totalCount,
+        positiveRatio,
+        neutralRatio,
+        negativeRatio,
         sentimentType: sentiment.type,
         sentimentLabel: sentiment.label,
-        hasSentimentData,
       }
     })
-    .filter((item) => item.lookupKeys.length > 0)
+    .filter((item) => item.category)
+    .sort((a, b) => b.totalCount - a.totalCount)
 }
 
-function mergeTopicSentimentData(
-  topics: TopicItem[],
-  sentiments: TopicSentimentItem[],
-): TopicItem[] {
-  if (sentiments.length === 0) {
-    return topics
-  }
+function normalizeGenreTopicItems(rawData: unknown): GenreTopicItem[] {
+  const rawList = readNestedListFromUnknown(rawData, ['items', 'data', 'results'])
 
-  const sentimentMap = new Map<string, TopicSentimentItem>()
+  return rawList
+    .map((item) => {
+      const keywords = readStringList(item, ['keywords', 'keyword', 'terms', 'words'])
+      const topicId = readOptionalNumber(item, ['topic_id', 'topicId', 'id'])
 
-  sentiments.forEach((sentiment) => {
-    sentiment.lookupKeys.forEach((key) => {
-      if (!sentimentMap.has(key)) {
-        sentimentMap.set(key, sentiment)
+      return {
+        genre: readString(item, ['genre', 'genres', 'category']) || 'Unknown',
+        topicId,
+        name: createTopicNameFromKeywords(keywords, topicId),
+        keywords,
+        weight: readOptionalNumber(item, ['weight', 'score', 'value']),
+        gameCount: readOptionalNumber(item, ['game_count', 'gameCount', 'count']),
       }
     })
-  })
+    .filter((item) => item.genre && item.keywords.length > 0)
+}
 
-  return topics.map((topic, index) => {
-    const keyMatchedSentiment = topic.lookupKeys
-      .map((key) => sentimentMap.get(key))
-      .find((item): item is TopicSentimentItem => item !== undefined)
+function createSentimentCategorySummary(categories: TopicSentimentCategory[]) {
+  const totalCount = categories.reduce((sum, item) => sum + item.totalCount, 0)
+  const totalPositiveCount = categories.reduce((sum, item) => sum + item.positiveCount, 0)
+  const averagePositiveRatio = totalCount > 0 ? (totalPositiveCount / totalCount) * 100 : null
 
-    const fallbackSentiment = keyMatchedSentiment ?? sentiments[index]
+  const topPositiveCategory =
+    [...categories].sort((a, b) => b.positiveRatio - a.positiveRatio)[0]?.label ?? '-'
+  const topNegativeCategory =
+    [...categories].sort((a, b) => b.negativeRatio - a.negativeRatio)[0]?.label ?? '-'
 
-    if (!fallbackSentiment || !fallbackSentiment.hasSentimentData) {
-      return topic
-    }
+  return {
+    totalCount,
+    averagePositiveRatio,
+    topPositiveCategory,
+    topNegativeCategory,
+  }
+}
 
-    const positiveRate = topic.positiveRate ?? fallbackSentiment.positiveRate
-    const negativeRate = topic.negativeRate ?? fallbackSentiment.negativeRate
-    const sentiment = getSentimentInfo(positiveRate, negativeRate, fallbackSentiment.sentimentLabel)
-
+function getSentimentInfo(
+  positiveRatio: number | null,
+  negativeRatio: number | null,
+): {
+  type: SentimentType
+  label: string
+} {
+  if (positiveRatio === null) {
     return {
-      ...topic,
-      positiveRate,
-      negativeRate,
-      neutralRate: calculateNeutralRate(positiveRate, negativeRate),
-      sentimentType: sentiment.type,
-      sentimentLabel: sentiment.label,
-      hasSentimentData: true,
-      highlight: createHighlightText(topic.name, topic.keywords, sentiment.label),
+      type: 'neutral',
+      label: '데이터 없음',
     }
-  })
-}
-
-function normalizeTopicItem(item: Record<string, unknown>, index: number): TopicItem | null {
-  const keywords = readStringList(item, [
-    'keywords',
-    'keyword',
-    'terms',
-    'words',
-    'top_words',
-    'topWords',
-    'topic_words',
-    'topicWords',
-  ])
-
-  const rawName =
-    readString(item, [
-      'topic',
-      'topic_name',
-      'topicName',
-      'name',
-      'label',
-      'cluster',
-      'cluster_name',
-      'title',
-      'category',
-    ]) || keywords.slice(0, 2).join(' / ')
-
-  const name = formatTopicName(rawName, keywords)
-
-  if (!name) {
-    return null
   }
 
-  const share = normalizeOptionalPercent(
-    readOptionalNumber(item, [
-      'share',
-      'ratio',
-      'weight',
-      'probability',
-      'percentage',
-      'percent',
-      'topic_ratio',
-      'topicRatio',
-      'topic_share',
-      'topicShare',
-      'prevalence',
-      'weight_percent',
-    ]),
-  )
+  if (positiveRatio >= 80) {
+    return {
+      type: 'positive',
+      label: '매우 긍정적',
+    }
+  }
 
-  const positiveRate = normalizeOptionalPercent(
-    readOptionalNumber(item, [
-      'positive_ratio',
-      'positiveRatio',
-      'positive_rate',
-      'positiveRate',
-      'positive',
-      'positive_percent',
-      'positivePercent',
-    ]),
-  )
+  if (positiveRatio >= 70) {
+    return {
+      type: 'positive',
+      label: '긍정 경향',
+    }
+  }
 
-  const negativeRate = normalizeOptionalPercent(
-    readOptionalNumber(item, [
-      'negative_ratio',
-      'negativeRatio',
-      'negative_rate',
-      'negativeRate',
-      'negative',
-      'negative_percent',
-      'negativePercent',
-    ]),
-  )
-
-  const rawSentiment = readString(item, [
-    'sentiment',
-    'sentiment_label',
-    'sentimentLabel',
-    'tone',
-    'status',
-    'sentiment_type',
-    'sentimentType',
-  ])
-
-  const hasSentimentData = positiveRate !== null || negativeRate !== null || rawSentiment !== ''
-  const sentiment = getSentimentInfo(positiveRate, negativeRate, rawSentiment)
-
-  const neutralRate = calculateNeutralRate(positiveRate, negativeRate)
-  const mentionCount = readOptionalNumber(item, [
-    'review_count',
-    'reviewCount',
-    'count',
-    'mentions',
-    'mention_count',
-    'frequency',
-    'freq',
-  ])
-
-  const highlight =
-    readString(item, ['highlight', 'summary', 'description', 'insight', 'comment']) ||
-    createHighlightText(name, keywords, hasSentimentData ? sentiment.label : '')
-
-  const genre = readString(item, ['genre', 'genres', 'main_genre', 'mainGenre']) || '미분류'
+  if (negativeRatio !== null && negativeRatio >= 25) {
+    return {
+      type: 'negative',
+      label: '개선 필요',
+    }
+  }
 
   return {
-    id: readString(item, ['id', 'topic_id', 'topicId']) || `topic-${index + 1}`,
-    rawName,
-    name,
-    keywords,
-    lookupKeys: createTopicLookupKeys(rawName, keywords),
-    share,
-    positiveRate,
-    negativeRate,
-    neutralRate,
-    mentionCount,
-    sentimentType: sentiment.type,
-    sentimentLabel: sentiment.label,
-    hasSentimentData,
-    highlight,
-    genre,
+    type: 'mixed',
+    label: '혼합 반응',
   }
 }
 
-function unwrapTopicList(rawData: unknown): Record<string, unknown>[] {
-  if (Array.isArray(rawData)) {
-    return rawData.filter(isRecord)
+function createTopicNameFromKeywords(keywords: string[], topicId: number | null): string {
+  const mainKeywords = keywords.slice(0, 2)
+
+  if (mainKeywords.length > 0) {
+    return mainKeywords.map((keyword) => formatKeyword(keyword)).join(' / ')
   }
 
-  if (!isRecord(rawData)) {
-    return []
-  }
-
-  const listKeys = [
-    'items',
-    'topics',
-    'data',
-    'results',
-    'topic_clusters',
-    'topicClusters',
-    'clusters',
-    'top_topics',
-    'topTopics',
-  ]
-
-  for (const key of listKeys) {
-    const value = rawData[key]
-
-    if (Array.isArray(value)) {
-      return value.filter(isRecord)
-    }
-
-    if (isRecord(value)) {
-      const nestedList = unwrapTopicList(value)
-
-      if (nestedList.length > 0) {
-        return nestedList
-      }
-    }
-  }
-
-  return []
+  return topicId === null ? '토픽 정보 없음' : `Topic ${topicId}`
 }
 
-function createSentimentSummary(topics: TopicItem[]) {
-  const summaryMap = new Map<
-    TopicSentimentType,
-    {
-      label: string
-      count: number
-      type: TopicSentimentType
-    }
-  >([
-    ['positive', { label: '긍정 경향', count: 0, type: 'positive' }],
-    ['mixed', { label: '혼합 반응', count: 0, type: 'mixed' }],
-    ['negative', { label: '부정 경향', count: 0, type: 'negative' }],
-    ['neutral', { label: '감성 데이터 없음', count: 0, type: 'neutral' }],
-  ])
+function formatCategoryName(category: string): string {
+  const trimmedCategory = category.trim()
 
-  topics.forEach((topic) => {
-    const savedItem = summaryMap.get(topic.sentimentType)
+  if (!trimmedCategory) {
+    return '카테고리 없음'
+  }
 
-    if (savedItem) {
-      savedItem.count += 1
-    }
-  })
+  const normalizedCategory = normalizeToken(trimmedCategory)
+  const koreanLabel = CATEGORY_LABEL_MAP[normalizedCategory] ?? getKoreanKeywordLabel(normalizedCategory)
 
-  return Array.from(summaryMap.values())
+  return `${koreanLabel} (${trimmedCategory})`
 }
 
-function createGenreSummary(topics: TopicItem[]) {
-  const map = new Map<string, TopicItem[]>()
+function formatClusterNodeLabel(label: string, type: string): string {
+  const normalizedType = normalizeToken(type)
 
-  topics.forEach((topic) => {
-    if (!topic.genre || topic.genre === '미분류') {
-      return
-    }
+  if (normalizedType.includes('keyword')) {
+    return formatKeyword(label)
+  }
 
-    const savedList = map.get(topic.genre) ?? []
-    savedList.push(topic)
-    map.set(topic.genre, savedList)
-  })
+  if (normalizedType.includes('topic')) {
+    return label
+  }
 
-  return Array.from(map.entries()).map(([genre, topicList]) => ({
-    genre,
-    topics: topicList,
-  }))
+  if (/^[a-zA-Z0-9\s,/|_-]+$/.test(label)) {
+    return formatEnglishPhraseByToken(label)
+  }
+
+  return label
 }
 
-function createTopicOverallInsight(topics: TopicItem[]): TopicOverallInsight {
-  const sortedTopics = [...topics].sort((a, b) => (b.share ?? 0) - (a.share ?? 0))
-  const topTopic = sortedTopics[0] ?? null
-  const topFiveTopics = sortedTopics.slice(0, 5)
-
-  const topFiveShareValues = topFiveTopics
-    .map((topic) => topic.share)
-    .filter((share): share is number => share !== null)
-
-  const topFiveShare =
-    topFiveShareValues.length > 0
-      ? topFiveShareValues.reduce((sum, share) => sum + share, 0)
-      : null
-
-  const sentimentTopics = topics.filter((topic) => topic.positiveRate !== null)
-  const averagePositiveRate =
-    sentimentTopics.length > 0
-      ? sentimentTopics.reduce((sum, topic) => sum + (topic.positiveRate ?? 0), 0) /
-        sentimentTopics.length
-      : null
-
-  const positiveTopicCount = sentimentTopics.filter(
-    (topic) => topic.sentimentType === 'positive',
-  ).length
-
-  const topKeywordText = createDominantKeywordText(topFiveTopics)
-
-  const resultTitle = createOverallResultTitle(averagePositiveRate, topFiveShare)
-  const mainSummary = createMainTopicSummary(topTopic, topKeywordText, topFiveShare)
-  const sentimentSummary = createOverallSentimentSummary(
-    averagePositiveRate,
-    positiveTopicCount,
-    sentimentTopics.length,
-  )
-  const actionSummary = createTopicActionSummary(topTopic, averagePositiveRate)
-
-  return {
-    topTopicName: topTopic ? topTopic.name : '-',
-    topTopicShare: topTopic?.share ?? null,
-    topKeywordText,
-    topFiveShare,
-    averagePositiveRate,
-    positiveTopicCount,
-    sentimentTopicCount: sentimentTopics.length,
-    resultTitle,
-    mainSummary,
-    sentimentSummary,
-    actionSummary,
-  }
-}
-
-function createDominantKeywordText(topics: TopicItem[]) {
-  const keywordMap = new Map<string, number>()
-
-  topics.forEach((topic) => {
-    topic.keywords.slice(0, 4).forEach((keyword) => {
-      const normalizedKeyword = normalizeToken(keyword)
-
-      if (!normalizedKeyword) {
-        return
-      }
-
-      keywordMap.set(normalizedKeyword, (keywordMap.get(normalizedKeyword) ?? 0) + 1)
-    })
-  })
-
-  const sortedKeywords = Array.from(keywordMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([keyword]) => formatKeyword(keyword))
-
-  return sortedKeywords.join(', ') || '주요 키워드 없음'
-}
-
-function createOverallResultTitle(averagePositiveRate: number | null, topFiveShare: number | null) {
-  if (averagePositiveRate === null) {
-    return '토픽 비중을 기준으로 주요 리뷰 관심사를 요약한 결과입니다.'
-  }
-
-  const sentimentText =
-    averagePositiveRate >= 70
-      ? '전반적으로 긍정적인 반응이 강한 토픽 구조입니다.'
-      : averagePositiveRate >= 55
-        ? '대체로 긍정 반응이 우세한 토픽 구조입니다.'
-        : averagePositiveRate >= 40
-          ? '긍정과 부정이 함께 나타나는 혼합형 토픽 구조입니다.'
-          : '개선 요구가 비교적 강하게 나타나는 토픽 구조입니다.'
-
-  if (topFiveShare !== null) {
-    return `${sentimentText} 상위 토픽이 전체의 ${topFiveShare.toFixed(
-      1,
-    )}%를 차지하고 있습니다.`
-  }
-
-  return sentimentText
-}
-
-function createMainTopicSummary(
-  topTopic: TopicItem | null,
-  topKeywordText: string,
-  topFiveShare: number | null,
-) {
-  if (!topTopic) {
-    return '표시할 대표 토픽 데이터가 없습니다.'
-  }
-
-  const shareText =
-    topTopic.share === null ? '' : ` 가장 큰 비중의 토픽은 ${topTopic.share.toFixed(1)}%입니다.`
-
-  const topFiveText =
-    topFiveShare === null
-      ? ''
-      : ` 상위 5개 토픽의 합산 비중은 ${topFiveShare.toFixed(
-          1,
-        )}%로, 리뷰 논의가 일부 핵심 주제에 집중되어 있습니다.`
-
-  return `현재 리뷰에서는 ${topTopic.name} 토픽이 가장 두드러지며, ${topKeywordText} 키워드가 반복적으로 나타납니다.${shareText}${topFiveText}`
-}
-
-function createOverallSentimentSummary(
-  averagePositiveRate: number | null,
-  positiveTopicCount: number,
-  sentimentTopicCount: number,
-) {
-  if (averagePositiveRate === null || sentimentTopicCount === 0) {
-    return '현재 연결된 토픽 데이터에는 토픽별 긍정 비율이 충분히 포함되어 있지 않아, 감성 결론은 비중 중심으로만 해석하는 것이 적절합니다.'
-  }
-
-  return `감성 데이터가 있는 ${sentimentTopicCount}개 토픽 중 ${positiveTopicCount}개가 긍정 경향으로 분류되었고, 평균 긍정률은 ${averagePositiveRate.toFixed(
-    0,
-  )}%입니다. 따라서 현재 토픽 흐름은 긍정 반응을 중심으로 해석할 수 있습니다.`
-}
-
-function createTopicActionSummary(topTopic: TopicItem | null, averagePositiveRate: number | null) {
-  if (!topTopic) {
-    return '토픽 데이터가 추가되면 대표 토픽을 기준으로 개선 방향을 도출할 수 있습니다.'
-  }
-
-  if (averagePositiveRate === null) {
-    return `${topTopic.name}처럼 비중이 큰 토픽을 중심으로 상세 리뷰를 확인하고, 이후 감성 데이터가 추가되면 긍정·부정 원인을 분리해 해석하는 것이 좋습니다.`
-  }
-
-  if (averagePositiveRate >= 70) {
-    return `${topTopic.name} 관련 강점을 대시보드나 발표에서 핵심 긍정 요인으로 강조하고, 유사 키워드를 중심으로 성공 요인을 설명하는 방향이 적절합니다.`
-  }
-
-  if (averagePositiveRate >= 55) {
-    return `${topTopic.name} 토픽은 긍정 반응이 있으므로 장점은 유지하되, 함께 등장하는 부정 키워드나 낮은 긍정률 토픽을 추가로 확인하는 것이 좋습니다.`
-  }
-
-  return `${topTopic.name} 토픽의 비중이 높지만 긍정률이 충분히 높지 않으므로, 해당 토픽에서 어떤 불편 요소가 반복되는지 추가 분석하는 것이 좋습니다.`
-}
-
-function formatTopicName(rawName: string, keywords: string[]) {
-  const name = rawName.trim()
-
-  if (!name) {
-    return formatKeyword(keywords[0] ?? '')
-  }
-
-  if (/[가-힣]/.test(name) && name.includes('(') && name.includes(')')) {
-    return name
-  }
-
-  if (/[가-힣]/.test(name)) {
-    return name
-  }
-
-  return formatEnglishPhraseByToken(name)
-}
-
-function formatEnglishPhraseByToken(text: string) {
-  const trimmedText = text.trim()
-
-  if (!trimmedText) {
-    return ''
-  }
-
-  const tokens = splitEnglishTokens(trimmedText)
-
-  if (tokens.length === 0) {
-    return `기타 (${trimmedText})`
-  }
-
-  return tokens.map((token) => formatKeyword(token)).join(' / ')
-}
-
-function formatKeywordList(keywords: string[]) {
+function formatKeywordList(keywords: string[]): string {
   return keywords
     .map((keyword) => formatKeyword(keyword))
     .filter(Boolean)
     .join(', ')
 }
 
-function formatKeyword(keyword: string) {
+function formatKeyword(keyword: string): string {
   const trimmedKeyword = keyword.trim()
 
   if (!trimmedKeyword) {
@@ -1149,54 +1053,34 @@ function formatKeyword(keyword: string) {
   return `${koreanLabel} (${trimmedKeyword})`
 }
 
-function getKoreanKeywordLabel(keyword: string) {
+function formatEnglishPhraseByToken(text: string): string {
+  const tokens = splitEnglishTokens(text)
+
+  if (tokens.length === 0) {
+    return `기타 (${text})`
+  }
+
+  return tokens.map((token) => formatKeyword(token)).join(' / ')
+}
+
+function getKoreanKeywordLabel(keyword: string): string {
   const normalizedKeyword = normalizeToken(keyword)
 
   if (!normalizedKeyword) {
     return '기타'
   }
 
-  if (KEYWORD_LABEL_MAP[normalizedKeyword]) {
-    return KEYWORD_LABEL_MAP[normalizedKeyword]
-  }
-
-  return '기타'
+  return KEYWORD_LABEL_MAP[normalizedKeyword] ?? '기타'
 }
 
-function createTopicLookupKeys(rawName: string, keywords: string[]) {
-  const keySet = new Set<string>()
-
-  const nameKey = normalizeToken(rawName)
-
-  if (nameKey) {
-    keySet.add(nameKey)
-  }
-
-  const keywordKey = keywords.map((keyword) => normalizeToken(keyword)).filter(Boolean).join(' ')
-
-  if (keywordKey) {
-    keySet.add(keywordKey)
-  }
-
-  keywords.forEach((keyword) => {
-    const key = normalizeToken(keyword)
-
-    if (key) {
-      keySet.add(key)
-    }
-  })
-
-  return Array.from(keySet)
-}
-
-function splitEnglishTokens(text: string) {
+function splitEnglishTokens(text: string): string[] {
   return text
     .split(/[,/|]+/)
     .map((token) => token.trim())
-    .filter(Boolean)
+    .filter((token) => token.length > 0)
 }
 
-function normalizeToken(text: string) {
+function normalizeToken(text: string): string {
   return text
     .trim()
     .toLowerCase()
@@ -1205,107 +1089,95 @@ function normalizeToken(text: string) {
     .trim()
 }
 
-function getSentimentInfo(
-  positiveRate: number | null,
-  negativeRate: number | null,
-  rawSentiment = '',
-): {
-  type: TopicSentimentType
-  label: string
-} {
-  const normalizedSentiment = normalizeToken(rawSentiment)
-
-  if (
-    normalizedSentiment.includes('positive') ||
-    normalizedSentiment.includes('good') ||
-    normalizedSentiment.includes('긍정')
-  ) {
-    return {
-      type: 'positive',
-      label: '긍정 경향',
-    }
+function calculateRatio(count: number, total: number): number {
+  if (total <= 0) {
+    return 0
   }
 
-  if (
-    normalizedSentiment.includes('negative') ||
-    normalizedSentiment.includes('bad') ||
-    normalizedSentiment.includes('부정')
-  ) {
-    return {
-      type: 'negative',
-      label: '부정적',
-    }
-  }
-
-  if (
-    normalizedSentiment.includes('mixed') ||
-    normalizedSentiment.includes('neutral') ||
-    normalizedSentiment.includes('혼합') ||
-    normalizedSentiment.includes('중립')
-  ) {
-    return {
-      type: 'mixed',
-      label: '혼합 반응',
-    }
-  }
-
-  if (positiveRate === null) {
-    return {
-      type: 'neutral',
-      label: '감성 데이터 없음',
-    }
-  }
-
-  if (positiveRate >= 70) {
-    return {
-      type: 'positive',
-      label: '매우 긍정적',
-    }
-  }
-
-  if (positiveRate >= 55) {
-    return {
-      type: 'positive',
-      label: '긍정 경향',
-    }
-  }
-
-  if (positiveRate >= 40 && (negativeRate === null || negativeRate < 45)) {
-    return {
-      type: 'mixed',
-      label: '혼합 반응',
-    }
-  }
-
-  return {
-    type: 'negative',
-    label: '부정적',
-  }
+  return (count / total) * 100
 }
 
-function calculateNeutralRate(positiveRate: number | null, negativeRate: number | null) {
-  if (positiveRate === null || negativeRate === null) {
+function normalizeOptionalPercent(value: number | null): number | null {
+  if (value === null) {
     return null
   }
 
-  return Math.max(0, 100 - positiveRate - negativeRate)
-}
-
-function createHighlightText(name: string, keywords: string[], sentimentLabel: string) {
-  const keywordText = formatKeywordList(keywords.slice(0, 3))
-
-  if (keywordText && sentimentLabel) {
-    return `${keywordText} 키워드가 함께 언급되며, 전체적으로 ${sentimentLabel}으로 분류됩니다.`
+  if (value <= 0) {
+    return 0
   }
 
-  if (keywordText) {
-    return `${keywordText} 키워드가 함께 언급되는 주요 토픽입니다.`
+  if (value <= 1) {
+    return value * 100
   }
 
-  return `${name} 관련 리뷰가 반복적으로 언급되고 있습니다.`
+  return Math.min(value, 100)
 }
 
-function readString(item: Record<string, unknown>, keys: string[]) {
+function unwrapList(rawData: unknown): Record<string, unknown>[] {
+  if (Array.isArray(rawData)) {
+    return rawData.filter(isRecord)
+  }
+
+  if (!isRecord(rawData)) {
+    return []
+  }
+
+  return readNestedListFromUnknown(rawData, [
+    'items',
+    'topics',
+    'data',
+    'results',
+    'clusters',
+    'top_topics',
+    'topTopics',
+  ])
+}
+
+function readNestedListFromUnknown(rawData: unknown, keys: string[]): Record<string, unknown>[] {
+  if (!isRecord(rawData)) {
+    return []
+  }
+
+  return readNestedList(rawData, keys)
+}
+
+function readNestedList(item: Record<string, unknown>, keys: string[]): Record<string, unknown>[] {
+  for (const key of keys) {
+    const value = item[key]
+
+    if (Array.isArray(value)) {
+      return value.filter(isRecord)
+    }
+
+    if (isRecord(value)) {
+      const nestedList = unwrapList(value)
+
+      if (nestedList.length > 0) {
+        return nestedList
+      }
+    }
+  }
+
+  return []
+}
+
+function readNodeReference(value: unknown): string {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim()
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+
+  if (isRecord(value)) {
+    return readString(value, ['id', 'node_id', 'nodeId', 'label', 'name'])
+  }
+
+  return ''
+}
+
+function readString(item: Record<string, unknown>, keys: string[]): string {
   for (const key of keys) {
     const value = item[key]
 
@@ -1318,10 +1190,19 @@ function readString(item: Record<string, unknown>, keys: string[]) {
     }
 
     if (Array.isArray(value)) {
-      const textList = value
-        .filter((entry): entry is string => typeof entry === 'string')
-        .map((entry) => entry.trim())
-        .filter(Boolean)
+      const textList: string[] = value
+        .map((entry): string => {
+          if (typeof entry === 'string' || typeof entry === 'number') {
+            return String(entry).trim()
+          }
+
+          if (isRecord(entry)) {
+            return readString(entry, ['label', 'name', 'keyword', 'id'])
+          }
+
+          return ''
+        })
+        .filter((entry) => entry.length > 0)
 
       if (textList.length > 0) {
         return textList.join(', ')
@@ -1332,30 +1213,40 @@ function readString(item: Record<string, unknown>, keys: string[]) {
   return ''
 }
 
-function readStringList(item: Record<string, unknown>, keys: string[]) {
+function readStringList(item: Record<string, unknown>, keys: string[]): string[] {
   for (const key of keys) {
     const value = item[key]
 
     if (Array.isArray(value)) {
       return value
-        .map((entry) => String(entry).trim())
-        .filter(Boolean)
-        .slice(0, 8)
+        .map((entry): string => {
+          if (typeof entry === 'string' || typeof entry === 'number') {
+            return String(entry).trim()
+          }
+
+          if (isRecord(entry)) {
+            return readString(entry, ['keyword', 'label', 'name', 'term', 'word'])
+          }
+
+          return ''
+        })
+        .filter((entry) => entry.length > 0)
+        .slice(0, 10)
     }
 
     if (typeof value === 'string' && value.trim()) {
       return value
         .split(/[,/|]/)
         .map((entry) => entry.trim())
-        .filter(Boolean)
-        .slice(0, 8)
+        .filter((entry) => entry.length > 0)
+        .slice(0, 10)
     }
   }
 
   return []
 }
 
-function readOptionalNumber(item: Record<string, unknown>, keys: string[]) {
+function readOptionalNumber(item: Record<string, unknown>, keys: string[]): number | null {
   for (const key of keys) {
     const value = item[key]
 
@@ -1373,22 +1264,6 @@ function readOptionalNumber(item: Record<string, unknown>, keys: string[]) {
   }
 
   return null
-}
-
-function normalizeOptionalPercent(value: number | null) {
-  if (value === null) {
-    return null
-  }
-
-  if (value <= 0) {
-    return 0
-  }
-
-  if (value <= 1) {
-    return value * 100
-  }
-
-  return Math.min(value, 100)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

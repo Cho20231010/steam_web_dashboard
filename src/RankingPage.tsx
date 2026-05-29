@@ -261,6 +261,22 @@ function RankingPage() {
     return buildPagination(currentPage, totalPages)
   }, [currentPage, totalPages])
 
+  const resultPageStatusText = useMemo(() => {
+    if (sortedGames.length === 0) {
+      return ''
+    }
+
+    if (currentPage === totalPages) {
+      return '현재 검색 결과의 마지막 페이지입니다'
+    }
+
+    if (apiMeta.hasNextCursor) {
+      return '다음 데이터 페이지가 존재합니다'
+    }
+
+    return '현재 불러온 데이터 기준으로 표시 중입니다'
+  }, [apiMeta.hasNextCursor, currentPage, sortedGames.length, totalPages])
+
   function handleSearch() {
     setAppliedSearchText(searchText)
     setCurrentPage(1)
@@ -424,8 +440,8 @@ function RankingPage() {
             </p>
           </div>
 
-          {apiMeta.hasNextCursor && (
-            <span className="sample-cursor-note">다음 데이터 페이지가 존재합니다</span>
+          {!isLoading && !errorMessage && resultPageStatusText && (
+            <span className="sample-cursor-note">{resultPageStatusText}</span>
           )}
         </div>
 

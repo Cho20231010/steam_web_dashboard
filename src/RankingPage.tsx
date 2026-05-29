@@ -3,7 +3,8 @@ import './RankingPage.css'
 
 type SortOption =
   | 'popular'
-  | 'positive'
+  | 'positiveHigh'
+  | 'positiveLow'
   | 'playtimeHigh'
   | 'playtimeLow'
   | 'priceLow'
@@ -117,13 +118,12 @@ function RankingPage() {
     const freeCount = games.filter((game) => game.isFree).length
     const paidCount = games.length - freeCount
 
-    const representativeGenre =
-      games
-        .flatMap((game) => game.genres)
-        .reduce<Record<string, number>>((acc, genre) => {
-          acc[genre] = (acc[genre] ?? 0) + 1
-          return acc
-        }, {})
+    const representativeGenre = games
+      .flatMap((game) => game.genres)
+      .reduce<Record<string, number>>((acc, genre) => {
+        acc[genre] = (acc[genre] ?? 0) + 1
+        return acc
+      }, {})
 
     const topGenre =
       Object.entries(representativeGenre).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '-'
@@ -151,8 +151,7 @@ function RankingPage() {
 
       const matchesPrice = matchesPriceFilter(game.price, selectedPrice)
 
-      const matchesPlatform =
-        selectedPlatform === 'all' || game.platforms.includes(selectedPlatform)
+      const matchesPlatform = selectedPlatform === 'all' || game.platforms.includes(selectedPlatform)
 
       const matchesFree = !onlyFree || game.isFree
 
@@ -168,8 +167,12 @@ function RankingPage() {
         return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
       }
 
-      if (sortBy === 'positive') {
-        return (b.positiveRatio ?? 0) - (a.positiveRatio ?? 0)
+      if (sortBy === 'positiveHigh') {
+        return getPositiveRatioForSort(b.positiveRatio, 'high') - getPositiveRatioForSort(a.positiveRatio, 'high')
+      }
+
+      if (sortBy === 'positiveLow') {
+        return getPositiveRatioForSort(a.positiveRatio, 'low') - getPositiveRatioForSort(b.positiveRatio, 'low')
       }
 
       if (sortBy === 'playtimeHigh') {
@@ -348,7 +351,8 @@ function RankingPage() {
           <label htmlFor="sort-filter">정렬</label>
           <select id="sort-filter" value={sortBy} onChange={handleSortChange}>
             <option value="popular">리뷰 수 많은순</option>
-            <option value="positive">리뷰 긍정률순</option>
+            <option value="positiveHigh">리뷰 긍정률 높은순</option>
+            <option value="positiveLow">리뷰 긍정률 낮은순</option>
             <option value="playtimeHigh">평균 플레이시간 높은순</option>
             <option value="playtimeLow">평균 플레이시간 낮은순</option>
             <option value="priceLow">가격 낮은순</option>
@@ -366,9 +370,7 @@ function RankingPage() {
       <div className="search-result-card">
         <div className="search-result-header">
           <div>
-            <strong>
-              검색 결과 {sortedGames.length.toLocaleString('ko-KR')}건
-            </strong>
+            <strong>검색 결과 {sortedGames.length.toLocaleString('ko-KR')}건</strong>
             <p>
               현재 불러온 샘플 {apiMeta.loadedCount.toLocaleString('ko-KR')}개 중 조건에 맞는
               게임만 표시합니다.
@@ -688,6 +690,14 @@ function calculatePositiveRatio(
   }
 
   return normalizeRatio(fallbackRatio)
+}
+
+function getPositiveRatioForSort(value: number | null, direction: 'high' | 'low'): number {
+  if (value === null || !Number.isFinite(value)) {
+    return direction === 'high' ? -1 : 101
+  }
+
+  return value
 }
 
 function formatGenreLabel(genre: string): string {

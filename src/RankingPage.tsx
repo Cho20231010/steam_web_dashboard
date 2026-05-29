@@ -56,6 +56,7 @@ function RankingPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [failedImageIds, setFailedImageIds] = useState<Set<number>>(new Set())
 
   const [searchText, setSearchText] = useState('')
   const [appliedSearchText, setAppliedSearchText] = useState('')
@@ -71,6 +72,7 @@ function RankingPage() {
       try {
         setIsLoading(true)
         setErrorMessage('')
+        setFailedImageIds(new Set())
 
         const response = await fetch(`${API_BASE_URL}/games`)
 
@@ -313,6 +315,14 @@ function RankingPage() {
     setCurrentPage(1)
   }
 
+  function handleImageError(gameId: number) {
+    setFailedImageIds((prev) => {
+      const next = new Set(prev)
+      next.add(gameId)
+      return next
+    })
+  }
+
   return (
     <section className="search-page" aria-label="게임 검색 화면">
       <div className="sample-notice-card">
@@ -468,42 +478,48 @@ function RankingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleGames.map((game) => (
-                    <tr key={game.id}>
-                      <td>
-                        <div className="game-cell">
-                          <div className="game-thumb-wrap">
-                            {game.imageUrl ? (
-                              <img
-                                className="game-thumb"
-                                src={game.imageUrl}
-                                alt={game.name}
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div className="game-thumb placeholder">No Image</div>
-                            )}
+                  {visibleGames.map((game) => {
+                    const shouldShowImage = game.imageUrl && !failedImageIds.has(game.id)
+
+                    return (
+                      <tr key={game.id}>
+                        <td>
+                          <div className="game-cell">
+                            <div className="game-thumb-wrap">
+                              {shouldShowImage ? (
+                                <img
+                                  className="game-thumb"
+                                  src={game.imageUrl}
+                                  alt={game.name}
+                                  loading="lazy"
+                                  onError={() => handleImageError(game.id)}
+                                />
+                              ) : (
+                                <div className="game-thumb placeholder">No Image</div>
+                              )}
+                            </div>
+
+                            <div className="game-info">
+                              <strong>{game.name}</strong>
+                              <span>ID {game.id}</span>
+                            </div>
                           </div>
-                          <div className="game-info">
-                            <strong>{game.name}</strong>
-                            <span>ID {game.id}</span>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td>{game.primaryGenre || '-'}</td>
+                        <td>{game.primaryGenre || '-'}</td>
 
-                      <td>{formatPriceText(game.price, game.isFree)}</td>
+                        <td>{formatPriceText(game.price, game.isFree)}</td>
 
-                      <td>{game.reviewCount === null ? '-' : formatCount(game.reviewCount)}</td>
+                        <td>{game.reviewCount === null ? '-' : formatCount(game.reviewCount)}</td>
 
-                      <td className="positive-cell">
-                        {game.positiveRatio === null ? '-' : `${game.positiveRatio.toFixed(1)}%`}
-                      </td>
+                        <td className="positive-cell">
+                          {game.positiveRatio === null ? '-' : `${game.positiveRatio.toFixed(1)}%`}
+                        </td>
 
-                      <td>{formatPlaytime(game.averagePlaytime)}</td>
-                    </tr>
-                  ))}
+                        <td>{formatPlaytime(game.averagePlaytime)}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -607,19 +623,23 @@ function normalizeGames(rawData: unknown): SearchGame[] {
         'avgPlaytime',
       ])
 
-      const imageUrl =
+      const id =
+        readOptionalNumber(item, ['app_id', 'appid', 'id', 'game_id', 'gameId']) ?? index + 1
+
+      const rawImageUrl =
+        readString(item, ['header_image', 'headerImage']) ||
+        readString(item, ['capsule_image', 'capsuleImage']) ||
         readString(item, [
-          'header_image',
-          'headerImage',
-          'capsule_image',
-          'capsuleImage',
           'image_url',
           'imageUrl',
           'thumbnail',
-        ]) || ''
+          'thumbnail_url',
+          'thumbnailUrl',
+          'cover_image',
+          'coverImage',
+        ])
 
-      const id =
-        readOptionalNumber(item, ['app_id', 'appid', 'id', 'game_id', 'gameId']) ?? index + 1
+      const imageUrl = normalizeImageUrl(rawImageUrl)
 
       return {
         id,
@@ -884,6 +904,28 @@ function normalizeRatio(value: number | null): number | null {
   }
 
   return value
+}
+
+function normalizeImageUrl(imageUrl: string): string {
+  const trimmed = imageUrl.trim()
+
+  if (!trimmed) {
+    return ''
+  }
+
+  if (trimmed.startsWith('//')) {
+    return `https:${trimmed}`
+  }
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed
+  }
+
+  if (trimmed.startsWith('/')) {
+    return `${API_BASE_URL}${trimmed}`
+  }
+
+  return trimmed
 }
 
 function unwrapList(rawData: unknown): Record<string, unknown>[] {

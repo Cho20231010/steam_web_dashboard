@@ -151,7 +151,7 @@ function TrendComparePage() {
       .slice(0, 5)
   }, [trendData.genreTrends])
 
-  const priceTrends = useMemo(() => {
+  const comparablePriceTrends = useMemo(() => {
     return trendData.priceTrends
       .filter((item) => item.previousReviews !== null && item.previousReviews > 0)
       .slice(0, 5)
@@ -229,7 +229,7 @@ function TrendComparePage() {
         compareMode,
         monthlyTrends,
         genreTrends: comparableGenreTrends,
-        priceTrends,
+        priceTrends: comparablePriceTrends,
       })}
 
       <div className="trend-compare-bottom-note">
@@ -268,13 +268,13 @@ function renderCompareContent({
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="전체 리뷰 수 추이" hideLegend />
-          <TrendLineChart data={monthlyTrends} chartType="reviews" />
+          <TrendCardHeader title="장르별 리뷰 수 추이" />
+          <GenreReviewTrendBars data={genreTrends} />
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="전체 긍정 비율 추이" hideLegend />
-          <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
+          <TrendCardHeader title="장르별 긍정 비율 추이" />
+          <GenrePositiveRateTrendBars data={genreTrends} />
         </article>
       </div>
     )
@@ -294,13 +294,13 @@ function renderCompareContent({
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="전체 리뷰 수 추이" hideLegend />
-          <TrendLineChart data={monthlyTrends} chartType="reviews" />
+          <TrendCardHeader title="가격대별 리뷰 수 추이" />
+          <PriceReviewTrendBars data={priceTrends} />
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="전체 긍정 비율 추이" hideLegend />
-          <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
+          <TrendCardHeader title="가격대별 긍정 비율 추이" />
+          <PricePositiveRateTrendTable data={priceTrends} />
         </article>
       </div>
     )
@@ -309,22 +309,22 @@ function renderCompareContent({
   return (
     <div className="trend-compare-grid" key="all-view">
       <article className="trend-compare-card">
-        <TrendCardHeader title="리뷰 수 추이 비교" hideLegend />
+        <TrendCardHeader title="전체 리뷰 수 추이" hideLegend />
         <TrendLineChart data={monthlyTrends} chartType="reviews" />
       </article>
 
       <article className="trend-compare-card">
-        <TrendCardHeader title="긍정 비율 추이 비교" hideLegend />
+        <TrendCardHeader title="전체 긍정 비율 추이" hideLegend />
         <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
       </article>
 
       <article className="trend-compare-card">
-        <TrendCardHeader title="장르별 리뷰 수 변화" hideLegend />
+        <TrendCardHeader title="대표적인 장르별 리뷰 수 변화" hideLegend />
         <GenreReviewChangeTable data={genreTrends} />
       </article>
 
       <article className="trend-compare-card">
-        <TrendCardHeader title="가격대별 긍정 비율 변화" />
+        <TrendCardHeader title="대표적인 가격대별 긍정 비율 변화" />
         <PricePositiveRateBars data={priceTrends} />
       </article>
     </div>
@@ -519,6 +519,86 @@ function GenrePositiveRateChangeTable({ data }: { data: GenreTrend[] }) {
   )
 }
 
+function GenreReviewTrendBars({ data }: { data: GenreTrend[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="trend-compare-loading">
+        이전 기간과 현재 기간이 모두 있는 장르별 리뷰 수 추이 데이터가 없습니다.
+      </div>
+    )
+  }
+
+  const maxReviewCount = Math.max(
+    ...data.map((item) => Math.max(item.currentReviews, item.previousReviews ?? 0)),
+    1,
+  )
+
+  return (
+    <div className="trend-compare-price-list">
+      {data.map((item) => (
+        <div className="trend-compare-price-item" key={item.genre}>
+          <span className="trend-compare-price-label">{item.genre}</span>
+
+          <div className="trend-compare-price-track">
+            {item.previousReviews !== null && (
+              <div
+                className="trend-compare-price-bar previous"
+                style={{ width: `${(item.previousReviews / maxReviewCount) * 100}%` }}
+              />
+            )}
+
+            <div
+              className="trend-compare-price-bar current"
+              style={{ width: `${(item.currentReviews / maxReviewCount) * 100}%` }}
+            />
+          </div>
+
+          <strong>{formatCompactNumber(item.currentReviews)}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function GenrePositiveRateTrendBars({ data }: { data: GenreTrend[] }) {
+  const filteredData = data.filter(
+    (item) => item.currentPositiveRate !== null && item.previousPositiveRate !== null,
+  )
+
+  if (filteredData.length === 0) {
+    return (
+      <div className="trend-compare-loading">
+        이전 기간과 현재 기간이 모두 있는 장르별 긍정 비율 추이 데이터가 없습니다.
+      </div>
+    )
+  }
+
+  return (
+    <div className="trend-compare-price-list">
+      {filteredData.map((item) => {
+        const currentRate = item.currentPositiveRate ?? 0
+        const previousRate = item.previousPositiveRate ?? 0
+
+        return (
+          <div className="trend-compare-price-item" key={item.genre}>
+            <span className="trend-compare-price-label">{item.genre}</span>
+
+            <div className="trend-compare-price-track">
+              <div
+                className="trend-compare-price-bar previous"
+                style={{ width: `${previousRate}%` }}
+              />
+              <div className="trend-compare-price-bar current" style={{ width: `${currentRate}%` }} />
+            </div>
+
+            <strong>{currentRate.toFixed(1)}%</strong>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function PricePositiveRateBars({ data }: { data: PriceTrend[] }) {
   if (data.length === 0) {
     return (
@@ -595,6 +675,85 @@ function PriceReviewChangeTable({ data }: { data: PriceTrend[] }) {
   )
 }
 
+function PriceReviewTrendBars({ data }: { data: PriceTrend[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="trend-compare-loading">
+        이전 기간과 현재 기간이 모두 있는 가격대별 리뷰 수 추이 데이터가 없습니다.
+      </div>
+    )
+  }
+
+  const maxReviewCount = Math.max(
+    ...data.map((item) => Math.max(item.currentReviews, item.previousReviews ?? 0)),
+    1,
+  )
+
+  return (
+    <div className="trend-compare-price-list">
+      {data.map((item) => (
+        <div className="trend-compare-price-item" key={item.priceBand}>
+          <span className="trend-compare-price-label">{item.priceBand}</span>
+
+          <div className="trend-compare-price-track">
+            {item.previousReviews !== null && (
+              <div
+                className="trend-compare-price-bar previous"
+                style={{ width: `${(item.previousReviews / maxReviewCount) * 100}%` }}
+              />
+            )}
+
+            <div
+              className="trend-compare-price-bar current"
+              style={{ width: `${(item.currentReviews / maxReviewCount) * 100}%` }}
+            />
+          </div>
+
+          <strong>{formatCompactNumber(item.currentReviews)}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function PricePositiveRateTrendTable({ data }: { data: PriceTrend[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="trend-compare-loading">
+        이전 기간과 현재 기간이 모두 있는 가격대별 긍정 비율 추이 데이터가 없습니다.
+      </div>
+    )
+  }
+
+  return (
+    <div className="trend-compare-genre-table">
+      <div className="trend-compare-genre-head">
+        <span>가격대</span>
+        <span>현재 긍정률</span>
+        <span>이전 긍정률</span>
+        <span>변화폭</span>
+      </div>
+
+      {data.map((item) => {
+        const currentRate = item.currentPositiveRate
+        const previousRate = item.previousPositiveRate ?? 0
+        const changePoint = currentRate - previousRate
+
+        return (
+          <div className="trend-compare-genre-row" key={item.priceBand}>
+            <strong>{item.priceBand}</strong>
+            <span>{currentRate.toFixed(1)}%</span>
+            <span>{item.previousPositiveRate === null ? '-' : `${previousRate.toFixed(1)}%`}</span>
+            <em className={changePoint >= 0 ? 'up' : 'down'}>
+              {changePoint >= 0 ? '▲' : '▼'} {Math.abs(changePoint).toFixed(1)}%p
+            </em>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function createLinePoints(
   data: MonthlyTrend[],
   valueKey: TrendValueKey,
@@ -661,14 +820,14 @@ function getCompareModeTitle(compareMode: CompareMode) {
 
 function getCompareModeDescription(compareMode: CompareMode) {
   if (compareMode === 'genre') {
-    return '장르별 비교 탭에서는 이전 기간과 현재 기간이 모두 존재하는 장르만 표시하여 실제 변화율을 비교합니다.'
+    return '장르별 비교 탭에서는 이전 기간과 현재 기간이 모두 존재하는 장르만 표시하여 실제 변화율과 추이를 비교합니다.'
   }
 
   if (compareMode === 'price') {
     return '가격대 비교 탭에서는 가격대별 긍정 비율과 리뷰 수 변화를 중심으로 비교합니다.'
   }
 
-  return '현재 백엔드 데이터에 포함된 최신 2개월을 기준으로 리뷰 수, 긍정 비율, 장르별 리뷰 수, 가격대별 긍정 비율 변화를 비교합니다.'
+  return '현재 백엔드 데이터에 포함된 최신 2개월을 기준으로 전체 추이와 대표적인 장르·가격대 변화를 함께 비교합니다.'
 }
 
 function calculateChangeRate(currentValue: number, previousValue: number | null) {

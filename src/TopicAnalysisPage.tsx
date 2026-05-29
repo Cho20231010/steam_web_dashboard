@@ -166,6 +166,7 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   nt: '기타',
   de: '기타',
   doi: '기타',
+  friends: '기타',
 }
 
 const COMPACT_KEYWORD_LABEL_MAP: Record<string, string> = {
@@ -235,6 +236,7 @@ const TITLE_EXCLUDED_KEYWORDS = new Set([
   'de',
   'doi',
   'don',
+  'friends',
   'review',
   'reviews',
   'steam',
@@ -823,7 +825,12 @@ function GenreTopicDistributionView({ genreTopics }: { genreTopics: GenreTopicIt
       </article>
 
       <article className="topic-analysis-card topic-analysis-card--wide">
-        <h2>{currentGenre === 'all' ? '전체 장르 토픽 목록' : `${currentGenre} 토픽 목록`}</h2>
+        <h2>{currentGenre === 'all' ? '장르별 대표 토픽 분포' : `${currentGenre} 대표 토픽 분포`}</h2>
+        <p className="topic-card-caption">
+          Topic은 리뷰 키워드를 묶어 만든 주제 번호이며, weight는 해당 장르에서 그 토픽이
+          얼마나 강하게 나타나는지를 의미합니다. game count는 해당 장르·토픽 조합에 포함된
+          게임 수입니다. 같은 토픽은 여러 장르에서 반복 표시될 수 있습니다.
+        </p>
 
         {filteredGenreTopics.length === 0 ? (
           <div className="topic-analysis-empty inside">장르별 토픽 데이터가 없습니다.</div>

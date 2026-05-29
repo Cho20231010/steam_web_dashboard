@@ -296,7 +296,7 @@
 
 .search-table {
   width: 100%;
-  min-width: 1300px;
+  min-width: 1260px;
   border-collapse: collapse;
   table-layout: auto;
 }
@@ -312,8 +312,8 @@
 }
 
 .search-table thead th:first-child {
-  width: 37%;
-  min-width: 480px;
+  width: 36%;
+  min-width: 450px;
   text-align: left;
 }
 
@@ -351,7 +351,7 @@
 
 .game-cell {
   display: grid;
-  grid-template-columns: 200px 240px;
+  grid-template-columns: 200px 220px;
   align-items: center;
   column-gap: 14px;
   min-width: 0;
@@ -387,9 +387,9 @@
 }
 
 .game-info {
-  width: 240px;
+  width: 220px;
   min-width: 0;
-  max-width: 240px;
+  max-width: 220px;
   padding: 8px 0;
 }
 
@@ -397,24 +397,17 @@
   display: -webkit-box;
   overflow: hidden;
   color: #172033;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: normal;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
   line-clamp: 4;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
-}
-
-.game-info span {
-  display: block;
-  margin-top: 6px;
-  color: #98a2b3;
-  font-size: 10.5px;
-  font-weight: 800;
 }
 
 .price-cell {
@@ -541,7 +534,6 @@ html.theme-dark .search-table thead th,
 html.theme-dark .search-empty,
 html.theme-dark .page-ellipsis,
 html.theme-dark .search-result-header p,
-html.theme-dark .game-info span,
 html.theme-dark .price-usd {
   color: #cbd5e1;
 }
@@ -654,6 +646,6 @@ html.theme-dark .sample-cursor-note {
   }
 
   .search-table {
-    min-width: 1300px;
+    min-width: 1260px;
   }
 }

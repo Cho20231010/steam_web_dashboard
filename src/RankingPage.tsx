@@ -43,7 +43,6 @@ type GamesApiMeta = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 const ITEMS_PER_PAGE = 5
-
 const USD_TO_KRW_RATE = 1350
 
 function RankingPage() {
@@ -487,7 +486,6 @@ function RankingPage() {
 
                             <div className="game-info">
                               <strong>{game.name}</strong>
-                              <span>ID {game.id}</span>
                             </div>
                           </div>
                         </td>

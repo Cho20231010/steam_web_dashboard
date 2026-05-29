@@ -6,6 +6,7 @@ import ReviewPage from './ReviewPage'
 import RankingPage from './RankingPage'
 import SettingsPage from './SettingsPage'
 import TrendComparePage from './TrendComparePage'
+import TopicAnalysisPage from './TopicAnalysisPage'
 
 type PageType =
   | 'home'
@@ -112,23 +113,15 @@ function App() {
 
         {activePage === 'trendCompare' && <TrendComparePage />}
 
-        {activePage === 'topicAnalysis' && (
-          <section className="status-card">
-            <strong>토픽 분석 화면 준비 중</strong>
-            <p>
-              /analysis/topics, /analysis/topics/clusters, /analysis/topics/sentiment,
-              /analysis/topics/by-genre API를 연결해서 토픽별 감성 경향을 보여줄 수 있습니다.
-            </p>
-          </section>
-        )}
+        {activePage === 'topicAnalysis' && <TopicAnalysisPage />}
 
         {activePage === 'marketDistribution' && (
           <section className="status-card">
             <strong>시장 분포 화면 준비 중</strong>
             <p>
-              /analysis/genre-stats, /analysis/price-band-stats,
-              /analysis/platform-stats, /analysis/release-year-stats API를 연결해서
-              장르·가격대·플랫폼·출시연도별 시장 분포를 보여줄 수 있습니다.
+              /analysis/genre-stats, /analysis/price-band-stats, /analysis/platform-stats,
+              /analysis/release-year-stats API를 연결해서 장르·가격대·플랫폼·출시연도별 시장
+              분포를 보여줄 수 있습니다.
             </p>
           </section>
         )}
@@ -139,9 +132,9 @@ function App() {
           <section className="status-card">
             <strong>관심 게임 화면 준비 중</strong>
             <p>
-              /users/me/wishlist, /users/me/wishlist/compare,
-              /users/me/notifications API를 X-Client-Id 헤더와 함께 연결하면 실제 관심 게임과
-              알림 데이터를 반영할 수 있습니다.
+              /users/me/wishlist, /users/me/wishlist/compare, /users/me/notifications API를
+              X-Client-Id 헤더와 함께 연결하면 실제 관심 게임과 알림 데이터를 반영할 수
+              있습니다.
             </p>
           </section>
         )}
@@ -153,4 +146,3 @@ function App() {
 }
 
 export default App
-

@@ -786,3 +786,36 @@ html.theme-dark .topic-analysis-empty {
     align-items: flex-start;
   }
 }
+
+/* 토픽 하이라이트 하단 카드의 동그라미 색상 통일 */
+.topic-highlight-title .topic-highlight-dot {
+  width: 11px;
+  height: 11px;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--blue, #5d63f1);
+  box-shadow: 0 0 0 4px rgba(93, 99, 241, 0.1);
+}
+
+/* 감성 데이터가 들어왔을 때 테이블 감성 경향 표시 보강 */
+.topic-sentiment-row em.positive {
+  color: #15a05f;
+}
+
+.topic-sentiment-row em.mixed {
+  color: #f59e0b;
+}
+
+.topic-sentiment-row em.negative {
+  color: #e24a4a;
+}
+
+.topic-sentiment-row em.neutral {
+  color: #667085;
+}
+
+html.theme-dark .topic-highlight-title .topic-highlight-dot {
+  background: #8b8fff;
+  box-shadow: 0 0 0 4px rgba(139, 143, 255, 0.16);
+}

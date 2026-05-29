@@ -7,8 +7,10 @@ type TopicSentimentType = 'positive' | 'mixed' | 'negative' | 'neutral'
 
 type TopicItem = {
   id: string
+  rawName: string
   name: string
   keywords: string[]
+  lookupKeys: string[]
   share: number | null
   positiveRate: number | null
   negativeRate: number | null
@@ -16,8 +18,18 @@ type TopicItem = {
   mentionCount: number | null
   sentimentType: TopicSentimentType
   sentimentLabel: string
+  hasSentimentData: boolean
   highlight: string
   genre: string
+}
+
+type TopicSentimentItem = {
+  lookupKeys: string[]
+  positiveRate: number | null
+  negativeRate: number | null
+  sentimentType: TopicSentimentType
+  sentimentLabel: string
+  hasSentimentData: boolean
 }
 
 type BubbleLayout = {
@@ -161,16 +173,13 @@ function TopicAnalysisPage() {
         setIsLoading(true)
         setErrorMessage('')
 
-        const response = await fetch(`${API_BASE_URL}/analysis/topics`)
+        const topicData = await fetchRequiredJson('/analysis/topics')
+        const sentimentData = await fetchOptionalJson('/analysis/topics/sentiment')
 
-        if (!response.ok) {
-          throw new Error(`Topic API error: ${response.status}`)
-        }
+        const normalizedTopics = normalizeTopicData(topicData)
+        const normalizedSentiments = sentimentData ? normalizeTopicSentimentData(sentimentData) : []
 
-        const rawData = await response.json()
-        const normalizedTopics = normalizeTopicData(rawData)
-
-        setTopics(normalizedTopics)
+        setTopics(mergeTopicSentimentData(normalizedTopics, normalizedSentiments))
       } catch (error) {
         console.error('토픽 분석 데이터를 불러오지 못했습니다.', error)
         setTopics([])
@@ -454,7 +463,7 @@ function TopicBubbleCluster({ topics }: { topics: TopicItem[] }) {
 
                 <p>{formatKeywordList(topic.keywords.slice(0, 4)) || '키워드 데이터 없음'}</p>
 
-                {topic.positiveRate !== null && (
+                {topic.hasSentimentData && (
                   <em className={topic.sentimentType}>{topic.sentimentLabel}</em>
                 )}
               </div>
@@ -476,21 +485,17 @@ function TopicSentimentTable({ topics }: { topics: TopicItem[] }) {
         <span>감성 경향</span>
       </div>
 
-      {topics.map((topic) => {
-        const hasSentimentData = topic.positiveRate !== null
-
-        return (
-          <div className="topic-sentiment-row" key={topic.id}>
-            <strong>{topic.name}</strong>
-            <span>{topic.share === null ? '-' : `${topic.share.toFixed(1)}%`}</span>
-            <span>{hasSentimentData ? `${topic.positiveRate?.toFixed(0)}%` : '-'}</span>
-            <em className={hasSentimentData ? topic.sentimentType : 'neutral'}>
-              <i />
-              {hasSentimentData ? topic.sentimentLabel : '-'}
-            </em>
-          </div>
-        )
-      })}
+      {topics.map((topic) => (
+        <div className="topic-sentiment-row" key={topic.id}>
+          <strong>{topic.name}</strong>
+          <span>{topic.share === null ? '-' : `${topic.share.toFixed(1)}%`}</span>
+          <span>{topic.positiveRate === null ? '-' : `${topic.positiveRate.toFixed(0)}%`}</span>
+          <em className={topic.hasSentimentData ? topic.sentimentType : 'neutral'}>
+            <i />
+            {topic.hasSentimentData ? topic.sentimentLabel : '-'}
+          </em>
+        </div>
+      ))}
     </div>
   )
 }
@@ -525,13 +530,37 @@ function TopicHighlightCard({ topic }: { topic: TopicItem }) {
   return (
     <div className={`topic-highlight-card ${topic.sentimentType}`}>
       <div className="topic-highlight-title">
-        <span>{getTopicIcon(topic.sentimentType)}</span>
+        <span className="topic-highlight-dot" aria-hidden="true" />
         <strong>{topic.name}</strong>
       </div>
 
       <p>{topic.highlight}</p>
     </div>
   )
+}
+
+async function fetchRequiredJson(path: string) {
+  const response = await fetch(`${API_BASE_URL}${path}`)
+
+  if (!response.ok) {
+    throw new Error(`${path} API error: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+async function fetchOptionalJson(path: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`)
+
+    if (!response.ok) {
+      return null
+    }
+
+    return response.json()
+  } catch {
+    return null
+  }
 }
 
 function normalizeTopicData(rawData: unknown): TopicItem[] {
@@ -541,6 +570,131 @@ function normalizeTopicData(rawData: unknown): TopicItem[] {
     .map((item, index) => normalizeTopicItem(item, index))
     .filter((topic): topic is TopicItem => topic !== null)
     .sort((a, b) => (b.share ?? 0) - (a.share ?? 0))
+}
+
+function normalizeTopicSentimentData(rawData: unknown): TopicSentimentItem[] {
+  const rawList = unwrapTopicList(rawData)
+
+  return rawList
+    .map((item) => {
+      const keywords = readStringList(item, [
+        'keywords',
+        'keyword',
+        'terms',
+        'words',
+        'top_words',
+        'topWords',
+        'topic_words',
+        'topicWords',
+      ])
+
+      const rawName =
+        readString(item, [
+          'topic',
+          'topic_name',
+          'topicName',
+          'name',
+          'label',
+          'cluster',
+          'cluster_name',
+          'title',
+          'category',
+        ]) || keywords.slice(0, 2).join(' / ')
+
+      const positiveRate = normalizeOptionalPercent(
+        readOptionalNumber(item, [
+          'positive_ratio',
+          'positiveRatio',
+          'positive_rate',
+          'positiveRate',
+          'positive',
+          'positive_percent',
+          'positivePercent',
+        ]),
+      )
+
+      const negativeRate = normalizeOptionalPercent(
+        readOptionalNumber(item, [
+          'negative_ratio',
+          'negativeRatio',
+          'negative_rate',
+          'negativeRate',
+          'negative',
+          'negative_percent',
+          'negativePercent',
+        ]),
+      )
+
+      const rawSentiment = readString(item, [
+        'sentiment',
+        'sentiment_label',
+        'sentimentLabel',
+        'tone',
+        'status',
+        'sentiment_type',
+        'sentimentType',
+      ])
+
+      const hasSentimentData = positiveRate !== null || negativeRate !== null || rawSentiment !== ''
+      const sentiment = getSentimentInfo(positiveRate, negativeRate, rawSentiment)
+
+      return {
+        lookupKeys: createTopicLookupKeys(rawName, keywords),
+        positiveRate,
+        negativeRate,
+        sentimentType: sentiment.type,
+        sentimentLabel: sentiment.label,
+        hasSentimentData,
+      }
+    })
+    .filter((item) => item.lookupKeys.length > 0)
+}
+
+function mergeTopicSentimentData(
+  topics: TopicItem[],
+  sentiments: TopicSentimentItem[],
+): TopicItem[] {
+  if (sentiments.length === 0) {
+    return topics
+  }
+
+  const sentimentMap = new Map<string, TopicSentimentItem>()
+
+  sentiments.forEach((sentiment) => {
+    sentiment.lookupKeys.forEach((key) => {
+      if (!sentimentMap.has(key)) {
+        sentimentMap.set(key, sentiment)
+      }
+    })
+  })
+
+  return topics.map((topic, index) => {
+    const keyMatchedSentiment = topic.lookupKeys
+      .map((key) => sentimentMap.get(key))
+      .find((item): item is TopicSentimentItem => item !== undefined)
+
+    const fallbackSentiment = keyMatchedSentiment ?? sentiments[index]
+
+    if (!fallbackSentiment || !fallbackSentiment.hasSentimentData) {
+      return topic
+    }
+
+    const positiveRate = topic.positiveRate ?? fallbackSentiment.positiveRate
+    const negativeRate = topic.negativeRate ?? fallbackSentiment.negativeRate
+    const sentiment = getSentimentInfo(positiveRate, negativeRate, fallbackSentiment.sentimentLabel)
+
+    return {
+      ...topic,
+      positiveRate,
+      negativeRate,
+      neutralRate: calculateNeutralRate(positiveRate, negativeRate),
+      sentimentType: sentiment.type,
+      sentimentLabel: sentiment.label,
+      hasSentimentData: true,
+      highlight:
+        topic.highlight || createHighlightText(topic.name, topic.keywords, sentiment.label),
+    }
+  })
 }
 
 function normalizeTopicItem(item: Record<string, unknown>, index: number): TopicItem | null {
@@ -615,6 +769,19 @@ function normalizeTopicItem(item: Record<string, unknown>, index: number): Topic
     ]),
   )
 
+  const rawSentiment = readString(item, [
+    'sentiment',
+    'sentiment_label',
+    'sentimentLabel',
+    'tone',
+    'status',
+    'sentiment_type',
+    'sentimentType',
+  ])
+
+  const hasSentimentData = positiveRate !== null || negativeRate !== null || rawSentiment !== ''
+  const sentiment = getSentimentInfo(positiveRate, negativeRate, rawSentiment)
+
   const neutralRate = calculateNeutralRate(positiveRate, negativeRate)
   const mentionCount = readOptionalNumber(item, [
     'review_count',
@@ -626,18 +793,18 @@ function normalizeTopicItem(item: Record<string, unknown>, index: number): Topic
     'freq',
   ])
 
-  const sentiment = getSentimentInfo(positiveRate, negativeRate)
-
   const highlight =
     readString(item, ['highlight', 'summary', 'description', 'insight', 'comment']) ||
-    createHighlightText(name, keywords, positiveRate === null ? '' : sentiment.label)
+    createHighlightText(name, keywords, hasSentimentData ? sentiment.label : '')
 
   const genre = readString(item, ['genre', 'genres', 'main_genre', 'mainGenre']) || '미분류'
 
   return {
     id: readString(item, ['id', 'topic_id', 'topicId']) || `topic-${index + 1}`,
+    rawName,
     name,
     keywords,
+    lookupKeys: createTopicLookupKeys(rawName, keywords),
     share,
     positiveRate,
     negativeRate,
@@ -645,6 +812,7 @@ function normalizeTopicItem(item: Record<string, unknown>, index: number): Topic
     mentionCount,
     sentimentType: sentiment.type,
     sentimentLabel: sentiment.label,
+    hasSentimentData,
     highlight,
     genre,
   }
@@ -848,6 +1016,32 @@ function getKoreanKeywordLabel(keyword: string) {
   return '기타'
 }
 
+function createTopicLookupKeys(rawName: string, keywords: string[]) {
+  const keySet = new Set<string>()
+
+  const nameKey = normalizeToken(rawName)
+
+  if (nameKey) {
+    keySet.add(nameKey)
+  }
+
+  const keywordKey = keywords.map((keyword) => normalizeToken(keyword)).filter(Boolean).join(' ')
+
+  if (keywordKey) {
+    keySet.add(keywordKey)
+  }
+
+  keywords.forEach((keyword) => {
+    const key = normalizeToken(keyword)
+
+    if (key) {
+      keySet.add(key)
+    }
+  })
+
+  return Array.from(keySet)
+}
+
 function splitEnglishTokens(text: string) {
   return text
     .split(/[,/|]+/)
@@ -867,10 +1061,47 @@ function normalizeToken(text: string) {
 function getSentimentInfo(
   positiveRate: number | null,
   negativeRate: number | null,
+  rawSentiment = '',
 ): {
   type: TopicSentimentType
   label: string
 } {
+  const normalizedSentiment = normalizeToken(rawSentiment)
+
+  if (
+    normalizedSentiment.includes('positive') ||
+    normalizedSentiment.includes('good') ||
+    normalizedSentiment.includes('긍정')
+  ) {
+    return {
+      type: 'positive',
+      label: '긍정 경향',
+    }
+  }
+
+  if (
+    normalizedSentiment.includes('negative') ||
+    normalizedSentiment.includes('bad') ||
+    normalizedSentiment.includes('부정')
+  ) {
+    return {
+      type: 'negative',
+      label: '부정적',
+    }
+  }
+
+  if (
+    normalizedSentiment.includes('mixed') ||
+    normalizedSentiment.includes('neutral') ||
+    normalizedSentiment.includes('혼합') ||
+    normalizedSentiment.includes('중립')
+  ) {
+    return {
+      type: 'mixed',
+      label: '혼합 반응',
+    }
+  }
+
   if (positiveRate === null) {
     return {
       type: 'neutral',
@@ -925,22 +1156,6 @@ function createHighlightText(name: string, keywords: string[], sentimentLabel: s
   }
 
   return `${name} 관련 리뷰가 반복적으로 언급되고 있습니다.`
-}
-
-function getTopicIcon(type: TopicSentimentType) {
-  if (type === 'positive') {
-    return '👍'
-  }
-
-  if (type === 'negative') {
-    return '👎'
-  }
-
-  if (type === 'mixed') {
-    return '⚠️'
-  }
-
-  return '●'
 }
 
 function readString(item: Record<string, unknown>, keys: string[]) {

@@ -94,8 +94,12 @@
 
 .market-dashboard-grid {
   display: grid;
-  grid-template-columns: 1.15fr 1fr 1fr;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 14px;
+}
+
+.market-dashboard-grid > .market-card {
+  grid-column: span 4;
 }
 
 .market-card {
@@ -112,13 +116,9 @@
   min-height: 286px;
 }
 
-.market-card--wide {
-  grid-column: span 2;
-}
-
 .market-card--release,
 .market-card--trend {
-  grid-column: span 3;
+  grid-column: span 12;
 }
 
 .market-card--trend {
@@ -300,7 +300,6 @@
   font-style: normal;
 }
 
-/* 세로 막대 그래프 */
 .vertical-bar-chart {
   height: 250px;
   display: grid;
@@ -563,6 +562,60 @@
   font-weight: 950;
 }
 
+/* 장르 분포 탭 */
+.market-dashboard-grid--genre > .market-card:nth-child(1) {
+  grid-column: span 5;
+}
+
+.market-dashboard-grid--genre > .market-card:nth-child(2) {
+  grid-column: span 7;
+}
+
+.market-dashboard-grid--genre > .market-card:nth-child(3),
+.market-dashboard-grid--genre > .market-card:nth-child(4) {
+  grid-column: span 6;
+}
+
+/* 가격대 분포 탭 */
+.market-dashboard-grid--price > .market-card:nth-child(1) {
+  grid-column: span 5;
+}
+
+.market-dashboard-grid--price > .market-card:nth-child(2) {
+  grid-column: span 7;
+}
+
+.market-dashboard-grid--price > .market-card:nth-child(3) {
+  grid-column: span 12;
+}
+
+/* 플랫폼 분포 탭 */
+.market-dashboard-grid--platform > .market-card:nth-child(1),
+.market-dashboard-grid--platform > .market-card:nth-child(2) {
+  grid-column: span 6;
+}
+
+.market-dashboard-grid--platform > .market-card:nth-child(3) {
+  grid-column: span 12;
+}
+
+/* 출시 연도 분포 탭 */
+.market-dashboard-grid--release > .market-card {
+  grid-column: span 12;
+}
+
+.market-dashboard-grid--genre > .market-card:nth-child(2) .vertical-bar-chart,
+.market-dashboard-grid--price > .market-card:nth-child(2) .vertical-bar-chart,
+.market-dashboard-grid--price > .market-card:nth-child(3) .vertical-bar-chart,
+.market-dashboard-grid--platform > .market-card:nth-child(1) .vertical-bar-chart,
+.market-dashboard-grid--platform > .market-card:nth-child(2) .vertical-bar-chart {
+  height: 280px;
+}
+
+.market-dashboard-grid--platform > .market-card:nth-child(3) .platform-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 html.theme-dark .market-summary-strip,
 html.theme-dark .market-distribution-tabs,
 html.theme-dark .market-card {
@@ -656,15 +709,22 @@ html.theme-dark .trend-insight {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .market-dashboard-grid {
-    grid-template-columns: 1fr 1fr;
+  .market-dashboard-grid--genre > .market-card:nth-child(1),
+  .market-dashboard-grid--genre > .market-card:nth-child(2),
+  .market-dashboard-grid--genre > .market-card:nth-child(3),
+  .market-dashboard-grid--genre > .market-card:nth-child(4),
+  .market-dashboard-grid--price > .market-card:nth-child(1),
+  .market-dashboard-grid--price > .market-card:nth-child(2),
+  .market-dashboard-grid--price > .market-card:nth-child(3),
+  .market-dashboard-grid--platform > .market-card:nth-child(1),
+  .market-dashboard-grid--platform > .market-card:nth-child(2),
+  .market-dashboard-grid--platform > .market-card:nth-child(3),
+  .market-dashboard-grid--release > .market-card {
+    grid-column: span 12;
   }
 
-  .market-card--large,
-  .market-card--wide,
-  .market-card--release,
-  .market-card--trend {
-    grid-column: span 2;
+  .vertical-bar-chart {
+    height: 270px;
   }
 
   .release-year-chart {
@@ -691,11 +751,19 @@ html.theme-dark .trend-insight {
     grid-template-columns: 1fr;
   }
 
-  .market-card--large,
-  .market-card--wide,
-  .market-card--release,
-  .market-card--trend {
-    grid-column: span 1;
+  .market-dashboard-grid > .market-card,
+  .market-dashboard-grid--genre > .market-card:nth-child(1),
+  .market-dashboard-grid--genre > .market-card:nth-child(2),
+  .market-dashboard-grid--genre > .market-card:nth-child(3),
+  .market-dashboard-grid--genre > .market-card:nth-child(4),
+  .market-dashboard-grid--price > .market-card:nth-child(1),
+  .market-dashboard-grid--price > .market-card:nth-child(2),
+  .market-dashboard-grid--price > .market-card:nth-child(3),
+  .market-dashboard-grid--platform > .market-card:nth-child(1),
+  .market-dashboard-grid--platform > .market-card:nth-child(2),
+  .market-dashboard-grid--platform > .market-card:nth-child(3),
+  .market-dashboard-grid--release > .market-card {
+    grid-column: auto;
   }
 
   .genre-distribution-body {

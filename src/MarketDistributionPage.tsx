@@ -150,11 +150,25 @@ function MarketDistributionPage() {
             fetchRequiredJson('/analysis/release-year-stats'),
           ])
 
-        if (summaryResult.status === 'rejected') throw summaryResult.reason
-        if (genreResult.status === 'rejected') throw genreResult.reason
-        if (priceResult.status === 'rejected') throw priceResult.reason
-        if (platformResult.status === 'rejected') throw platformResult.reason
-        if (releaseYearResult.status === 'rejected') throw releaseYearResult.reason
+        if (summaryResult.status === 'rejected') {
+          throw summaryResult.reason
+        }
+
+        if (genreResult.status === 'rejected') {
+          throw genreResult.reason
+        }
+
+        if (priceResult.status === 'rejected') {
+          throw priceResult.reason
+        }
+
+        if (platformResult.status === 'rejected') {
+          throw platformResult.reason
+        }
+
+        if (releaseYearResult.status === 'rejected') {
+          throw releaseYearResult.reason
+        }
 
         setMarketData({
           summary: normalizeSummaryStat(summaryResult.value),
@@ -251,7 +265,9 @@ function MarketSummaryBar({ summary }: { summary: SummaryStat }) {
     <div className="market-summary-strip" aria-label="시장 요약 지표">
       <div>
         <span>총 게임 수</span>
-        <strong>{summary.totalGames === null ? '-' : summary.totalGames.toLocaleString('ko-KR')}</strong>
+        <strong>
+          {summary.totalGames === null ? '-' : summary.totalGames.toLocaleString('ko-KR')}
+        </strong>
       </div>
 
       <div>
@@ -280,6 +296,7 @@ function MarketSummaryBar({ summary }: { summary: SummaryStat }) {
 
 function GenreDistributionView({ genres }: { genres: GenreStat[] }) {
   const topGenres = genres.slice(0, 8)
+
   const positiveGenres = genres
     .filter((genre) => genre.avgPositiveRatio !== null)
     .sort((a, b) => (b.avgPositiveRatio ?? 0) - (a.avgPositiveRatio ?? 0))
@@ -291,7 +308,7 @@ function GenreDistributionView({ genres }: { genres: GenreStat[] }) {
     .slice(0, 8)
 
   return (
-    <div className="market-dashboard-grid">
+    <div className="market-dashboard-grid market-dashboard-grid--genre">
       <GenreDistributionCard genres={genres} />
 
       <VerticalBarCard
@@ -337,8 +354,11 @@ function GenreDistributionView({ genres }: { genres: GenreStat[] }) {
 }
 
 function PriceDistributionView({ priceBands }: { priceBands: PriceBandStat[] }) {
+  const positivePriceBands = priceBands.filter((item) => item.avgPositiveRatio !== null)
+  const reviewPriceBands = priceBands.filter((item) => item.avgReviewCount !== null)
+
   return (
-    <div className="market-dashboard-grid">
+    <div className="market-dashboard-grid market-dashboard-grid--price">
       <VerticalBarCard
         title="가격대별 게임 수 분포"
         tag="게임 수"
@@ -350,21 +370,18 @@ function PriceDistributionView({ priceBands }: { priceBands: PriceBandStat[] }) 
           subText: `${item.share.toFixed(1)}%`,
         }))}
         maxValue={Math.max(...priceBands.map((item) => item.gameCount), 1)}
-        wide
       />
 
       <VerticalBarCard
         title="가격대별 평균 긍정률"
         tag="긍정률"
         description="가격대별 평균 긍정률을 비교해 가격 구간별 평가 차이를 확인합니다."
-        items={priceBands
-          .filter((item) => item.avgPositiveRatio !== null)
-          .map((item) => ({
-            label: item.label,
-            value: item.avgPositiveRatio ?? 0,
-            valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
-            subText: `${item.gameCount.toLocaleString('ko-KR')}개`,
-          }))}
+        items={positivePriceBands.map((item) => ({
+          label: item.label,
+          value: item.avgPositiveRatio ?? 0,
+          valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
+          subText: `${item.gameCount.toLocaleString('ko-KR')}개`,
+        }))}
         maxValue={100}
       />
 
@@ -372,23 +389,23 @@ function PriceDistributionView({ priceBands }: { priceBands: PriceBandStat[] }) 
         title="가격대별 평균 리뷰 수"
         tag="리뷰 수"
         description="가격대별 평균 리뷰 수를 비교해 반응 규모를 확인합니다."
-        items={priceBands
-          .filter((item) => item.avgReviewCount !== null)
-          .map((item) => ({
-            label: item.label,
-            value: item.avgReviewCount ?? 0,
-            valueText: Math.round(item.avgReviewCount ?? 0).toLocaleString('ko-KR'),
-            subText: `${item.gameCount.toLocaleString('ko-KR')}개`,
-          }))}
-        maxValue={Math.max(...priceBands.map((item) => item.avgReviewCount ?? 0), 1)}
+        items={reviewPriceBands.map((item) => ({
+          label: item.label,
+          value: item.avgReviewCount ?? 0,
+          valueText: Math.round(item.avgReviewCount ?? 0).toLocaleString('ko-KR'),
+          subText: `${item.gameCount.toLocaleString('ko-KR')}개`,
+        }))}
+        maxValue={Math.max(...reviewPriceBands.map((item) => item.avgReviewCount ?? 0), 1)}
       />
     </div>
   )
 }
 
 function PlatformDistributionView({ platforms }: { platforms: PlatformStat[] }) {
+  const positivePlatforms = platforms.filter((platform) => platform.avgPositiveRatio !== null)
+
   return (
-    <div className="market-dashboard-grid">
+    <div className="market-dashboard-grid market-dashboard-grid--platform">
       <VerticalBarCard
         title="플랫폼별 게임 수"
         tag="게임 수"
@@ -406,14 +423,12 @@ function PlatformDistributionView({ platforms }: { platforms: PlatformStat[] }) 
         title="플랫폼별 평균 긍정률"
         tag="긍정률"
         description="플랫폼별 평균 긍정률을 세로 막대 그래프로 비교합니다."
-        items={platforms
-          .filter((platform) => platform.avgPositiveRatio !== null)
-          .map((platform) => ({
-            label: platform.label,
-            value: platform.avgPositiveRatio ?? 0,
-            valueText: `${(platform.avgPositiveRatio ?? 0).toFixed(1)}%`,
-            subText: `${platform.gameCount.toLocaleString('ko-KR')}개`,
-          }))}
+        items={positivePlatforms.map((platform) => ({
+          label: platform.label,
+          value: platform.avgPositiveRatio ?? 0,
+          valueText: `${(platform.avgPositiveRatio ?? 0).toFixed(1)}%`,
+          subText: `${platform.gameCount.toLocaleString('ko-KR')}개`,
+        }))}
         maxValue={100}
       />
 
@@ -424,7 +439,7 @@ function PlatformDistributionView({ platforms }: { platforms: PlatformStat[] }) 
 
 function ReleaseDistributionView({ releaseYears }: { releaseYears: ReleaseYearStat[] }) {
   return (
-    <div className="market-dashboard-grid">
+    <div className="market-dashboard-grid market-dashboard-grid--release">
       <ReleaseYearDistributionCard releaseYears={releaseYears} />
 
       <ReleasePositiveTrendCard releaseYears={releaseYears} />
@@ -643,7 +658,9 @@ function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearS
                   {point.value.toFixed(1)}%
                 </text>
 
-                {isLast && <circle cx={point.x} cy={point.y} r="16" className="trend-point-glow" />}
+                {isLast && (
+                  <circle cx={point.x} cy={point.y} r="16" className="trend-point-glow" />
+                )}
 
                 <circle
                   cx={point.x}
@@ -652,7 +669,12 @@ function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearS
                   className={`trend-point-dot ${isLast ? 'last' : ''}`}
                 />
 
-                <circle cx={point.x} cy={point.y} r={isLast ? 3.4 : 2.4} className="trend-point-core" />
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={isLast ? 3.4 : 2.4}
+                  className="trend-point-core"
+                />
 
                 <text x={point.x} y="350" className="trend-x-tick" textAnchor="middle">
                   {point.year}
@@ -713,17 +735,15 @@ function VerticalBarCard({
   description,
   items,
   maxValue,
-  wide = false,
 }: {
   title: string
   tag: string
   description: string
   items: VerticalBarItem[]
   maxValue: number
-  wide?: boolean
 }) {
   return (
-    <article className={`market-card ${wide ? 'market-card--wide' : ''}`}>
+    <article className="market-card">
       <div className="market-card-header">
         <div>
           <h2>{title}</h2>
@@ -770,7 +790,9 @@ async function fetchRequiredJson(path: string): Promise<unknown> {
 }
 
 function normalizeSummaryStat(rawData: unknown): SummaryStat {
-  if (!isRecord(rawData)) return INITIAL_SUMMARY
+  if (!isRecord(rawData)) {
+    return INITIAL_SUMMARY
+  }
 
   return {
     totalGames: readOptionalNumber(rawData, ['total_games', 'totalGames']),
@@ -912,7 +934,9 @@ function normalizeReleaseYearStats(rawData: unknown): ReleaseYearStat[] {
 }
 
 function buildPieBackground(items: GenreStat[]): string {
-  if (items.length === 0) return '#edf1ff'
+  if (items.length === 0) {
+    return '#edf1ff'
+  }
 
   let current = 0
 
@@ -933,7 +957,9 @@ function buildPieBackground(items: GenreStat[]): string {
 function ensureShare<T extends { gameCount: number; share: number }>(items: T[]): T[] {
   const total = items.reduce((sum, item) => sum + item.gameCount, 0)
 
-  if (total <= 0) return items
+  if (total <= 0) {
+    return items
+  }
 
   return items.map((item) => ({
     ...item,
@@ -997,8 +1023,13 @@ function createTrendPoints(
 }
 
 function buildSmoothPath(points: TrendPoint[]): string {
-  if (points.length === 0) return ''
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`
+  if (points.length === 0) {
+    return ''
+  }
+
+  if (points.length === 1) {
+    return `M ${points[0].x} ${points[0].y}`
+  }
 
   let path = `M ${points[0].x} ${points[0].y}`
 
@@ -1030,11 +1061,25 @@ function getYPosition(
 function getPriceBandOrder(priceBand: string): number {
   const normalized = normalizeToken(priceBand)
 
-  if (normalized.includes('free')) return 0
-  if (normalized.includes('0 5000')) return 1
-  if (normalized.includes('5000 15000')) return 2
-  if (normalized.includes('15000 30000')) return 3
-  if (normalized.includes('30000 50000')) return 4
+  if (normalized.includes('free')) {
+    return 0
+  }
+
+  if (normalized.includes('0 5000')) {
+    return 1
+  }
+
+  if (normalized.includes('5000 15000')) {
+    return 2
+  }
+
+  if (normalized.includes('15000 30000')) {
+    return 3
+  }
+
+  if (normalized.includes('30000 50000')) {
+    return 4
+  }
 
   return 5
 }
@@ -1043,8 +1088,13 @@ function formatPriceBandLabel(priceBand: string): string {
   const trimmed = priceBand.trim()
   const normalized = normalizeToken(trimmed)
 
-  if (!trimmed) return '알 수 없음'
-  if (normalized.includes('free')) return '무료'
+  if (!trimmed) {
+    return '알 수 없음'
+  }
+
+  if (normalized.includes('free')) {
+    return '무료'
+  }
 
   const matchedRange = trimmed.match(/(\d+)\s*[-~]\s*(\d+)/)
 
@@ -1066,7 +1116,9 @@ function formatPriceBandLabel(priceBand: string): string {
 function formatGenreLabel(genre: string): string {
   const trimmedGenre = genre.trim()
 
-  if (!trimmedGenre) return '알 수 없음'
+  if (!trimmedGenre) {
+    return '알 수 없음'
+  }
 
   if (/[가-힣]/.test(trimmedGenre) && trimmedGenre.includes('(') && trimmedGenre.includes(')')) {
     return trimmedGenre
@@ -1075,7 +1127,9 @@ function formatGenreLabel(genre: string): string {
   const normalizedGenre = normalizeToken(trimmedGenre)
   const koreanLabel = GENRE_LABEL_MAP[normalizedGenre]
 
-  if (!koreanLabel) return trimmedGenre
+  if (!koreanLabel) {
+    return trimmedGenre
+  }
 
   return `${koreanLabel} (${trimmedGenre})`
 }
@@ -1083,7 +1137,9 @@ function formatGenreLabel(genre: string): string {
 function formatPlatformLabel(platform: string): string {
   const trimmed = platform.trim()
 
-  if (!trimmed) return '알 수 없음'
+  if (!trimmed) {
+    return '알 수 없음'
+  }
 
   const normalized = normalizeToken(trimmed)
 
@@ -1093,16 +1149,29 @@ function formatPlatformLabel(platform: string): string {
 function getPlatformIcon(platform: string): string {
   const normalized = normalizeToken(platform)
 
-  if (normalized.includes('windows')) return '▦'
-  if (normalized.includes('mac')) return '◐'
-  if (normalized.includes('linux')) return '◇'
+  if (normalized.includes('windows')) {
+    return '▦'
+  }
+
+  if (normalized.includes('mac')) {
+    return '◐'
+  }
+
+  if (normalized.includes('linux')) {
+    return '◇'
+  }
 
   return '◆'
 }
 
 function formatLargeNumber(value: number): string {
-  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`
+  }
+
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`
+  }
 
   return value.toLocaleString('ko-KR')
 }

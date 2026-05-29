@@ -39,6 +39,10 @@ type GamesApiMeta = {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 const ITEMS_PER_PAGE = 5
 
+// 원화 표시는 프론트 임시 환율 기준입니다.
+// 필요하면 1350 값을 프로젝트 기준 환율에 맞게 조정하면 됩니다.
+const USD_TO_KRW_RATE = 1350
+
 function RankingPage() {
   const [games, setGames] = useState<SearchGame[]>([])
   const [apiMeta, setApiMeta] = useState<GamesApiMeta>({
@@ -151,7 +155,8 @@ function RankingPage() {
 
       const matchesPrice = matchesPriceFilter(game.price, selectedPrice)
 
-      const matchesPlatform = selectedPlatform === 'all' || game.platforms.includes(selectedPlatform)
+      const matchesPlatform =
+        selectedPlatform === 'all' || game.platforms.includes(selectedPlatform)
 
       const matchesFree = !onlyFree || game.isFree
 
@@ -168,11 +173,17 @@ function RankingPage() {
       }
 
       if (sortBy === 'positiveHigh') {
-        return getPositiveRatioForSort(b.positiveRatio, 'high') - getPositiveRatioForSort(a.positiveRatio, 'high')
+        return (
+          getPositiveRatioForSort(b.positiveRatio, 'high') -
+          getPositiveRatioForSort(a.positiveRatio, 'high')
+        )
       }
 
       if (sortBy === 'positiveLow') {
-        return getPositiveRatioForSort(a.positiveRatio, 'low') - getPositiveRatioForSort(b.positiveRatio, 'low')
+        return (
+          getPositiveRatioForSort(a.positiveRatio, 'low') -
+          getPositiveRatioForSort(b.positiveRatio, 'low')
+        )
       }
 
       if (sortBy === 'playtimeHigh') {
@@ -749,7 +760,9 @@ function formatPriceText(price: number, isFree: boolean): string {
     return '무료'
   }
 
-  return `$${price.toFixed(2)}`
+  const krwPrice = Math.round(price * USD_TO_KRW_RATE)
+
+  return `₩${krwPrice.toLocaleString('ko-KR')} ($${price.toFixed(2)})`
 }
 
 function formatCount(value: number): string {

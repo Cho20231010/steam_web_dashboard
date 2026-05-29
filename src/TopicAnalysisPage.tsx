@@ -163,10 +163,15 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   review: '리뷰',
   reviews: '리뷰',
   steam: '스팀',
+  friends: '친구',
+  puzzles: '퍼즐',
+  puzzle: '퍼즐',
+  trine: '퍼즐',
+  tomb: '탐험',
+  raider: '어드벤처',
   nt: '기타',
   de: '기타',
   doi: '기타',
-  friends: '친구',
 }
 
 const COMPACT_KEYWORD_LABEL_MAP: Record<string, string> = {
@@ -215,6 +220,7 @@ const COMPACT_KEYWORD_LABEL_MAP: Record<string, string> = {
   worth: '가성비',
   expensive: '비쌈',
   cheap: '저렴함',
+  free: '무료',
   multiplayer: '멀티플레이',
   coop: '협동',
   online: '온라인',
@@ -228,6 +234,11 @@ const COMPACT_KEYWORD_LABEL_MAP: Record<string, string> = {
   character: '캐릭터',
   characters: '캐릭터',
   friends: '친구',
+  puzzles: '퍼즐',
+  puzzle: '퍼즐',
+  trine: '퍼즐',
+  tomb: '탐험',
+  raider: '어드벤처',
 }
 
 const GENRE_LABEL_MAP: Record<string, string> = {
@@ -393,15 +404,11 @@ function TopicAnalysisPage() {
           )}
 
           {activeTab === 'sentiment' && (
-            <TopicSentimentCategoryView
-              sentimentCategories={topicPageData.sentimentCategories}
-            />
+            <TopicSentimentCategoryView sentimentCategories={topicPageData.sentimentCategories} />
           )}
 
           {activeTab === 'trend' && (
-            <TopicWeightCompareView
-              representativeTopics={topicPageData.representativeTopics}
-            />
+            <TopicWeightCompareView representativeTopics={topicPageData.representativeTopics} />
           )}
 
           {activeTab === 'genre' && (
@@ -870,37 +877,105 @@ function GenreTopicDistributionView({ genreTopics }: { genreTopics: GenreTopicIt
             : `${formatGenreLabel(currentGenre)} 대표 토픽 분포`}
         </h2>
         <p className="topic-card-caption">
-          Topic은 리뷰 키워드를 묶어 만든 주제 번호이며, weight는 해당 장르에서 그 토픽이
-          얼마나 강하게 나타나는지를 의미합니다. game count는 해당 장르·토픽 조합에 포함된
-          게임 수입니다. 같은 토픽은 여러 장르에서 반복 표시될 수 있습니다.
+          토픽은 리뷰 키워드를 묶어 만든 주제 단위입니다. 가중치는 해당 장르에서 그 토픽이
+          얼마나 강하게 나타나는지를 의미하며, 게임 수는 해당 장르·토픽 조합에 포함된 게임
+          수입니다. 같은 토픽 주제는 여러 장르에서 반복 표시될 수 있습니다.
         </p>
+
+        <TopicDistributionChart topics={filteredGenreTopics} currentGenre={currentGenre} />
 
         {filteredGenreTopics.length === 0 ? (
           <div className="topic-analysis-empty inside">장르별 토픽 데이터가 없습니다.</div>
         ) : (
-          <div className="genre-topic-list">
-            {filteredGenreTopics.slice(0, 20).map((item, index) => (
-              <div className="genre-topic-item" key={`${item.genre}-${item.topicId}-${index}`}>
-                <div className="genre-topic-title">
-                  <strong>{formatGenreLabel(item.genre)}</strong>
-                  <span>Topic {item.topicId ?? '-'}</span>
-                </div>
+          <>
+            <h3 className="genre-topic-section-title">장르별 대표 토픽 목록</h3>
 
-                <h3>{item.name}</h3>
-                <p>{formatKeywordList(item.keywords)}</p>
+            <div className="genre-topic-list">
+              {filteredGenreTopics.slice(0, 20).map((item, index) => (
+                <div className="genre-topic-item" key={`${item.genre}-${item.topicId}-${index}`}>
+                  <div className="genre-topic-title">
+                    <strong>{formatGenreLabel(item.genre)}</strong>
+                  </div>
 
-                <div className="genre-topic-meta">
-                  <span>weight {item.weight === null ? '-' : item.weight.toFixed(3)}</span>
-                  <span>
-                    game count{' '}
-                    {item.gameCount === null ? '-' : item.gameCount.toLocaleString('ko-KR')}
-                  </span>
+                  <h3>{item.name}</h3>
+                  <p>{formatKeywordList(item.keywords)}</p>
+
+                  <div className="genre-topic-meta">
+                    <span>가중치 {item.weight === null ? '-' : item.weight.toFixed(3)}</span>
+                    <span>
+                      게임 수 {item.gameCount === null ? '-' : item.gameCount.toLocaleString('ko-KR')}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </article>
+    </div>
+  )
+}
+
+function TopicDistributionChart({
+  topics,
+  currentGenre,
+}: {
+  topics: GenreTopicItem[]
+  currentGenre: string
+}) {
+  const chartItems = useMemo(() => {
+    return topics.slice(0, 10).map((topic) => {
+      const label =
+        currentGenre === 'all'
+          ? `${formatGenreLabel(topic.genre)} · ${topic.name}`
+          : topic.name
+
+      return {
+        id: `${topic.genre}-${topic.topicId}-${topic.name}`,
+        label,
+        weight: topic.weight ?? 0,
+        gameCount: topic.gameCount ?? 0,
+      }
+    })
+  }, [topics, currentGenre])
+
+  const maxWeight = Math.max(...chartItems.map((item) => item.weight), 1)
+
+  if (chartItems.length === 0) {
+    return <div className="topic-analysis-empty inside">토픽 분포 그래프 데이터가 없습니다.</div>
+  }
+
+  return (
+    <div className="topic-distribution-chart">
+      <div className="topic-distribution-chart-header">
+        <h3>토픽 분포 그래프</h3>
+        <span>가중치 TOP {chartItems.length}</span>
+      </div>
+
+      <div className="topic-distribution-chart-list">
+        {chartItems.map((item) => {
+          const width = (item.weight / maxWeight) * 100
+
+          return (
+            <div className="topic-distribution-chart-row" key={item.id}>
+              <div className="topic-distribution-chart-label">
+                <strong>{item.label}</strong>
+                <span>
+                  가중치 {item.weight.toFixed(3)} · 게임 수 {item.gameCount.toLocaleString('ko-KR')}
+                </span>
+              </div>
+
+              <div className="topic-distribution-chart-track" aria-hidden="true">
+                <div
+                  style={{
+                    width: `${width}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -1132,12 +1207,12 @@ function createTopicTitleFromKeywords(keywords: string[], topicId: number | null
     return '스토리·몰입·전투'
   }
 
-  if (hasKeyword(normalizedKeywords, ['fps', 'bad', 'performance'])) {
+  if (hasKeyword(normalizedKeywords, ['fps', 'bad'])) {
     return 'FPS 성능·부정 반응'
   }
 
-  if (hasKeyword(normalizedKeywords, ['players', 'access', 'war'])) {
-    return '플레이어·접근성·전쟁'
+  if (hasKeyword(normalizedKeywords, ['players', 'access'])) {
+    return '플레이어·접근성'
   }
 
   const meaningfulLabels = normalizedKeywords
@@ -1198,6 +1273,7 @@ function formatGenreLabel(genre: string): string {
 
   const koreanParts = originalParts.map((part) => {
     const normalizedPart = normalizeToken(part)
+
     return GENRE_LABEL_MAP[normalizedPart] ?? part
   })
 

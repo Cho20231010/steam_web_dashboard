@@ -393,27 +393,27 @@
   box-shadow: none;
 }
 
-/* 게임명은 최대 2줄까지 자연스럽게 줄바꿈하되, ...은 표시하지 않음 */
+/* 게임명은 한 줄로 표시하고, ... 없이 전체 길이만큼 공간을 사용 */
 .game-info {
-  width: fit-content;
-  min-width: 80px;
-  max-width: 220px;
+  width: max-content;
+  min-width: 0;
+  max-width: none;
   padding: 8px 0;
 }
 
 .game-info strong {
   display: block;
-  overflow: hidden;
-  max-width: 220px;
-  max-height: 37.8px;
+  overflow: visible;
+  max-width: none;
+  max-height: none;
   color: #172033;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
-  white-space: normal;
+  white-space: nowrap;
   word-break: normal;
-  overflow-wrap: break-word;
-  hyphens: auto;
+  overflow-wrap: normal;
+  hyphens: manual;
 }
 
 .search-table tbody td:nth-child(2) {

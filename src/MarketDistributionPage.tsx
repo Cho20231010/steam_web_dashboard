@@ -52,6 +52,13 @@ type MarketDistributionData = {
   releaseYears: ReleaseYearStat[]
 }
 
+type TrendPoint = {
+  x: number
+  y: number
+  year: number
+  value: number
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const INITIAL_SUMMARY: SummaryStat = {
@@ -274,7 +281,7 @@ function MarketDistributionPage() {
             isFocused={activeTab === 'release'}
           />
 
-          <GenreMetricComparisonCard genres={marketData.genres} />
+          <ReleasePositiveTrendCard releaseYears={marketData.releaseYears} />
         </div>
       )}
     </section>
@@ -318,7 +325,7 @@ function GenreDistributionCard({
 
           <div className="genre-legend-list">
             {topGenres.map((genre, index) => (
-              <div className="genre-legend-item" key={genre.genre}>
+              <div className="genre-legend-item" key={`${genre.genre}-${index}`}>
                 <i
                   style={{
                     background: PIE_COLORS[index % PIE_COLORS.length],
@@ -476,111 +483,191 @@ function ReleaseYearDistributionCard({
   )
 }
 
-function GenreMetricComparisonCard({ genres }: { genres: GenreStat[] }) {
-  const validGenres = genres.filter(
-    (genre) => genre.avgPrice !== null && genre.avgPositiveRatio !== null,
-  )
+function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearStat[] }) {
+  const trendData = releaseYears
+    .filter((item) => item.avgPositiveRatio !== null)
+    .slice(-10)
+    .map((item) => ({
+      year: item.year,
+      value: item.avgPositiveRatio ?? 0,
+    }))
 
-  const representativeGenres = [...validGenres].sort((a, b) => b.gameCount - a.gameCount).slice(0, 8)
+  if (trendData.length === 0) {
+    return (
+      <article className="market-card market-card--trend">
+        <div className="market-card-header">
+          <h2>출시 연도별 평균 긍정 비율 변화</h2>
+          <span>긍정률 추이</span>
+        </div>
+        <div className="market-empty inside">출시 연도별 평균 긍정 비율 데이터가 없습니다.</div>
+      </article>
+    )
+  }
 
-  const overallAveragePrice = calculateAverage(
-    validGenres.map((genre) => genre.avgPrice ?? 0),
-  )
-  const overallAveragePositiveRatio = calculateAverage(
-    validGenres.map((genre) => genre.avgPositiveRatio ?? 0),
-  )
+  const minValue = Math.min(...trendData.map((item) => item.value))
+  const maxValue = Math.max(...trendData.map((item) => item.value))
+  const paddedMin = Math.floor((minValue - 1.5) / 5) * 5
+  const paddedMax = Math.ceil((maxValue + 1.5) / 5) * 5
+  const chartMin = Math.max(0, paddedMin)
+  const chartMax = Math.min(100, Math.max(paddedMax, chartMin + 5))
+  const yTicks = buildYAxisTicks(chartMin, chartMax)
 
-  const maxPrice = Math.max(...representativeGenres.map((genre) => genre.avgPrice ?? 0), 1)
+  const points = createTrendPoints(trendData, {
+    width: 1080,
+    height: 380,
+    paddingTop: 36,
+    paddingRight: 42,
+    paddingBottom: 54,
+    paddingLeft: 56,
+    minValue: chartMin,
+    maxValue: chartMax,
+  })
+
+  const path = buildSmoothPath(points)
+  const previousPoint = trendData.length >= 2 ? trendData[trendData.length - 2] : null
+  const latestPoint = trendData[trendData.length - 1]
+  const minPoint = trendData.reduce((prev, curr) => (curr.value < prev.value ? curr : prev))
+  const maxPoint = trendData.reduce((prev, curr) => (curr.value > prev.value ? curr : prev))
 
   return (
-    <article className="market-card market-card--comparison">
+    <article className="market-card market-card--trend">
       <div className="market-card-header">
         <div>
-          <h2>대표 장르 평균 가격 · 긍정 비율 비교</h2>
+          <h2>출시 연도별 평균 긍정 비율 변화</h2>
           <p className="market-card-caption">
-            게임 수가 많은 대표 장르를 기준으로 평균 긍정 비율과 평균 가격을 나란히 비교합니다.
+            최근 10개 출시 연도의 평균 긍정 비율 흐름입니다. 연도별 평가 변화가 한눈에
+            보이도록 곡선 라인 그래프로 표현했습니다.
           </p>
         </div>
-
-        <span>장르 비교</span>
+        <span>긍정률 추이</span>
       </div>
 
-      {representativeGenres.length === 0 ? (
-        <div className="market-empty inside">장르 평균 가격·긍정 비율 데이터가 없습니다.</div>
-      ) : (
-        <>
-          <div className="comparison-summary-badges">
-            <strong>전체 평균 긍정률 {overallAveragePositiveRatio.toFixed(1)}%</strong>
-            <strong>전체 평균 가격 {Math.round(overallAveragePrice).toLocaleString('ko-KR')}</strong>
-          </div>
+      <div className="trend-chart-wrapper">
+        <div className="trend-axis-label trend-axis-label--left">평균 긍정 비율</div>
+        <div className="trend-axis-label trend-axis-label--right">출시 연도</div>
 
-          <div className="genre-metric-list">
-            {representativeGenres.map((genre) => {
-              const positiveRatio = genre.avgPositiveRatio ?? 0
-              const avgPrice = genre.avgPrice ?? 0
-              const positiveWidth = Math.max(Math.min(positiveRatio, 100), 0)
-              const priceWidth = maxPrice === 0 ? 0 : (avgPrice / maxPrice) * 100
-              const positiveDelta = positiveRatio - overallAveragePositiveRatio
-              const priceDelta = avgPrice - overallAveragePrice
+        <svg
+          className="trend-chart-svg"
+          viewBox="0 0 1080 380"
+          role="img"
+          aria-label="출시 연도별 평균 긍정 비율 변화 그래프"
+        >
+          {yTicks.map((tick) => {
+            const y = getYPosition(tick, chartMin, chartMax, 380, 36, 54)
 
-              return (
-                <div className="genre-metric-item" key={genre.genre}>
-                  <div className="genre-metric-header">
-                    <div className="genre-metric-title">
-                      <strong>{genre.label}</strong>
-                      <span>{genre.gameCount.toLocaleString('ko-KR')}개 게임</span>
-                    </div>
+            return (
+              <g key={tick}>
+                <line
+                  x1="56"
+                  y1={y}
+                  x2="1038"
+                  y2={y}
+                  className="trend-grid-line"
+                />
+                <text x="8" y={y + 6} className="trend-y-tick">
+                  {tick}%
+                </text>
+              </g>
+            )
+          })}
 
-                    <div className="genre-metric-share">{genre.share.toFixed(1)}%</div>
-                  </div>
+          <line x1="56" y1="326" x2="1038" y2="326" className="trend-axis-line" />
 
-                  <div className="genre-metric-bars">
-                    <div className="metric-bar-row">
-                      <div className="metric-bar-label">평균 긍정 비율</div>
+          <path d={path} className="trend-line-path" />
 
-                      <div className="metric-bar-track">
-                        <div
-                          className="metric-bar-fill metric-bar-fill--positive"
-                          style={{
-                            width: `${positiveWidth}%`,
-                          }}
-                        />
-                      </div>
+          {points.map((point, index) => {
+            const isLast = index === points.length - 1
 
-                      <div className="metric-bar-value">
-                        <strong>{positiveRatio.toFixed(1)}%</strong>
-                        <span className={getDeltaClassName(positiveDelta)}>
-                          {formatRatioDelta(positiveDelta)}
-                        </span>
-                      </div>
-                    </div>
+            return (
+              <g key={point.year}>
+                <text
+                  x={point.x}
+                  y={point.y - (isLast ? 30 : 18)}
+                  className={`trend-point-label ${isLast ? 'last' : ''}`}
+                  textAnchor="middle"
+                >
+                  {point.value.toFixed(1)}%
+                </text>
 
-                    <div className="metric-bar-row">
-                      <div className="metric-bar-label">평균 가격</div>
+                {isLast && (
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="16"
+                    className="trend-point-glow"
+                  />
+                )}
 
-                      <div className="metric-bar-track">
-                        <div
-                          className="metric-bar-fill metric-bar-fill--price"
-                          style={{
-                            width: `${priceWidth}%`,
-                          }}
-                        />
-                      </div>
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={isLast ? 7 : 5}
+                  className={`trend-point-dot ${isLast ? 'last' : ''}`}
+                />
 
-                      <div className="metric-bar-value">
-                        <strong>{Math.round(avgPrice).toLocaleString('ko-KR')}</strong>
-                        <span className={getDeltaClassName(priceDelta)}>
-                          {formatNumberDelta(priceDelta)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </>
-      )}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={isLast ? 3.4 : 2.4}
+                  className="trend-point-core"
+                />
+
+                <text x={point.x} y="350" className="trend-x-tick" textAnchor="middle">
+                  {point.year}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+
+      <div className="trend-summary-row">
+        <div className="trend-summary-chip">
+          <strong>최저</strong>
+          <span>
+            {minPoint.year}년 {minPoint.value.toFixed(1)}%
+          </span>
+        </div>
+
+        <div className="trend-summary-chip">
+          <strong>최고</strong>
+          <span>
+            {maxPoint.year}년 {maxPoint.value.toFixed(1)}%
+          </span>
+        </div>
+
+        <div className="trend-summary-chip">
+          <strong>최근</strong>
+          <span>
+            {latestPoint.year}년 {latestPoint.value.toFixed(1)}%
+          </span>
+        </div>
+      </div>
+
+      <div className="trend-insight">
+        {previousPoint ? (
+          <>
+            <span className="trend-insight-icon" aria-hidden="true">
+              ↗
+            </span>
+            <p>
+              {previousPoint.year}년 <strong>{previousPoint.value.toFixed(1)}%</strong>에서{' '}
+              {latestPoint.year}년 <strong>{latestPoint.value.toFixed(1)}%</strong>로{' '}
+              {latestPoint.value >= previousPoint.value ? '상승' : '하락'} 흐름이 나타납니다.
+            </p>
+          </>
+        ) : (
+          <>
+            <span className="trend-insight-icon" aria-hidden="true">
+              ↗
+            </span>
+            <p>
+              {latestPoint.year}년 평균 긍정 비율은 <strong>{latestPoint.value.toFixed(1)}%</strong>
+              입니다.
+            </p>
+          </>
+        )}
+      </div>
     </article>
   )
 }
@@ -777,12 +864,92 @@ function calculateTotalCount(items: Array<{ gameCount: number }>): number {
   return items.reduce((sum, item) => sum + item.gameCount, 0)
 }
 
-function calculateAverage(values: number[]): number {
-  if (values.length === 0) {
-    return 0
+function buildYAxisTicks(minValue: number, maxValue: number): number[] {
+  const ticks: number[] = []
+  const step = 5
+
+  for (let value = maxValue; value >= minValue; value -= step) {
+    ticks.push(value)
   }
 
-  return values.reduce((sum, value) => sum + value, 0) / values.length
+  return ticks
+}
+
+function createTrendPoints(
+  data: Array<{ year: number; value: number }>,
+  options: {
+    width: number
+    height: number
+    paddingTop: number
+    paddingRight: number
+    paddingBottom: number
+    paddingLeft: number
+    minValue: number
+    maxValue: number
+  },
+): TrendPoint[] {
+  const {
+    width,
+    height,
+    paddingTop,
+    paddingRight,
+    paddingBottom,
+    paddingLeft,
+    minValue,
+    maxValue,
+  } = options
+
+  const chartWidth = width - paddingLeft - paddingRight
+  const chartHeight = height - paddingTop - paddingBottom
+
+  return data.map((item, index) => {
+    const ratioX = data.length === 1 ? 0.5 : index / (data.length - 1)
+    const ratioY =
+      maxValue === minValue ? 0.5 : (item.value - minValue) / (maxValue - minValue)
+
+    return {
+      x: paddingLeft + chartWidth * ratioX,
+      y: paddingTop + chartHeight * (1 - ratioY),
+      year: item.year,
+      value: item.value,
+    }
+  })
+}
+
+function buildSmoothPath(points: TrendPoint[]): string {
+  if (points.length === 0) {
+    return ''
+  }
+
+  if (points.length === 1) {
+    const point = points[0]
+    return `M ${point.x} ${point.y}`
+  }
+
+  let path = `M ${points[0].x} ${points[0].y}`
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const current = points[index]
+    const next = points[index + 1]
+    const controlX = (current.x + next.x) / 2
+
+    path += ` C ${controlX} ${current.y}, ${controlX} ${next.y}, ${next.x} ${next.y}`
+  }
+
+  return path
+}
+
+function getYPosition(
+  value: number,
+  minValue: number,
+  maxValue: number,
+  height: number,
+  paddingTop: number,
+  paddingBottom: number,
+): number {
+  const chartHeight = height - paddingTop - paddingBottom
+  const ratio = maxValue === minValue ? 0.5 : (value - minValue) / (maxValue - minValue)
+  return paddingTop + chartHeight * (1 - ratio)
 }
 
 function getPriceBandOrder(priceBand: string): number {
@@ -901,32 +1068,6 @@ function formatLargeNumber(value: number): string {
   }
 
   return value.toLocaleString('ko-KR')
-}
-
-function formatRatioDelta(delta: number): string {
-  if (Math.abs(delta) < 0.05) {
-    return '평균 수준'
-  }
-
-  const sign = delta > 0 ? '+' : '-'
-  return `평균 대비 ${sign}${Math.abs(delta).toFixed(1)}%p`
-}
-
-function formatNumberDelta(delta: number): string {
-  if (Math.abs(delta) < 0.5) {
-    return '평균 수준'
-  }
-
-  const sign = delta > 0 ? '+' : '-'
-  return `평균 대비 ${sign}${Math.round(Math.abs(delta)).toLocaleString('ko-KR')}`
-}
-
-function getDeltaClassName(delta: number): string {
-  if (Math.abs(delta) < 0.05) {
-    return 'metric-delta neutral'
-  }
-
-  return delta > 0 ? 'metric-delta positive' : 'metric-delta negative'
 }
 
 function unwrapList(rawData: unknown): Record<string, unknown>[] {

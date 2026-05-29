@@ -3,7 +3,7 @@ import './TrendComparePage.css'
 import { getAnalysisTrends, getGenreTrends, getPriceTrends } from './api'
 
 type CompareStandard = 'reviews' | 'positiveRate'
-type CompareMode = 'all' | 'price'
+type CompareMode = 'all' | 'genre' | 'price'
 
 type MonthlyTrend = {
   period: string
@@ -16,6 +16,8 @@ type GenreTrend = {
   genre: string
   currentReviews: number
   previousReviews: number | null
+  currentPositiveRate: number | null
+  previousPositiveRate: number | null
 }
 
 type PriceTrend = {
@@ -143,12 +145,16 @@ function TrendComparePage() {
     return getLatestTwoMonthlyTrends(trendData.monthlyTrends)
   }, [trendData.monthlyTrends])
 
-  const genreTrends = useMemo(() => {
-    return trendData.genreTrends.slice(0, 5)
+  const comparableGenreTrends = useMemo(() => {
+    return trendData.genreTrends
+      .filter((item) => item.previousReviews !== null && item.previousReviews > 0)
+      .slice(0, 5)
   }, [trendData.genreTrends])
 
   const priceTrends = useMemo(() => {
-    return trendData.priceTrends.slice(0, 5)
+    return trendData.priceTrends
+      .filter((item) => item.previousReviews !== null && item.previousReviews > 0)
+      .slice(0, 5)
   }, [trendData.priceTrends])
 
   const periodMeta = useMemo(() => {
@@ -196,6 +202,14 @@ function TrendComparePage() {
           </button>
 
           <button
+            className={compareMode === 'genre' ? 'active' : ''}
+            type="button"
+            onClick={() => setCompareMode('genre')}
+          >
+            장르별 비교
+          </button>
+
+          <button
             className={compareMode === 'price' ? 'active' : ''}
             type="button"
             onClick={() => setCompareMode('price')}
@@ -214,7 +228,7 @@ function TrendComparePage() {
       {renderCompareContent({
         compareMode,
         monthlyTrends,
-        genreTrends,
+        genreTrends: comparableGenreTrends,
         priceTrends,
       })}
 
@@ -240,6 +254,32 @@ function renderCompareContent({
   genreTrends: GenreTrend[]
   priceTrends: PriceTrend[]
 }) {
+  if (compareMode === 'genre') {
+    return (
+      <div className="trend-compare-grid" key="genre-view">
+        <article className="trend-compare-card">
+          <TrendCardHeader title="장르별 리뷰 수 변화" hideLegend />
+          <GenreReviewChangeTable data={genreTrends} />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="장르별 긍정 비율 변화" hideLegend />
+          <GenrePositiveRateChangeTable data={genreTrends} />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="전체 리뷰 수 추이" hideLegend />
+          <TrendLineChart data={monthlyTrends} chartType="reviews" />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="전체 긍정 비율 추이" hideLegend />
+          <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
+        </article>
+      </div>
+    )
+  }
+
   if (compareMode === 'price') {
     return (
       <div className="trend-compare-grid" key="price-view">
@@ -399,7 +439,11 @@ function TrendLineChart({
 
 function GenreReviewChangeTable({ data }: { data: GenreTrend[] }) {
   if (data.length === 0) {
-    return <div className="trend-compare-loading">표시할 장르별 리뷰 수 데이터가 없습니다.</div>
+    return (
+      <div className="trend-compare-loading">
+        이전 기간과 현재 기간이 모두 있는 장르 데이터가 없습니다.
+      </div>
+    )
   }
 
   return (
@@ -433,9 +477,55 @@ function GenreReviewChangeTable({ data }: { data: GenreTrend[] }) {
   )
 }
 
+function GenrePositiveRateChangeTable({ data }: { data: GenreTrend[] }) {
+  const filteredData = data.filter(
+    (item) => item.currentPositiveRate !== null && item.previousPositiveRate !== null,
+  )
+
+  if (filteredData.length === 0) {
+    return (
+      <div className="trend-compare-loading">
+        이전 기간과 현재 기간이 모두 있는 장르별 긍정 비율 데이터가 없습니다.
+      </div>
+    )
+  }
+
+  return (
+    <div className="trend-compare-genre-table">
+      <div className="trend-compare-genre-head">
+        <span>장르</span>
+        <span>현재 긍정률</span>
+        <span>이전 긍정률</span>
+        <span>변화폭</span>
+      </div>
+
+      {filteredData.map((item) => {
+        const currentRate = item.currentPositiveRate ?? 0
+        const previousRate = item.previousPositiveRate ?? 0
+        const changePoint = currentRate - previousRate
+
+        return (
+          <div className="trend-compare-genre-row" key={item.genre}>
+            <strong>{item.genre}</strong>
+            <span>{currentRate.toFixed(1)}%</span>
+            <span>{previousRate.toFixed(1)}%</span>
+            <em className={changePoint >= 0 ? 'up' : 'down'}>
+              {changePoint >= 0 ? '▲' : '▼'} {Math.abs(changePoint).toFixed(1)}%p
+            </em>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function PricePositiveRateBars({ data }: { data: PriceTrend[] }) {
   if (data.length === 0) {
-    return <div className="trend-compare-loading">표시할 가격대별 긍정 비율 데이터가 없습니다.</div>
+    return (
+      <div className="trend-compare-loading">
+        이전 기간과 현재 기간이 모두 있는 가격대별 긍정 비율 데이터가 없습니다.
+      </div>
+    )
   }
 
   return (
@@ -467,7 +557,11 @@ function PricePositiveRateBars({ data }: { data: PriceTrend[] }) {
 
 function PriceReviewChangeTable({ data }: { data: PriceTrend[] }) {
   if (data.length === 0) {
-    return <div className="trend-compare-loading">표시할 가격대별 리뷰 수 데이터가 없습니다.</div>
+    return (
+      <div className="trend-compare-loading">
+        이전 기간과 현재 기간이 모두 있는 가격대별 리뷰 수 데이터가 없습니다.
+      </div>
+    )
   }
 
   return (
@@ -554,6 +648,10 @@ function getPeriodMeta(data: MonthlyTrend[]) {
 }
 
 function getCompareModeTitle(compareMode: CompareMode) {
+  if (compareMode === 'genre') {
+    return '장르별 기준 비교'
+  }
+
   if (compareMode === 'price') {
     return '가격대 기준 비교'
   }
@@ -562,8 +660,12 @@ function getCompareModeTitle(compareMode: CompareMode) {
 }
 
 function getCompareModeDescription(compareMode: CompareMode) {
+  if (compareMode === 'genre') {
+    return '장르별 비교 탭에서는 이전 기간과 현재 기간이 모두 존재하는 장르만 표시하여 실제 변화율을 비교합니다.'
+  }
+
   if (compareMode === 'price') {
-    return '가격대 비교 버튼을 선택하면 가격대별 긍정 비율과 리뷰 수 변화를 중심으로 비교합니다.'
+    return '가격대 비교 탭에서는 가격대별 긍정 비율과 리뷰 수 변화를 중심으로 비교합니다.'
   }
 
   return '현재 백엔드 데이터에 포함된 최신 2개월을 기준으로 리뷰 수, 긍정 비율, 장르별 리뷰 수, 가격대별 긍정 비율 변화를 비교합니다.'
@@ -668,6 +770,8 @@ function normalizeTopGenreTrends(rawData: unknown): GenreTrend[] {
           genre,
           currentReviews: 0,
           previousReviews: null,
+          currentPositiveRate: null,
+          previousPositiveRate: null,
         }
       }
 
@@ -682,6 +786,8 @@ function normalizeTopGenreTrends(rawData: unknown): GenreTrend[] {
         genre,
         currentReviews: currentPeriod.reviewCount,
         previousReviews: previousPeriod ? previousPeriod.reviewCount : null,
+        currentPositiveRate: currentPeriod.positiveRatio,
+        previousPositiveRate: previousPeriod ? previousPeriod.positiveRatio : null,
       }
     })
     .filter((item) => item.genre.trim().length > 0)
@@ -733,6 +839,8 @@ function normalizeGenreTrends(rawData: unknown): GenreTrend[] {
         genre: group.genre,
         currentReviews: currentPeriod ? currentPeriod.reviewCount : 0,
         previousReviews: previousPeriod ? previousPeriod.reviewCount : null,
+        currentPositiveRate: currentPeriod ? currentPeriod.positiveRatio : null,
+        previousPositiveRate: previousPeriod ? previousPeriod.positiveRatio : null,
       }
     })
     .filter((item) => item.genre.trim().length > 0)

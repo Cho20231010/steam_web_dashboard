@@ -539,6 +539,7 @@ function GenreReviewTrendBars({ data }: { data: GenreTrend[] }) {
         const previousReviews = item.previousReviews ?? 0
         const previousWidth = (previousReviews / maxReviewCount) * 100
         const currentWidth = (item.currentReviews / maxReviewCount) * 100
+        const changeRate = calculateChangeRate(item.currentReviews, item.previousReviews)
 
         return (
           <div className="trend-compare-stacked-item" key={item.genre}>
@@ -569,6 +570,8 @@ function GenreReviewTrendBars({ data }: { data: GenreTrend[] }) {
                 {formatCompactNumber(item.currentReviews)}
               </span>
             </div>
+
+            <TrendChangeSummary label="변화율" value={changeRate} suffix="%" />
           </div>
         )
       })}
@@ -594,6 +597,7 @@ function GenrePositiveRateTrendBars({ data }: { data: GenreTrend[] }) {
       {filteredData.map((item) => {
         const currentRate = item.currentPositiveRate ?? 0
         const previousRate = item.previousPositiveRate ?? 0
+        const changePoint = currentRate - previousRate
 
         return (
           <div className="trend-compare-stacked-item" key={item.genre}>
@@ -622,6 +626,8 @@ function GenrePositiveRateTrendBars({ data }: { data: GenreTrend[] }) {
                 {currentRate.toFixed(1)}%
               </span>
             </div>
+
+            <TrendChangeSummary label="변화폭" value={changePoint} suffix="%p" />
           </div>
         )
       })}
@@ -673,12 +679,7 @@ function PricePositiveRateBars({ data }: { data: PriceTrend[] }) {
               </span>
             </div>
 
-            <div className="trend-compare-stacked-change">
-              <span>변화폭</span>
-              <em className={changePoint >= 0 ? 'up' : 'down'}>
-                {changePoint >= 0 ? '▲' : '▼'} {Math.abs(changePoint).toFixed(1)}%p
-              </em>
-            </div>
+            <TrendChangeSummary label="변화폭" value={changePoint} suffix="%p" />
           </div>
         )
       })}
@@ -746,6 +747,7 @@ function PriceReviewTrendBars({ data }: { data: PriceTrend[] }) {
         const previousReviews = item.previousReviews ?? 0
         const previousWidth = (previousReviews / maxReviewCount) * 100
         const currentWidth = (item.currentReviews / maxReviewCount) * 100
+        const changeRate = calculateChangeRate(item.currentReviews, item.previousReviews)
 
         return (
           <div className="trend-compare-stacked-item" key={item.priceBand}>
@@ -776,6 +778,8 @@ function PriceReviewTrendBars({ data }: { data: PriceTrend[] }) {
                 {formatCompactNumber(item.currentReviews)}
               </span>
             </div>
+
+            <TrendChangeSummary label="변화율" value={changeRate} suffix="%" />
           </div>
         )
       })}
@@ -797,6 +801,7 @@ function PricePositiveRateTrendBars({ data }: { data: PriceTrend[] }) {
       {data.map((item) => {
         const currentRate = item.currentPositiveRate
         const previousRate = item.previousPositiveRate ?? 0
+        const changePoint = currentRate - previousRate
 
         return (
           <div className="trend-compare-stacked-item" key={item.priceBand}>
@@ -825,9 +830,40 @@ function PricePositiveRateTrendBars({ data }: { data: PriceTrend[] }) {
                 {currentRate.toFixed(1)}%
               </span>
             </div>
+
+            <TrendChangeSummary label="변화폭" value={changePoint} suffix="%p" />
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function TrendChangeSummary({
+  label,
+  value,
+  suffix,
+}: {
+  label: string
+  value: number | null
+  suffix: '%' | '%p'
+}) {
+  if (value === null || !Number.isFinite(value)) {
+    return (
+      <div className="trend-compare-stacked-change">
+        <span>{label}</span>
+        <em className="up">-</em>
+      </div>
+    )
+  }
+
+  return (
+    <div className="trend-compare-stacked-change">
+      <span>{label}</span>
+      <em className={value >= 0 ? 'up' : 'down'}>
+        {value >= 0 ? '▲' : '▼'} {Math.abs(value).toFixed(1)}
+        {suffix}
+      </em>
     </div>
   )
 }

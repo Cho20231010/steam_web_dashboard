@@ -32,6 +32,20 @@ type TopicSentimentItem = {
   hasSentimentData: boolean
 }
 
+type TopicOverallInsight = {
+  topTopicName: string
+  topTopicShare: number | null
+  topKeywordText: string
+  topFiveShare: number | null
+  averagePositiveRate: number | null
+  positiveTopicCount: number
+  sentimentTopicCount: number
+  resultTitle: string
+  mainSummary: string
+  sentimentSummary: string
+  actionSummary: string
+}
+
 type BubbleLayout = {
   x: number
   y: number
@@ -264,8 +278,12 @@ function TopicSentimentView({
     type: TopicSentimentType
   }>
 }) {
+  const overallInsight = createTopicOverallInsight(topics)
+
   return (
     <div className="topic-analysis-content">
+      <TopicOverallResult insight={overallInsight} />
+
       <div className="topic-analysis-main-grid">
         <article className="topic-analysis-card">
           <h2>감성 경향 요약</h2>
@@ -291,6 +309,68 @@ function TopicSentimentView({
         <TopicSentimentTable topics={topics} />
       </article>
     </div>
+  )
+}
+
+function TopicOverallResult({ insight }: { insight: TopicOverallInsight }) {
+  return (
+    <article className="topic-analysis-card topic-analysis-card--wide topic-overall-result-card">
+      <div className="topic-overall-header">
+        <div>
+          <h2>전체 토픽 분석 결과</h2>
+          <p>{insight.resultTitle}</p>
+        </div>
+
+        <span className="topic-overall-badge">종합 결과</span>
+      </div>
+
+      <div className="topic-overall-metric-grid">
+        <div className="topic-overall-metric">
+          <span>대표 토픽</span>
+          <strong>{insight.topTopicName}</strong>
+        </div>
+
+        <div className="topic-overall-metric">
+          <span>TOP5 토픽 비중</span>
+          <strong>{insight.topFiveShare === null ? '-' : `${insight.topFiveShare.toFixed(1)}%`}</strong>
+        </div>
+
+        <div className="topic-overall-metric">
+          <span>평균 긍정률</span>
+          <strong>
+            {insight.averagePositiveRate === null
+              ? '-'
+              : `${insight.averagePositiveRate.toFixed(0)}%`}
+          </strong>
+        </div>
+
+        <div className="topic-overall-metric">
+          <span>긍정 토픽</span>
+          <strong>
+            {insight.sentimentTopicCount === 0
+              ? '-'
+              : `${insight.positiveTopicCount}/${insight.sentimentTopicCount}개`}
+          </strong>
+        </div>
+      </div>
+
+      <div className="topic-overall-insight-grid">
+        <div className="topic-overall-insight">
+          <strong>핵심 관심사</strong>
+          <p>{insight.mainSummary}</p>
+        </div>
+
+        <div className="topic-overall-insight">
+          <strong>감성 해석</strong>
+          <p>{insight.sentimentSummary}</p>
+        </div>
+
+        <div className="topic-overall-insight">
+          <strong>활용 방향</strong>
+          <p>{insight.actionSummary}</p>
+        </div>
+      </div>
+    </article>
   )
 }
 
@@ -853,6 +933,159 @@ function createGenreSummary(topics: TopicItem[]) {
     genre,
     topics: topicList,
   }))
+}
+
+function createTopicOverallInsight(topics: TopicItem[]): TopicOverallInsight {
+  const sortedTopics = [...topics].sort((a, b) => (b.share ?? 0) - (a.share ?? 0))
+  const topTopic = sortedTopics[0] ?? null
+  const topFiveTopics = sortedTopics.slice(0, 5)
+
+  const topFiveShareValues = topFiveTopics
+    .map((topic) => topic.share)
+    .filter((share): share is number => share !== null)
+
+  const topFiveShare =
+    topFiveShareValues.length > 0
+      ? topFiveShareValues.reduce((sum, share) => sum + share, 0)
+      : null
+
+  const sentimentTopics = topics.filter((topic) => topic.positiveRate !== null)
+  const averagePositiveRate =
+    sentimentTopics.length > 0
+      ? sentimentTopics.reduce((sum, topic) => sum + (topic.positiveRate ?? 0), 0) /
+        sentimentTopics.length
+      : null
+
+  const positiveTopicCount = sentimentTopics.filter(
+    (topic) => topic.sentimentType === 'positive',
+  ).length
+
+  const topKeywordText = createDominantKeywordText(topFiveTopics)
+
+  const resultTitle = createOverallResultTitle(averagePositiveRate, topFiveShare)
+  const mainSummary = createMainTopicSummary(topTopic, topKeywordText, topFiveShare)
+  const sentimentSummary = createOverallSentimentSummary(
+    averagePositiveRate,
+    positiveTopicCount,
+    sentimentTopics.length,
+  )
+  const actionSummary = createTopicActionSummary(topTopic, averagePositiveRate)
+
+  return {
+    topTopicName: topTopic ? topTopic.name : '-',
+    topTopicShare: topTopic?.share ?? null,
+    topKeywordText,
+    topFiveShare,
+    averagePositiveRate,
+    positiveTopicCount,
+    sentimentTopicCount: sentimentTopics.length,
+    resultTitle,
+    mainSummary,
+    sentimentSummary,
+    actionSummary,
+  }
+}
+
+function createDominantKeywordText(topics: TopicItem[]) {
+  const keywordMap = new Map<string, number>()
+
+  topics.forEach((topic) => {
+    topic.keywords.slice(0, 4).forEach((keyword) => {
+      const normalizedKeyword = normalizeToken(keyword)
+
+      if (!normalizedKeyword) {
+        return
+      }
+
+      keywordMap.set(normalizedKeyword, (keywordMap.get(normalizedKeyword) ?? 0) + 1)
+    })
+  })
+
+  const sortedKeywords = Array.from(keywordMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([keyword]) => formatKeyword(keyword))
+
+  return sortedKeywords.join(', ') || '주요 키워드 없음'
+}
+
+function createOverallResultTitle(averagePositiveRate: number | null, topFiveShare: number | null) {
+  if (averagePositiveRate === null) {
+    return '토픽 비중을 기준으로 주요 리뷰 관심사를 요약한 결과입니다.'
+  }
+
+  const sentimentText =
+    averagePositiveRate >= 70
+      ? '전반적으로 긍정적인 반응이 강한 토픽 구조입니다.'
+      : averagePositiveRate >= 55
+        ? '대체로 긍정 반응이 우세한 토픽 구조입니다.'
+        : averagePositiveRate >= 40
+          ? '긍정과 부정이 함께 나타나는 혼합형 토픽 구조입니다.'
+          : '개선 요구가 비교적 강하게 나타나는 토픽 구조입니다.'
+
+  if (topFiveShare !== null) {
+    return `${sentimentText} 상위 토픽이 전체의 ${topFiveShare.toFixed(
+      1,
+    )}%를 차지하고 있습니다.`
+  }
+
+  return sentimentText
+}
+
+function createMainTopicSummary(
+  topTopic: TopicItem | null,
+  topKeywordText: string,
+  topFiveShare: number | null,
+) {
+  if (!topTopic) {
+    return '표시할 대표 토픽 데이터가 없습니다.'
+  }
+
+  const shareText =
+    topTopic.share === null ? '' : ` 가장 큰 비중의 토픽은 ${topTopic.share.toFixed(1)}%입니다.`
+
+  const topFiveText =
+    topFiveShare === null
+      ? ''
+      : ` 상위 5개 토픽의 합산 비중은 ${topFiveShare.toFixed(
+          1,
+        )}%로, 리뷰 논의가 일부 핵심 주제에 집중되어 있습니다.`
+
+  return `현재 리뷰에서는 ${topTopic.name} 토픽이 가장 두드러지며, ${topKeywordText} 키워드가 반복적으로 나타납니다.${shareText}${topFiveText}`
+}
+
+function createOverallSentimentSummary(
+  averagePositiveRate: number | null,
+  positiveTopicCount: number,
+  sentimentTopicCount: number,
+) {
+  if (averagePositiveRate === null || sentimentTopicCount === 0) {
+    return '현재 연결된 토픽 데이터에는 토픽별 긍정 비율이 충분히 포함되어 있지 않아, 감성 결론은 비중 중심으로만 해석하는 것이 적절합니다.'
+  }
+
+  return `감성 데이터가 있는 ${sentimentTopicCount}개 토픽 중 ${positiveTopicCount}개가 긍정 경향으로 분류되었고, 평균 긍정률은 ${averagePositiveRate.toFixed(
+    0,
+  )}%입니다. 따라서 현재 토픽 흐름은 긍정 반응을 중심으로 해석할 수 있습니다.`
+}
+
+function createTopicActionSummary(topTopic: TopicItem | null, averagePositiveRate: number | null) {
+  if (!topTopic) {
+    return '토픽 데이터가 추가되면 대표 토픽을 기준으로 개선 방향을 도출할 수 있습니다.'
+  }
+
+  if (averagePositiveRate === null) {
+    return `${topTopic.name}처럼 비중이 큰 토픽을 중심으로 상세 리뷰를 확인하고, 이후 감성 데이터가 추가되면 긍정·부정 원인을 분리해 해석하는 것이 좋습니다.`
+  }
+
+  if (averagePositiveRate >= 70) {
+    return `${topTopic.name} 관련 강점을 대시보드나 발표에서 핵심 긍정 요인으로 강조하고, 유사 키워드를 중심으로 성공 요인을 설명하는 방향이 적절합니다.`
+  }
+
+  if (averagePositiveRate >= 55) {
+    return `${topTopic.name} 토픽은 긍정 반응이 있으므로 장점은 유지하되, 함께 등장하는 부정 키워드나 낮은 긍정률 토픽을 추가로 확인하는 것이 좋습니다.`
+  }
+
+  return `${topTopic.name} 토픽의 비중이 높지만 긍정률이 충분히 높지 않으므로, 해당 토픽에서 어떤 불편 요소가 반복되는지 추가 분석하는 것이 좋습니다.`
 }
 
 function formatTopicName(rawName: string, keywords: string[]) {

@@ -1,545 +1,778 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getGames, type Game } from './api'
+import './RankingPage.css'
 
-type SortKey = 'popularity' | 'positiveRate' | 'reviewCount' | 'playtime'
-type PaymentFilter = 'all' | 'free' | 'paid'
-type PriceFilter = 'all' | 'free' | 'under10000' | '10000to30000' | 'over30000'
+type SortOption =
+  | 'popular'
+  | 'positive'
+  | 'latest'
+  | 'priceLow'
+  | 'priceHigh'
+  | 'name'
 
-type RankingGame = {
-  id: string
+type PriceFilter = 'all' | 'free' | '0-10' | '10-30' | '30plus'
+
+type SearchGame = {
+  id: number
   name: string
-  genre: string
+  genres: string[]
+  primaryGenre: string
+  price: number
   isFree: boolean
-  priceValue: number
-  priceLabel: string
-  ownersLabel: string
-  ownersValue: number
-  positiveReviews: number
-  negativeReviews: number
-  neutralReviews: number
-  totalReviews: number
-  positiveRate: number
-  averagePlaytime: number
-  popularityValue: number
+  platforms: string[]
+  positiveRatio: number | null
+  reviewCount: number | null
+  releaseDate: string
+  imageUrl: string
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+const ITEMS_PER_PAGE = 5
+
 function RankingPage() {
-  const [games, setGames] = useState<Game[]>([])
-  const [loading, setLoading] = useState(true)
+  const [games, setGames] = useState<SearchGame[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
-  const [genreFilter, setGenreFilter] = useState('all')
-  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all')
-  const [priceFilter, setPriceFilter] = useState<PriceFilter>('all')
-  const [searchKeyword, setSearchKeyword] = useState('')
-  const [sortKey, setSortKey] = useState<SortKey>('popularity')
+  const [searchText, setSearchText] = useState('')
+  const [appliedSearchText, setAppliedSearchText] = useState('')
+  const [selectedGenre, setSelectedGenre] = useState('all')
+  const [selectedPrice, setSelectedPrice] = useState<PriceFilter>('all')
+  const [selectedPlatform, setSelectedPlatform] = useState('all')
+  const [sortBy, setSortBy] = useState<SortOption>('popular')
+  const [onlyFree, setOnlyFree] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     async function loadGames() {
       try {
-        setLoading(true)
+        setIsLoading(true)
         setErrorMessage('')
 
-        const result = await getGames()
-        setGames(Array.isArray(result) ? result : [])
+        const response = await fetch(`${API_BASE_URL}/games`)
+
+        if (!response.ok) {
+          throw new Error(`/games API error: ${response.status}`)
+        }
+
+        const rawData = await response.json()
+        const normalizedGames = normalizeGames(rawData)
+
+        setGames(normalizedGames)
       } catch (error) {
-        console.error(error)
-        setErrorMessage('게임 순위 데이터를 불러오지 못했습니다.')
+        console.error('게임 목록을 불러오지 못했습니다.', error)
+        setGames([])
+        setErrorMessage('검색 화면에 사용할 게임 데이터를 불러오지 못했습니다.')
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
 
     loadGames()
   }, [])
 
-  const normalizedGames = useMemo(() => {
-    return games.map((game, index) => normalizeRankingGame(game, index))
+  const genreOptions = useMemo(() => {
+    const uniqueGenres = Array.from(
+      new Set(
+        games
+          .map((game) => game.primaryGenre)
+          .filter((genre) => genre && genre.trim()),
+      ),
+    )
+
+    return ['all', ...uniqueGenres]
   }, [games])
 
-  const genreOptions = useMemo(() => {
-    return Array.from(
+  const platformOptions = useMemo(() => {
+    const uniquePlatforms = Array.from(
       new Set(
-        normalizedGames
-          .map((game) => game.genre)
-          .filter((genre) => genre && genre !== '장르 없음'),
+        games.flatMap((game) => game.platforms).filter((platform) => platform && platform.trim()),
       ),
-    ).sort((a, b) => a.localeCompare(b))
-  }, [normalizedGames])
+    )
+
+    return ['all', ...uniquePlatforms]
+  }, [games])
 
   const filteredGames = useMemo(() => {
-    const keyword = searchKeyword.trim().toLowerCase()
+    return games.filter((game) => {
+      const matchesSearch =
+        !appliedSearchText.trim() ||
+        game.name.toLowerCase().includes(appliedSearchText.trim().toLowerCase())
 
-    return normalizedGames.filter((game) => {
       const matchesGenre =
-        genreFilter === 'all' ? true : game.genre === genreFilter
+        selectedGenre === 'all' ||
+        game.primaryGenre === selectedGenre ||
+        game.genres.includes(selectedGenre)
 
-      const matchesPayment =
-        paymentFilter === 'all'
-          ? true
-          : paymentFilter === 'free'
-            ? game.isFree
-            : !game.isFree
+      const matchesPrice = matchesPriceFilter(game.price, selectedPrice)
 
-      const matchesPrice = (() => {
-        if (priceFilter === 'all') return true
-        if (priceFilter === 'free') return game.isFree || game.priceValue === 0
-        if (priceFilter === 'under10000') {
-          return game.priceValue > 0 && game.priceValue < 10000
-        }
-        if (priceFilter === '10000to30000') {
-          return game.priceValue >= 10000 && game.priceValue <= 30000
-        }
-        if (priceFilter === 'over30000') return game.priceValue > 30000
-        return true
-      })()
+      const matchesPlatform =
+        selectedPlatform === 'all' || game.platforms.includes(selectedPlatform)
 
-      const matchesKeyword = keyword
-        ? game.name.toLowerCase().includes(keyword)
-        : true
+      const matchesFree = !onlyFree || game.isFree
 
-      return matchesGenre && matchesPayment && matchesPrice && matchesKeyword
+      return matchesSearch && matchesGenre && matchesPrice && matchesPlatform && matchesFree
     })
-  }, [normalizedGames, genreFilter, paymentFilter, priceFilter, searchKeyword])
+  }, [games, appliedSearchText, selectedGenre, selectedPrice, selectedPlatform, onlyFree])
 
   const sortedGames = useMemo(() => {
     const copied = [...filteredGames]
 
     copied.sort((a, b) => {
-      if (sortKey === 'popularity') {
-        if (b.popularityValue !== a.popularityValue) {
-          return b.popularityValue - a.popularityValue
-        }
-
-        return b.totalReviews - a.totalReviews
+      if (sortBy === 'popular') {
+        return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
       }
 
-      if (sortKey === 'positiveRate') {
-        if (b.positiveRate !== a.positiveRate) {
-          return b.positiveRate - a.positiveRate
-        }
-
-        return b.totalReviews - a.totalReviews
+      if (sortBy === 'positive') {
+        return (b.positiveRatio ?? 0) - (a.positiveRatio ?? 0)
       }
 
-      if (sortKey === 'reviewCount') {
-        if (b.totalReviews !== a.totalReviews) {
-          return b.totalReviews - a.totalReviews
-        }
-
-        return b.positiveRate - a.positiveRate
+      if (sortBy === 'latest') {
+        return getDateValue(b.releaseDate) - getDateValue(a.releaseDate)
       }
 
-      if (sortKey === 'playtime') {
-        if (b.averagePlaytime !== a.averagePlaytime) {
-          return b.averagePlaytime - a.averagePlaytime
-        }
+      if (sortBy === 'priceLow') {
+        return a.price - b.price
+      }
 
-        return b.totalReviews - a.totalReviews
+      if (sortBy === 'priceHigh') {
+        return b.price - a.price
+      }
+
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name)
       }
 
       return 0
     })
 
     return copied
-  }, [filteredGames, sortKey])
+  }, [filteredGames, sortBy])
+
+  const totalPages = Math.max(1, Math.ceil(sortedGames.length / ITEMS_PER_PAGE))
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   const visibleGames = useMemo(() => {
-    return sortedGames.slice(0, 10)
-  }, [sortedGames])
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return sortedGames.slice(start, start + ITEMS_PER_PAGE)
+  }, [sortedGames, currentPage])
 
-  if (loading) {
-    return (
-      <section className="ranking-status-card">
-        <strong>게임 순위 데이터를 불러오는 중입니다...</strong>
-        <p>백엔드 API에서 게임 목록을 가져오고 있습니다.</p>
-      </section>
-    )
+  const paginationItems = useMemo(() => {
+    return buildPagination(currentPage, totalPages)
+  }, [currentPage, totalPages])
+
+  function handleSearch() {
+    setAppliedSearchText(searchText)
+    setCurrentPage(1)
   }
 
-  if (errorMessage) {
-    return (
-      <section className="ranking-status-card error">
-        <strong>데이터 로드 실패</strong>
-        <p>{errorMessage}</p>
-      </section>
-    )
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
+  function handleGenreChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    setSelectedGenre(event.target.value)
+    setCurrentPage(1)
+  }
+
+  function handlePriceChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    setSelectedPrice(event.target.value as PriceFilter)
+    setCurrentPage(1)
+  }
+
+  function handlePlatformChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    setSelectedPlatform(event.target.value)
+    setCurrentPage(1)
+  }
+
+  function handleSortChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    setSortBy(event.target.value as SortOption)
+    setCurrentPage(1)
+  }
+
+  function handleOnlyFreeChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setOnlyFree(event.target.checked)
+    setCurrentPage(1)
   }
 
   return (
-    <div className="ranking-page">
-      <section className="ranking-filter-card">
-        <div className="ranking-filter-grid">
-          <div className="ranking-filter-field">
-            <label>장르</label>
-            <select
-              value={genreFilter}
-              onChange={(event) => setGenreFilter(event.target.value)}
-            >
-              <option value="all">전체</option>
-              {genreOptions.map((genre) => (
-                <option key={genre} value={genre}>
-                  {genre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="ranking-filter-field">
-            <label>유료/무료</label>
-            <select
-              value={paymentFilter}
-              onChange={(event) =>
-                setPaymentFilter(event.target.value as PaymentFilter)
-              }
-            >
-              <option value="all">전체</option>
-              <option value="free">무료</option>
-              <option value="paid">유료</option>
-            </select>
-          </div>
-
-          <div className="ranking-filter-field">
-            <label>가격대</label>
-            <select
-              value={priceFilter}
-              onChange={(event) =>
-                setPriceFilter(event.target.value as PriceFilter)
-              }
-            >
-              <option value="all">전체</option>
-              <option value="free">무료</option>
-              <option value="under10000">1만원 미만</option>
-              <option value="10000to30000">1만원 ~ 3만원</option>
-              <option value="over30000">3만원 초과</option>
-            </select>
-          </div>
-
-          <div className="ranking-filter-search">
-            <label>검색</label>
-            <input
-              type="text"
-              value={searchKeyword}
-              onChange={(event) => setSearchKeyword(event.target.value)}
-              placeholder="게임 검색"
-            />
-          </div>
-        </div>
-
-        <div className="ranking-sort-row">
-          <span className="ranking-sort-label">정렬 기준</span>
-
-          <button
-            className={sortKey === 'popularity' ? 'active' : ''}
-            onClick={() => setSortKey('popularity')}
-            type="button"
-          >
-            인기순
-          </button>
-
-          <button
-            className={sortKey === 'positiveRate' ? 'active' : ''}
-            onClick={() => setSortKey('positiveRate')}
-            type="button"
-          >
-            긍정률순
-          </button>
-
-          <button
-            className={sortKey === 'reviewCount' ? 'active' : ''}
-            onClick={() => setSortKey('reviewCount')}
-            type="button"
-          >
-            리뷰수순
-          </button>
-
-          <button
-            className={sortKey === 'playtime' ? 'active' : ''}
-            onClick={() => setSortKey('playtime')}
-            type="button"
-          >
-            플레이타임순
+    <section className="search-page" aria-label="게임 검색 화면">
+      <div className="search-top-bar">
+        <div className="search-input-group">
+          <input
+            className="search-input"
+            type="text"
+            placeholder="게임명, 장르, 키워드로 검색해보세요"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button className="search-button" type="button" onClick={handleSearch}>
+            검색
           </button>
         </div>
-      </section>
 
-      <section className="ranking-table-card">
-        <div className="ranking-table-wrap">
-          <table className="ranking-table">
-            <thead>
-              <tr>
-                <th>순위</th>
-                <th>게임명</th>
-                <th>장르</th>
-                <th>가격</th>
-                <th>보유자 구간</th>
-                <th>긍정 리뷰</th>
-                <th>부정 리뷰</th>
-                <th>긍정률</th>
-              </tr>
-            </thead>
+        <button className="detail-search-button" type="button">
+          상세 검색
+        </button>
+      </div>
 
-            <tbody>
-              {visibleGames.length > 0 ? (
-                visibleGames.map((game, index) => (
-                  <tr key={game.id}>
-                    <td>{index + 1}</td>
+      <div className="search-filter-bar">
+        <div className="search-filter-item">
+          <label htmlFor="genre-filter">장르</label>
+          <select id="genre-filter" value={selectedGenre} onChange={handleGenreChange}>
+            {genreOptions.map((genre) => (
+              <option key={genre} value={genre}>
+                {genre === 'all' ? '전체' : genre}
+              </option>
+            ))}
+          </select>
+        </div>
 
-                    <td className="ranking-game-name-cell">
-                      <span className="ranking-game-name" title={game.name}>
-                        {game.name}
-                      </span>
-                    </td>
+        <div className="search-filter-item">
+          <label htmlFor="price-filter">가격</label>
+          <select id="price-filter" value={selectedPrice} onChange={handlePriceChange}>
+            <option value="all">전체</option>
+            <option value="free">무료</option>
+            <option value="0-10">$0 ~ $10</option>
+            <option value="10-30">$10 ~ $30</option>
+            <option value="30plus">$30 이상</option>
+          </select>
+        </div>
 
-                    <td>{game.genre}</td>
-                    <td>{game.priceLabel}</td>
-                    <td>{game.ownersLabel}</td>
-                    <td>{formatNumber(game.positiveReviews)}</td>
-                    <td>{formatNumber(game.negativeReviews)}</td>
-                    <td className="ranking-positive-rate">
-                      {game.positiveRate.toFixed(1)}%
-                    </td>
+        <div className="search-filter-item">
+          <label htmlFor="platform-filter">플랫폼</label>
+          <select id="platform-filter" value={selectedPlatform} onChange={handlePlatformChange}>
+            {platformOptions.map((platform) => (
+              <option key={platform} value={platform}>
+                {platform === 'all' ? '전체' : platform}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="search-filter-item">
+          <label htmlFor="sort-filter">정렬</label>
+          <select id="sort-filter" value={sortBy} onChange={handleSortChange}>
+            <option value="popular">인기순</option>
+            <option value="positive">긍정률순</option>
+            <option value="latest">최신 출시순</option>
+            <option value="priceLow">가격 낮은순</option>
+            <option value="priceHigh">가격 높은순</option>
+            <option value="name">이름순</option>
+          </select>
+        </div>
+
+        <label className="free-only-check">
+          <input type="checkbox" checked={onlyFree} onChange={handleOnlyFreeChange} />
+          <span>무료 게임만 보기</span>
+        </label>
+      </div>
+
+      <div className="search-result-card">
+        <div className="search-result-header">
+          <strong>검색 결과 ({sortedGames.length.toLocaleString('ko-KR')}건)</strong>
+        </div>
+
+        {isLoading && <div className="search-empty">게임 목록을 불러오는 중입니다.</div>}
+
+        {!isLoading && errorMessage && <div className="search-empty">{errorMessage}</div>}
+
+        {!isLoading && !errorMessage && visibleGames.length === 0 && (
+          <div className="search-empty">조건에 맞는 게임이 없습니다.</div>
+        )}
+
+        {!isLoading && !errorMessage && visibleGames.length > 0 && (
+          <>
+            <div className="search-table-wrap">
+              <table className="search-table">
+                <thead>
+                  <tr>
+                    <th>게임</th>
+                    <th>장르</th>
+                    <th>가격(USD)</th>
+                    <th>리뷰 수</th>
+                    <th>긍정 비율</th>
+                    <th>출시일</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={8} className="ranking-empty-row">
-                    조건에 맞는 게임이 없습니다.
-                  </td>
-                </tr>
+                </thead>
+                <tbody>
+                  {visibleGames.map((game) => (
+                    <tr key={game.id}>
+                      <td>
+                        <div className="game-cell">
+                          <div className="game-thumb-wrap">
+                            {game.imageUrl ? (
+                              <img
+                                className="game-thumb"
+                                src={game.imageUrl}
+                                alt={game.name}
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="game-thumb placeholder">No Image</div>
+                            )}
+                          </div>
+                          <div className="game-info">
+                            <strong>{game.name}</strong>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td>{game.primaryGenre || '-'}</td>
+
+                      <td>{formatPriceText(game.price, game.isFree)}</td>
+
+                      <td>{game.reviewCount === null ? '-' : formatCount(game.reviewCount)}</td>
+
+                      <td className="positive-cell">
+                        {game.positiveRatio === null ? '-' : `${game.positiveRatio.toFixed(1)}%`}
+                      </td>
+
+                      <td>{formatReleaseDate(game.releaseDate)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="search-pagination">
+              <button
+                type="button"
+                className="page-nav"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                ‹
+              </button>
+
+              {paginationItems.map((item, index) =>
+                item === 'ellipsis' ? (
+                  <span className="page-ellipsis" key={`ellipsis-${index}`}>
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    className={`page-number ${currentPage === item ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(item)}
+                  >
+                    {item}
+                  </button>
+                ),
               )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+
+              <button
+                type="button"
+                className="page-nav"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                ›
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
   )
 }
 
-function normalizeRankingGame(game: Game, index: number): RankingGame {
-  const record = game as Record<string, unknown>
+function normalizeGames(rawData: unknown): SearchGame[] {
+  const rawList = unwrapList(rawData)
 
-  const id = String(getGameId(record) ?? index)
-  const name = getGameName(record)
-  const genre = getPrimaryGenre(record)
+  return rawList
+    .map((item, index) => {
+      const name = readString(item, ['name', 'title', 'game_name', 'gameName']) || `게임 ${index + 1}`
+      const rawGenres = readStringArray(item, ['genres', 'genre', 'tags'])
+      const genres = rawGenres.length > 0 ? rawGenres : ['기타']
+      const primaryGenre = formatGenreLabel(genres[0])
 
-  const positiveReviews = toNumber(
-    readFirst(record, ['positive_reviews', 'positiveReviewCount', 'positive']),
-  )
+      const rawPrice =
+        readOptionalNumber(item, ['price', 'final_price', 'initial_price', 'price_usd']) ?? 0
+      const price = normalizePrice(rawPrice)
+      const isFree =
+        price === 0 ||
+        readBoolean(item, ['is_free', 'free_to_play', 'free']) ||
+        name.toLowerCase().includes('free')
 
-  const negativeReviews = toNumber(
-    readFirst(record, ['negative_reviews', 'negativeReviewCount', 'negative']),
-  )
+      const platforms = normalizePlatforms(item)
+      const positiveRatio = normalizeRatio(
+        readOptionalNumber(item, [
+          'positive_ratio',
+          'positivePercent',
+          'positive_percent',
+          'avg_positive_ratio',
+        ]),
+      )
 
-  const neutralReviews = toNumber(
-    readFirst(record, ['neutral_reviews', 'neutralReviewCount', 'neutral']),
-  )
+      const reviewCount = readOptionalNumber(item, [
+        'review_count',
+        'reviews',
+        'total_reviews',
+        'num_reviews',
+      ])
 
-  const totalReviews =
-    toNumber(
-      readFirst(record, ['review_count', 'total_reviews', 'totalReviews', 'total']),
-    ) ||
-    positiveReviews + negativeReviews + neutralReviews
+      const releaseDate =
+        readString(item, ['release_date', 'releaseDate', 'released_at', 'releasedAt']) || ''
 
-  const priceValue = normalizePriceValue(record)
-  const isFree = getIsFree(record, priceValue)
+      const imageUrl =
+        readString(item, [
+          'header_image',
+          'headerImage',
+          'capsule_image',
+          'capsuleImage',
+          'image_url',
+          'imageUrl',
+          'thumbnail',
+        ]) || ''
 
-  const priceLabel = isFree ? '무료' : `₩ ${formatNumber(priceValue)}`
-  const ownersValue = extractOwnersValue(record)
-  const ownersLabel = extractOwnersLabel(record)
+      const id =
+        readOptionalNumber(item, ['app_id', 'appid', 'id', 'game_id', 'gameId']) ?? index + 1
 
-  const positiveRate =
-    totalReviews > 0 ? (positiveReviews / totalReviews) * 100 : 0
-
-  const averagePlaytime = toNumber(
-    readFirst(record, ['average_playtime', 'avg_playtime', 'playtime_forever']),
-  )
-
-  const popularityValue =
-    toNumber(
-      readFirst(record, ['popularity_score', 'ccu', 'concurrent_users']),
-    ) ||
-    ownersValue ||
-    totalReviews
-
-  return {
-    id,
-    name,
-    genre,
-    isFree,
-    priceValue,
-    priceLabel,
-    ownersLabel,
-    ownersValue,
-    positiveReviews,
-    negativeReviews,
-    neutralReviews,
-    totalReviews,
-    positiveRate,
-    averagePlaytime,
-    popularityValue,
-  }
+      return {
+        id,
+        name,
+        genres: genres.map((genre) => formatGenreLabel(genre)),
+        primaryGenre,
+        price,
+        isFree,
+        platforms,
+        positiveRatio,
+        reviewCount,
+        releaseDate,
+        imageUrl,
+      }
+    })
+    .filter((game) => Boolean(game.name))
 }
 
-function getGameId(record: Record<string, unknown>) {
-  return readFirst(record, ['game_id', 'id', 'app_id', 'appid', 'steam_appid'])
-}
+function normalizePlatforms(item: Record<string, unknown>): string[] {
+  const directPlatforms = readStringArray(item, ['platforms', 'supported_platforms', 'platform'])
 
-function getGameName(record: Record<string, unknown>) {
-  return String(readFirst(record, ['name', 'title']) ?? '이름 없음')
-}
+  const result = new Set<string>()
 
-function getPrimaryGenre(record: Record<string, unknown>) {
-  const rawGenres = record.genres
-  const rawGenre = record.genre
-
-  if (Array.isArray(rawGenres) && rawGenres.length > 0) {
-    return String(rawGenres[0])
-  }
-
-  if (typeof rawGenres === 'string' && rawGenres.trim()) {
-    return rawGenres.split(',')[0].trim()
-  }
-
-  if (typeof rawGenre === 'string' && rawGenre.trim()) {
-    return rawGenre.split(',')[0].trim()
-  }
-
-  return '장르 없음'
-}
-
-function getIsFree(record: Record<string, unknown>, priceValue: number) {
-  const raw = readFirst(record, ['is_free', 'free', 'isFree'])
-
-  if (typeof raw === 'boolean') return raw
-  if (priceValue === 0) return true
-
-  const genre = getPrimaryGenre(record).toLowerCase()
-  return genre.includes('free')
-}
-
-function normalizePriceValue(record: Record<string, unknown>) {
-  const rawPrice = toNumber(
-    readFirst(record, ['price', 'price_value', 'final_price', 'initial_price']),
-  )
-
-  if (rawPrice <= 0) return 0
-
-  if (rawPrice > 0 && rawPrice < 1000) {
-    return Math.round(rawPrice * 1000)
-  }
-
-  return Math.round(rawPrice)
-}
-
-function extractOwnersLabel(record: Record<string, unknown>) {
-  const directText = readFirst(record, [
-    'owners_text',
-    'owners_range',
-    'estimated_owners',
-    'owners',
-  ])
-
-  if (typeof directText === 'string' && directText.trim()) {
-    return normalizeOwnersText(directText)
-  }
-
-  const ownersValue = extractOwnersValue(record)
-  if (ownersValue <= 0) return '-'
-
-  if (ownersValue >= 1_000_000) {
-    return `${Math.floor(ownersValue / 1_000_000)}M+`
-  }
-
-  if (ownersValue >= 1_000) {
-    return `${Math.floor(ownersValue / 1_000)}K+`
-  }
-
-  return `${formatNumber(ownersValue)}+`
-}
-
-function extractOwnersValue(record: Record<string, unknown>) {
-  const numericValue = toNumber(
-    readFirst(record, ['owners_value', 'owners_count']),
-  )
-
-  if (numericValue > 0) return numericValue
-
-  const textValue = readFirst(record, [
-    'owners_text',
-    'owners_range',
-    'estimated_owners',
-    'owners',
-  ])
-
-  if (typeof textValue !== 'string') return 0
-
-  const cleaned = textValue.replace(/,/g, '').trim()
-
-  if (cleaned.includes('..')) {
-    const parts = cleaned.split('..').map((part) => Number(part.trim()))
-    const last = parts[parts.length - 1]
-    return Number.isFinite(last) ? last : 0
-  }
-
-  const millionMatch = cleaned.match(/(\d+)\s*M\+?/i)
-  if (millionMatch) {
-    return Number(millionMatch[1]) * 1_000_000
-  }
-
-  const thousandMatch = cleaned.match(/(\d+)\s*K\+?/i)
-  if (thousandMatch) {
-    return Number(thousandMatch[1]) * 1_000
-  }
-
-  const plain = Number(cleaned)
-  return Number.isFinite(plain) ? plain : 0
-}
-
-function normalizeOwnersText(value: string) {
-  const cleaned = value.trim()
-
-  if (cleaned.includes('..')) {
-    const parts = cleaned.split('..').map((part) => part.trim())
-    const upper = Number(parts[parts.length - 1].replace(/,/g, ''))
-
-    if (Number.isFinite(upper) && upper >= 1_000_000) {
-      return `${Math.floor(upper / 1_000_000)}M+`
+  directPlatforms.forEach((platform) => {
+    const normalized = formatPlatformLabel(platform)
+    if (normalized) {
+      result.add(normalized)
     }
+  })
 
-    if (Number.isFinite(upper) && upper >= 1_000) {
-      return `${Math.floor(upper / 1_000)}K+`
+  if (readBoolean(item, ['windows'])) {
+    result.add('Windows')
+  }
+
+  if (readBoolean(item, ['mac', 'macos'])) {
+    result.add('macOS')
+  }
+
+  if (readBoolean(item, ['linux'])) {
+    result.add('Linux')
+  }
+
+  if (result.size === 0) {
+    result.add('Windows')
+  }
+
+  return Array.from(result)
+}
+
+function matchesPriceFilter(price: number, filter: PriceFilter): boolean {
+  if (filter === 'all') {
+    return true
+  }
+
+  if (filter === 'free') {
+    return price === 0
+  }
+
+  if (filter === '0-10') {
+    return price > 0 && price <= 10
+  }
+
+  if (filter === '10-30') {
+    return price > 10 && price <= 30
+  }
+
+  if (filter === '30plus') {
+    return price > 30
+  }
+
+  return true
+}
+
+function buildPagination(currentPage: number, totalPages: number): Array<number | 'ellipsis'> {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+
+  const result: Array<number | 'ellipsis'> = [1]
+
+  if (currentPage > 3) {
+    result.push('ellipsis')
+  }
+
+  const start = Math.max(2, currentPage - 1)
+  const end = Math.min(totalPages - 1, currentPage + 1)
+
+  for (let page = start; page <= end; page += 1) {
+    result.push(page)
+  }
+
+  if (currentPage < totalPages - 2) {
+    result.push('ellipsis')
+  }
+
+  result.push(totalPages)
+
+  return result
+}
+
+function formatGenreLabel(genre: string): string {
+  const normalized = genre.trim().toLowerCase()
+
+  const genreMap: Record<string, string> = {
+    action: '액션',
+    adventure: '어드벤처',
+    indie: '인디',
+    rpg: 'RPG',
+    simulation: '시뮬레이션',
+    strategy: '전략',
+    casual: '캐주얼',
+    sports: '스포츠',
+    racing: '레이싱',
+    'free to play': '무료 플레이',
+    'massively multiplayer': '대규모 멀티플레이',
+    'early access': '앞서 해보기',
+  }
+
+  if (!genre || /[가-힣]/.test(genre)) {
+    return genre
+  }
+
+  const korean = genreMap[normalized]
+
+  if (!korean) {
+    return genre
+  }
+
+  if (korean === genre) {
+    return genre
+  }
+
+  return `${korean}`
+}
+
+function formatPlatformLabel(platform: string): string {
+  const normalized = platform.trim().toLowerCase()
+
+  if (normalized.includes('win')) {
+    return 'Windows'
+  }
+
+  if (normalized.includes('mac')) {
+    return 'macOS'
+  }
+
+  if (normalized.includes('linux')) {
+    return 'Linux'
+  }
+
+  return platform.trim()
+}
+
+function formatPriceText(price: number, isFree: boolean): string {
+  if (isFree || price === 0) {
+    return 'Free'
+  }
+
+  return `$${price.toFixed(2)}`
+}
+
+function formatCount(value: number): string {
+  return value.toLocaleString('en-US')
+}
+
+function normalizePrice(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+
+  if (value === 0) {
+    return 0
+  }
+
+  if (value >= 200) {
+    return value / 100
+  }
+
+  return value
+}
+
+function normalizeRatio(value: number | null): number | null {
+  if (value === null || !Number.isFinite(value)) {
+    return null
+  }
+
+  if (value <= 1) {
+    return value * 100
+  }
+
+  return value
+}
+
+function formatReleaseDate(dateText: string): string {
+  if (!dateText) {
+    return '-'
+  }
+
+  const parsed = new Date(dateText)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return dateText
+  }
+
+  const year = parsed.getFullYear()
+  const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+  const date = `${parsed.getDate()}`.padStart(2, '0')
+
+  return `${year}.${month}.${date}`
+}
+
+function getDateValue(dateText: string): number {
+  if (!dateText) {
+    return 0
+  }
+
+  const parsed = new Date(dateText)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return 0
+  }
+
+  return parsed.getTime()
+}
+
+function unwrapList(rawData: unknown): Record<string, unknown>[] {
+  if (Array.isArray(rawData)) {
+    return rawData.filter(isRecord)
+  }
+
+  if (!isRecord(rawData)) {
+    return []
+  }
+
+  const nestedKeys = ['items', 'results', 'data', 'games']
+
+  for (const key of nestedKeys) {
+    const value = rawData[key]
+
+    if (Array.isArray(value)) {
+      return value.filter(isRecord)
     }
   }
 
-  return cleaned
+  return []
 }
 
-function readFirst(record: Record<string, unknown>, keys: string[]) {
+function readString(item: Record<string, unknown>, keys: string[]): string {
   for (const key of keys) {
-    const value = record[key]
+    const value = item[key]
 
-    if (value !== undefined && value !== null && value !== '') {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+
+  return ''
+}
+
+function readOptionalNumber(item: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = item[key]
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
       return value
     }
+
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value.replace(/,/g, ''))
+
+      if (Number.isFinite(parsed)) {
+        return parsed
+      }
+    }
   }
 
-  return undefined
+  return null
 }
 
-function toNumber(value: unknown) {
-  if (typeof value === 'number') return value
+function readBoolean(item: Record<string, unknown>, keys: string[]): boolean {
+  for (const key of keys) {
+    const value = item[key]
 
-  if (typeof value === 'string') {
-    const parsed = Number(value.replaceAll(',', '').replace('%', '').trim())
-    return Number.isFinite(parsed) ? parsed : 0
+    if (typeof value === 'boolean') {
+      return value
+    }
+
+    if (typeof value === 'number') {
+      return value === 1
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase()
+      if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+        return true
+      }
+    }
   }
 
-  return 0
+  return false
 }
 
-function formatNumber(value: number) {
-  return Math.round(value).toLocaleString()
+function readStringArray(item: Record<string, unknown>, keys: string[]): string[] {
+  for (const key of keys) {
+    const value = item[key]
+
+    if (Array.isArray(value)) {
+      return value
+        .map((entry) => {
+          if (typeof entry === 'string') {
+            return entry.trim()
+          }
+
+          if (isRecord(entry)) {
+            return (
+              readString(entry, ['name', 'label', 'genre', 'tag', 'platform']) || ''
+            ).trim()
+          }
+
+          return ''
+        })
+        .filter(Boolean)
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      return value
+        .split(/[|,/]/)
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    }
+  }
+
+  return []
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
 export default RankingPage

@@ -7,6 +7,7 @@ import RankingPage from './RankingPage'
 import SettingsPage from './SettingsPage'
 import TrendComparePage from './TrendComparePage'
 import TopicAnalysisPage from './TopicAnalysisPage'
+import MarketDistributionPage from './MarketDistributionPage'
 
 type PageType =
   | 'home'
@@ -115,16 +116,7 @@ function App() {
 
         {activePage === 'topicAnalysis' && <TopicAnalysisPage />}
 
-        {activePage === 'marketDistribution' && (
-          <section className="status-card">
-            <strong>시장 분포 화면 준비 중</strong>
-            <p>
-              /analysis/genre-stats, /analysis/price-band-stats, /analysis/platform-stats,
-              /analysis/release-year-stats API를 연결해서 장르·가격대·플랫폼·출시연도별 시장
-              분포를 보여줄 수 있습니다.
-            </p>
-          </section>
-        )}
+        {activePage === 'marketDistribution' && <MarketDistributionPage />}
 
         {activePage === 'search' && <RankingPage />}
 
@@ -132,9 +124,9 @@ function App() {
           <section className="status-card">
             <strong>관심 게임 화면 준비 중</strong>
             <p>
-              /users/me/wishlist, /users/me/wishlist/compare, /users/me/notifications API를
-              X-Client-Id 헤더와 함께 연결하면 실제 관심 게임과 알림 데이터를 반영할 수
-              있습니다.
+              /users/me/wishlist, /users/me/wishlist/compare,
+              /users/me/notifications API를 X-Client-Id 헤더와 함께 연결하면 실제 관심 게임과
+              알림 데이터를 반영할 수 있습니다.
             </p>
           </section>
         )}

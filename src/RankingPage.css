@@ -296,7 +296,7 @@
 
 .search-table {
   width: 100%;
-  min-width: 1600px;
+  min-width: 1380px;
   border-collapse: collapse;
   table-layout: auto;
 }
@@ -312,23 +312,23 @@
 }
 
 .search-table thead th:first-child {
-  width: 52%;
-  min-width: 820px;
+  width: 42%;
+  min-width: 560px;
   text-align: left;
 }
 
 .search-table thead th:nth-child(2) {
-  width: 8%;
+  width: 10%;
 }
 
 .search-table thead th:nth-child(3) {
-  width: 12%;
+  width: 14%;
 }
 
 .search-table thead th:nth-child(4),
 .search-table thead th:nth-child(5),
 .search-table thead th:nth-child(6) {
-  width: 10%;
+  width: 11%;
 }
 
 .search-table tbody td {
@@ -349,12 +349,12 @@
   text-align: left;
 }
 
-/* 이미지 영역과 텍스트 영역을 분리해서 배치 */
+/* 이미지 영역과 게임명 영역을 분리하되, 게임명 공간은 줄임 */
 .game-cell {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: 240px 280px;
   align-items: center;
-  column-gap: 18px;
+  column-gap: 14px;
   min-width: 0;
 }
 
@@ -387,10 +387,11 @@
   box-shadow: none;
 }
 
-/* 게임명 텍스트 전용 영역 */
+/* 게임명 텍스트 영역은 줄이고, 글자 크기는 이전 값으로 복구 */
 .game-info {
+  width: 280px;
   min-width: 0;
-  max-width: 100%;
+  max-width: 280px;
   padding: 8px 0;
 }
 
@@ -398,9 +399,9 @@
   display: -webkit-box;
   overflow: hidden;
   color: #172033;
-  font-size: 11px;
-  font-weight: 850;
-  line-height: 1.35;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.5;
   text-overflow: ellipsis;
   white-space: normal;
   word-break: keep-all;
@@ -414,7 +415,7 @@
   display: block;
   margin-top: 6px;
   color: #98a2b3;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 800;
 }
 
@@ -620,6 +621,6 @@ html.theme-dark .sample-cursor-note {
   }
 
   .search-table {
-    min-width: 1600px;
+    min-width: 1380px;
   }
 }

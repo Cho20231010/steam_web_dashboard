@@ -8,6 +8,7 @@ import SettingsPage from './SettingsPage'
 import TrendComparePage from './TrendComparePage'
 import TopicAnalysisPage from './TopicAnalysisPage'
 import MarketDistributionPage from './MarketDistributionPage'
+import FavoriteGamesPage from './FavoriteGamesPage'
 
 type PageType =
   | 'home'
@@ -120,16 +121,7 @@ function App() {
 
         {activePage === 'search' && <RankingPage />}
 
-        {activePage === 'wishlist' && (
-          <section className="status-card">
-            <strong>관심 게임 화면 준비 중</strong>
-            <p>
-              /users/me/wishlist, /users/me/wishlist/compare,
-              /users/me/notifications API를 X-Client-Id 헤더와 함께 연결하면 실제 관심 게임과
-              알림 데이터를 반영할 수 있습니다.
-            </p>
-          </section>
-        )}
+        {activePage === 'wishlist' && <FavoriteGamesPage />}
 
         {activePage === 'settings' && <SettingsPage />}
       </main>

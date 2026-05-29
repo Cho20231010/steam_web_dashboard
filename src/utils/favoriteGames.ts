@@ -8,6 +8,8 @@ export type FavoriteGame = {
 
 const FAVORITE_GAMES_KEY = 'steam_dashboard_favorite_games'
 
+export const FAVORITE_GAMES_UPDATED_EVENT = 'favorite-games-updated'
+
 export function readFavoriteGames(): FavoriteGame[] {
   try {
     const raw = localStorage.getItem(FAVORITE_GAMES_KEY)
@@ -49,7 +51,7 @@ export function saveFavoriteGame(game: FavoriteGame) {
   const nextFavoriteGames = [game, ...favoriteGames]
 
   localStorage.setItem(FAVORITE_GAMES_KEY, JSON.stringify(nextFavoriteGames))
-  window.dispatchEvent(new Event('favorite-games-updated'))
+  window.dispatchEvent(new Event(FAVORITE_GAMES_UPDATED_EVENT))
 
   return nextFavoriteGames
 }
@@ -62,7 +64,7 @@ export function removeFavoriteGame(gameId: string | number) {
   )
 
   localStorage.setItem(FAVORITE_GAMES_KEY, JSON.stringify(nextFavoriteGames))
-  window.dispatchEvent(new Event('favorite-games-updated'))
+  window.dispatchEvent(new Event(FAVORITE_GAMES_UPDATED_EVENT))
 
   return nextFavoriteGames
 }

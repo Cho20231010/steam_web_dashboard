@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import './TrendComparePage.css'
-import {
-  getAnalysisTrends,
-  getGenreTrends,
-  getPlatformStats,
-  getPriceTrends,
-} from './api'
+import { getAnalysisTrends, getGenreTrends, getPriceTrends } from './api'
 
 type CompareStandard = 'reviews' | 'positiveRate'
-type CompareMode = 'all' | 'platform' | 'price'
+type CompareMode = 'all' | 'price'
 
 type MonthlyTrend = {
   period: string
@@ -31,19 +26,10 @@ type PriceTrend = {
   previousPositiveRate: number | null
 }
 
-type PlatformStat = {
-  platform: string
-  gameCount: number
-  reviewCount: number | null
-  positiveRate: number | null
-  share: number | null
-}
-
 type TrendCompareData = {
   monthlyTrends: MonthlyTrend[]
   genreTrends: GenreTrend[]
   priceTrends: PriceTrend[]
-  platformStats: PlatformStat[]
 }
 
 type LineChartType = 'reviews' | 'positiveRate'
@@ -77,7 +63,6 @@ const INITIAL_TREND_DATA: TrendCompareData = {
   monthlyTrends: [],
   genreTrends: [],
   priceTrends: [],
-  platformStats: [],
 }
 
 function TrendComparePage() {
@@ -93,11 +78,10 @@ function TrendComparePage() {
         setIsLoading(true)
         setErrorMessage('')
 
-        const [trendResult, genreResult, priceResult, platformResult] = await Promise.allSettled([
+        const [trendResult, genreResult, priceResult] = await Promise.allSettled([
           getAnalysisTrends(),
           getGenreTrends(),
           getPriceTrends(),
-          getPlatformStats(),
         ])
 
         const trendApiData = trendResult.status === 'fulfilled' ? trendResult.value : null
@@ -114,21 +98,16 @@ function TrendComparePage() {
         const priceTrends =
           priceResult.status === 'fulfilled' ? normalizePriceTrends(priceResult.value) : []
 
-        const platformStats =
-          platformResult.status === 'fulfilled' ? normalizePlatformStats(platformResult.value) : []
-
         setTrendData({
           monthlyTrends,
           genreTrends,
           priceTrends,
-          platformStats,
         })
 
         if (
           trendResult.status === 'rejected' &&
           genreResult.status === 'rejected' &&
-          priceResult.status === 'rejected' &&
-          platformResult.status === 'rejected'
+          priceResult.status === 'rejected'
         ) {
           setErrorMessage('트렌드 비교 데이터를 불러오지 못했습니다.')
         }
@@ -156,17 +135,9 @@ function TrendComparePage() {
     return trendData.priceTrends.slice(0, 5)
   }, [trendData.priceTrends])
 
-  const platformStats = useMemo(() => {
-    return trendData.platformStats.slice(0, 5)
-  }, [trendData.platformStats])
-
   const periodMeta = useMemo(() => {
     return getPeriodMeta(monthlyTrends)
   }, [monthlyTrends])
-
-  function handleModeChange(nextMode: CompareMode) {
-    setCompareMode(nextMode)
-  }
 
   return (
     <section className="trend-compare-page" aria-label="트렌드 비교 화면">
@@ -203,23 +174,15 @@ function TrendComparePage() {
           <button
             className={compareMode === 'all' ? 'active' : ''}
             type="button"
-            onClick={() => handleModeChange('all')}
+            onClick={() => setCompareMode('all')}
           >
             전체
           </button>
 
           <button
-            className={compareMode === 'platform' ? 'active' : ''}
-            type="button"
-            onClick={() => handleModeChange('platform')}
-          >
-            플랫폼
-          </button>
-
-          <button
             className={compareMode === 'price' ? 'active' : ''}
             type="button"
-            onClick={() => handleModeChange('price')}
+            onClick={() => setCompareMode('price')}
           >
             가격대 비교
           </button>
@@ -237,7 +200,6 @@ function TrendComparePage() {
         monthlyTrends,
         genreTrends,
         priceTrends,
-        platformStats,
       })}
 
       <div className="trend-compare-bottom-note">
@@ -256,40 +218,12 @@ function renderCompareContent({
   monthlyTrends,
   genreTrends,
   priceTrends,
-  platformStats,
 }: {
   compareMode: CompareMode
   monthlyTrends: MonthlyTrend[]
   genreTrends: GenreTrend[]
   priceTrends: PriceTrend[]
-  platformStats: PlatformStat[]
 }) {
-  if (compareMode === 'platform') {
-    return (
-      <div className="trend-compare-grid" key="platform-view">
-        <article className="trend-compare-card">
-          <TrendCardHeader title="플랫폼별 게임 수 분포" hideLegend />
-          <PlatformDistributionBars data={platformStats} />
-        </article>
-
-        <article className="trend-compare-card">
-          <TrendCardHeader title="플랫폼별 상세 지표" hideLegend />
-          <PlatformStatsTable data={platformStats} />
-        </article>
-
-        <article className="trend-compare-card">
-          <TrendCardHeader title="전체 리뷰 수 추이" hideLegend />
-          <TrendLineChart data={monthlyTrends} chartType="reviews" />
-        </article>
-
-        <article className="trend-compare-card">
-          <TrendCardHeader title="전체 긍정 비율 추이" hideLegend />
-          <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
-        </article>
-      </div>
-    )
-  }
-
   if (compareMode === 'price') {
     return (
       <div className="trend-compare-grid" key="price-view">
@@ -551,63 +485,6 @@ function PriceReviewChangeTable({ data }: { data: PriceTrend[] }) {
   )
 }
 
-function PlatformDistributionBars({ data }: { data: PlatformStat[] }) {
-  if (data.length === 0) {
-    return <div className="trend-compare-loading">표시할 플랫폼 데이터가 없습니다.</div>
-  }
-
-  const maxGameCount = Math.max(...data.map((item) => item.gameCount), 1)
-
-  return (
-    <div className="trend-compare-price-list">
-      {data.map((item) => {
-        const width = item.share ?? (item.gameCount / maxGameCount) * 100
-
-        return (
-          <div className="trend-compare-price-item" key={item.platform}>
-            <span className="trend-compare-price-label">{item.platform}</span>
-            <div className="trend-compare-price-track">
-              <div
-                className="trend-compare-price-bar current"
-                style={{ width: `${Math.max(0, Math.min(width, 100))}%` }}
-              />
-            </div>
-            <strong>{formatCompactNumber(item.gameCount)}</strong>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function PlatformStatsTable({ data }: { data: PlatformStat[] }) {
-  if (data.length === 0) {
-    return <div className="trend-compare-loading">표시할 플랫폼 상세 데이터가 없습니다.</div>
-  }
-
-  return (
-    <div className="trend-compare-genre-table">
-      <div className="trend-compare-genre-head">
-        <span>플랫폼</span>
-        <span>게임 수</span>
-        <span>리뷰 수</span>
-        <span>긍정 비율</span>
-      </div>
-
-      {data.map((item) => (
-        <div className="trend-compare-genre-row" key={item.platform}>
-          <strong>{item.platform}</strong>
-          <span>{formatCompactNumber(item.gameCount)}</span>
-          <span>{item.reviewCount === null ? '-' : formatCompactNumber(item.reviewCount)}</span>
-          <em className="up">
-            {item.positiveRate === null ? '-' : `${item.positiveRate.toFixed(1)}%`}
-          </em>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function createLinePoints(
   data: MonthlyTrend[],
   valueKey: TrendValueKey,
@@ -661,10 +538,6 @@ function getPeriodMeta(data: MonthlyTrend[]) {
 }
 
 function getCompareModeTitle(compareMode: CompareMode) {
-  if (compareMode === 'platform') {
-    return '플랫폼 기준 비교'
-  }
-
   if (compareMode === 'price') {
     return '가격대 기준 비교'
   }
@@ -673,10 +546,6 @@ function getCompareModeTitle(compareMode: CompareMode) {
 }
 
 function getCompareModeDescription(compareMode: CompareMode) {
-  if (compareMode === 'platform') {
-    return '플랫폼 버튼을 선택하면 플랫폼별 게임 수, 리뷰 수, 긍정 비율을 중심으로 비교합니다.'
-  }
-
   if (compareMode === 'price') {
     return '가격대 비교 버튼을 선택하면 가격대별 긍정 비율과 리뷰 수 변화를 중심으로 비교합니다.'
   }
@@ -912,81 +781,6 @@ function normalizePriceTrends(rawData: unknown): PriceTrend[] {
     .sort((a, b) => b.currentPositiveRate - a.currentPositiveRate)
 }
 
-function normalizePlatformStats(rawData: unknown): PlatformStat[] {
-  const itemList = unwrapListFromUnknown(rawData)
-
-  if (itemList.length > 0) {
-    return itemList
-      .map((item) => {
-        const platform = formatPlatformLabel(
-          readString(item, ['platform', 'name', 'label', 'os', 'type']) || 'Unknown',
-        )
-
-        const gameCount =
-          readOptionalNumber(item, [
-            'game_count',
-            'gameCount',
-            'games',
-            'count',
-            'total_games',
-            'totalGames',
-            'value',
-            'total',
-          ]) ?? 0
-
-        const reviewCount = readOptionalNumber(item, [
-          'review_count',
-          'reviewCount',
-          'reviews',
-          'total_reviews',
-          'totalReviews',
-        ])
-
-        const positiveRate = readPositiveRatio(item)
-
-        const share = normalizeOptionalPercent(
-          readOptionalNumber(item, ['ratio', 'share', 'percent', 'percentage']),
-        )
-
-        return {
-          platform,
-          gameCount,
-          reviewCount,
-          positiveRate,
-          share,
-        }
-      })
-      .filter((item) => item.platform.trim().length > 0 && item.gameCount > 0)
-      .sort((a, b) => b.gameCount - a.gameCount)
-  }
-
-  if (!isRecord(rawData)) {
-    return []
-  }
-
-  const platformKeys = ['windows', 'mac', 'linux']
-  const fallbackStats: PlatformStat[] = []
-
-  platformKeys.forEach((key) => {
-    const value = rawData[key]
-    const gameCount = typeof value === 'number' && Number.isFinite(value) ? value : null
-
-    if (gameCount === null) {
-      return
-    }
-
-    fallbackStats.push({
-      platform: formatPlatformLabel(key),
-      gameCount,
-      reviewCount: null,
-      positiveRate: null,
-      share: null,
-    })
-  })
-
-  return fallbackStats.sort((a, b) => b.gameCount - a.gameCount)
-}
-
 function normalizeTrendPeriodItem(item: Record<string, unknown>): TrendPeriodItem | null {
   const period = readString(item, ['period', 'month', 'label', 'date', 'year_month'])
 
@@ -1154,25 +948,6 @@ function formatPeriodLabel(rawLabel: string) {
   return label
 }
 
-function formatPlatformLabel(rawLabel: string) {
-  const label = rawLabel.trim()
-  const lowerLabel = label.toLowerCase()
-
-  if (lowerLabel.includes('windows') || lowerLabel === 'win') {
-    return 'Windows'
-  }
-
-  if (lowerLabel.includes('mac')) {
-    return 'macOS'
-  }
-
-  if (lowerLabel.includes('linux')) {
-    return 'Linux'
-  }
-
-  return label
-}
-
 function readNestedListFromUnknown(rawData: unknown, keys: string[]) {
   if (!isRecord(rawData)) {
     return []
@@ -1212,9 +987,6 @@ function unwrapListFromUnknown(rawData: unknown): Record<string, unknown>[] {
     'results',
     'market',
     'trends',
-    'platforms',
-    'platform_stats',
-    'platformStats',
     'monthly_trends',
     'monthlyTrends',
     'review_trends',

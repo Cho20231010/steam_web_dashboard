@@ -217,14 +217,7 @@ function FavoriteGamesPage() {
 
   return (
     <section className="favorite-page" aria-label="관심 게임 페이지">
-      <div className="favorite-title-row">
-        <div>
-          <span>8. 관심 게임</span>
-          <h1>관심 게임 (위시리스트 & 알림)</h1>
-        </div>
-
-        {isInsightLoading && <div className="favorite-loading-pill">백엔드 데이터 확인 중</div>}
-      </div>
+      {isInsightLoading && <div className="favorite-loading-pill">백엔드 데이터 확인 중</div>}
 
       {insightError && <div className="favorite-error-notice">{insightError}</div>}
 
@@ -1346,7 +1339,7 @@ function normalizePrice(value: number | null): number | null {
     return 0
   }
 
-  if (value >= 200) {
+  if (Number.isInteger(value) && value >= 100) {
     return value / 100
   }
 

@@ -168,6 +168,78 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   doi: '기타',
 }
 
+const COMPACT_KEYWORD_LABEL_MAP: Record<string, string> = {
+  gameplay: '게임플레이',
+  mechanic: '게임 시스템',
+  mechanics: '게임 시스템',
+  play: '플레이',
+  playing: '플레이',
+  fun: '재미',
+  good: '긍정',
+  great: '긍정',
+  bad: '부정',
+  like: '선호',
+  likes: '선호',
+  time: '플레이 시간',
+  story: '스토리',
+  narrative: '스토리',
+  dialogue: '대사',
+  ending: '엔딩',
+  feel: '몰입',
+  feeling: '몰입',
+  combat: '전투',
+  graphic: '그래픽',
+  graphics: '그래픽',
+  visual: '비주얼',
+  visuals: '비주얼',
+  art: '아트',
+  animation: '애니메이션',
+  beautiful: '비주얼',
+  design: '디자인',
+  sound: '사운드',
+  music: '음악',
+  bug: '버그',
+  bugs: '버그',
+  crash: '크래시',
+  glitch: '오류',
+  broken: '오류',
+  error: '에러',
+  performance: '성능',
+  optimization: '최적화',
+  stutter: '끊김',
+  lag: '렉',
+  fps: 'FPS 성능',
+  price: '가격',
+  value: '가치',
+  worth: '가성비',
+  expensive: '비쌈',
+  cheap: '저렴함',
+  multiplayer: '멀티플레이',
+  coop: '협동',
+  online: '온라인',
+  server: '서버',
+  matchmaking: '매칭',
+  players: '플레이어',
+  player: '플레이어',
+  access: '접근성',
+  war: '전쟁',
+  quest: '퀘스트',
+  character: '캐릭터',
+  characters: '캐릭터',
+}
+
+const TITLE_EXCLUDED_KEYWORDS = new Set([
+  'game',
+  'games',
+  'nt',
+  'de',
+  'doi',
+  'don',
+  'review',
+  'reviews',
+  'steam',
+])
+
 const CATEGORY_LABEL_MAP: Record<string, string> = {
   gameplay: '게임플레이',
   graphics: '그래픽',
@@ -319,9 +391,6 @@ function TopicClusterView({
   clusterData: TopicClusterData
 }) {
   const totalSampleSize = representativeTopics[0]?.sampleSize ?? null
-  const reliableTopicCount = representativeTopics.filter((topic) =>
-    topic.reliability.toLowerCase().includes('high'),
-  ).length
 
   return (
     <div className="topic-analysis-content">
@@ -352,13 +421,13 @@ function TopicClusterView({
           </div>
 
           <div>
-            <span>High 신뢰도</span>
-            <strong>{reliableTopicCount}개</strong>
+            <span>토픽·키워드 노드</span>
+            <strong>{clusterData.nodes.length}개</strong>
           </div>
 
           <div>
-            <span>연결 노드</span>
-            <strong>{clusterData.nodes.length}개</strong>
+            <span>토픽-키워드 연결</span>
+            <strong>{clusterData.links.length}개</strong>
           </div>
         </div>
       </article>
@@ -371,7 +440,10 @@ function TopicClusterView({
 
         <article className="topic-analysis-card">
           <h2>토픽-키워드 연결 구조</h2>
-          <TopicClusterConnectionView clusterData={clusterData} />
+          <TopicClusterConnectionView
+            clusterData={clusterData}
+            representativeTopics={representativeTopics}
+          />
         </article>
       </div>
 
@@ -421,16 +493,23 @@ function RepresentativeTopicList({ topics }: { topics: RepresentativeTopic[] }) 
   )
 }
 
-function TopicClusterConnectionView({ clusterData }: { clusterData: TopicClusterData }) {
+function TopicClusterConnectionView({
+  clusterData,
+  representativeTopics,
+}: {
+  clusterData: TopicClusterData
+  representativeTopics: RepresentativeTopic[]
+}) {
   const nodeLabelMap = useMemo(() => {
+    const representativeTopicLabelMap = createRepresentativeTopicLabelMap(representativeTopics)
     const map = new Map<string, string>()
 
     clusterData.nodes.forEach((node) => {
-      map.set(node.id, node.displayLabel)
+      map.set(node.id, createClusterNodeDisplayLabel(node, representativeTopicLabelMap))
     })
 
     return map
-  }, [clusterData.nodes])
+  }, [clusterData.nodes, representativeTopics])
 
   if (clusterData.nodes.length === 0 && clusterData.links.length === 0) {
     return <div className="topic-analysis-empty inside">토픽 클러스터 연결 데이터가 없습니다.</div>
@@ -440,12 +519,12 @@ function TopicClusterConnectionView({ clusterData }: { clusterData: TopicCluster
     <div className="topic-cluster-connection">
       <div className="topic-cluster-connection-stats">
         <div>
-          <span>노드</span>
+          <span>토픽·키워드 노드</span>
           <strong>{clusterData.nodes.length}</strong>
         </div>
 
         <div>
-          <span>연결</span>
+          <span>토픽-키워드 연결</span>
           <strong>{clusterData.links.length}</strong>
         </div>
       </div>
@@ -464,7 +543,7 @@ function TopicClusterConnectionView({ clusterData }: { clusterData: TopicCluster
       ) : (
         <div className="topic-cluster-node-list">
           {clusterData.nodes.slice(0, 10).map((node) => (
-            <span key={node.id}>{node.displayLabel}</span>
+            <span key={node.id}>{nodeLabelMap.get(node.id) ?? node.displayLabel}</span>
           ))}
         </div>
       )}
@@ -814,7 +893,7 @@ function normalizeRepresentativeTopics(rawData: unknown): RepresentativeTopic[] 
       return {
         id: topicId === null ? `topic-${index + 1}` : `topic-${topicId}`,
         topicId,
-        name: createTopicNameFromKeywords(keywords, topicId),
+        name: createTopicTitleFromKeywords(keywords, topicId),
         keywords,
         weight,
         weightPercent,
@@ -917,7 +996,7 @@ function normalizeGenreTopicItems(rawData: unknown): GenreTopicItem[] {
       return {
         genre: readString(item, ['genre', 'genres', 'category']) || 'Unknown',
         topicId,
-        name: createTopicNameFromKeywords(keywords, topicId),
+        name: createTopicTitleFromKeywords(keywords, topicId),
         keywords,
         weight: readOptionalNumber(item, ['weight', 'score', 'value']),
         gameCount: readOptionalNumber(item, ['game_count', 'gameCount', 'count']),
@@ -985,14 +1064,107 @@ function getSentimentInfo(
   }
 }
 
-function createTopicNameFromKeywords(keywords: string[], topicId: number | null): string {
-  const mainKeywords = keywords.slice(0, 2)
+function createTopicTitleFromKeywords(keywords: string[], topicId: number | null): string {
+  const normalizedKeywords = keywords.map((keyword) => normalizeToken(keyword))
 
-  if (mainKeywords.length > 0) {
-    return mainKeywords.map((keyword) => formatKeyword(keyword)).join(' / ')
+  if (hasKeyword(normalizedKeywords, ['story', 'feel', 'combat'])) {
+    return '스토리·몰입·전투'
   }
 
-  return topicId === null ? '토픽 정보 없음' : `Topic ${topicId}`
+  if (hasKeyword(normalizedKeywords, ['fps', 'bad', 'performance', 'lag', 'optimization'])) {
+    return 'FPS 성능·긍부정 반응'
+  }
+
+  if (hasKeyword(normalizedKeywords, ['players', 'access'])) {
+    return '플레이어 접근성·전쟁'
+  }
+
+  if (hasKeyword(normalizedKeywords, ['fun', 'good', 'great'])) {
+    return '재미·긍정 플레이'
+  }
+
+  if (hasKeyword(normalizedKeywords, ['like', 'time'])) {
+    return '선호·플레이 시간'
+  }
+
+  const meaningfulKeywords = normalizedKeywords
+    .filter((keyword) => keyword && !TITLE_EXCLUDED_KEYWORDS.has(keyword))
+    .map((keyword) => getCompactKeywordLabel(keyword))
+    .filter(Boolean)
+
+  const uniqueLabels = Array.from(new Set(meaningfulKeywords)).slice(0, 3)
+
+  if (uniqueLabels.length > 0) {
+    return uniqueLabels.join('·')
+  }
+
+  return topicId === null ? '대표 토픽' : `Topic ${topicId}`
+}
+
+function hasKeyword(keywords: string[], candidates: string[]): boolean {
+  return candidates.some((candidate) => keywords.includes(candidate))
+}
+
+function getCompactKeywordLabel(keyword: string): string {
+  const normalizedKeyword = normalizeToken(keyword)
+
+  if (!normalizedKeyword || TITLE_EXCLUDED_KEYWORDS.has(normalizedKeyword)) {
+    return ''
+  }
+
+  return COMPACT_KEYWORD_LABEL_MAP[normalizedKeyword] ?? getKoreanKeywordLabel(normalizedKeyword)
+}
+
+function createRepresentativeTopicLabelMap(topics: RepresentativeTopic[]): Map<number, string> {
+  const map = new Map<number, string>()
+
+  topics.forEach((topic) => {
+    if (topic.topicId !== null) {
+      map.set(topic.topicId, topic.name)
+    }
+  })
+
+  return map
+}
+
+function createClusterNodeDisplayLabel(
+  node: TopicClusterNode,
+  representativeTopicLabelMap: Map<number, string>,
+): string {
+  const topicId = extractTopicIdFromLabel(node.label)
+  const normalizedType = normalizeToken(node.type)
+
+  if (topicId !== null) {
+    const topicName = representativeTopicLabelMap.get(topicId)
+
+    if (topicName) {
+      return `Topic ${topicId} · ${topicName}`
+    }
+
+    return `Topic ${topicId}`
+  }
+
+  if (normalizedType.includes('keyword')) {
+    return formatKeyword(node.label)
+  }
+
+  return node.displayLabel
+}
+
+function extractTopicIdFromLabel(label: string): number | null {
+  const matched = label.match(/topic[\s_-]*(\d+)/i)
+
+  if (!matched) {
+    return null
+  }
+
+  const parsedValue = Number(matched[1])
+
+  return Number.isFinite(parsedValue) ? parsedValue : null
+}
+
+function isTopicLabel(label: string): boolean {
+  return /topic[\s_-]*\d+/i.test(label)
 }
 
 function formatCategoryName(category: string): string {
@@ -1016,6 +1188,10 @@ function formatClusterNodeLabel(label: string, type: string): string {
   }
 
   if (normalizedType.includes('topic')) {
+    return label
+  }
+
+  if (isTopicLabel(label)) {
     return label
   }
 

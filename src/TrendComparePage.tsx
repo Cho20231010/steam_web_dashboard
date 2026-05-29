@@ -47,7 +47,6 @@ type TrendCompareData = {
 }
 
 type LineChartType = 'reviews' | 'positiveRate'
-
 type TrendValueKey = keyof Pick<MonthlyTrend, 'currentReviews' | 'currentPositiveRate'>
 
 type LinePoint = {
@@ -165,6 +164,10 @@ function TrendComparePage() {
     return getPeriodMeta(monthlyTrends)
   }, [monthlyTrends])
 
+  function handleModeChange(nextMode: CompareMode) {
+    setCompareMode(nextMode)
+  }
+
   return (
     <section className="trend-compare-page" aria-label="트렌드 비교 화면">
       <div className="trend-compare-filter-card">
@@ -200,21 +203,23 @@ function TrendComparePage() {
           <button
             className={compareMode === 'all' ? 'active' : ''}
             type="button"
-            onClick={() => setCompareMode('all')}
+            onClick={() => handleModeChange('all')}
           >
             전체
           </button>
+
           <button
             className={compareMode === 'platform' ? 'active' : ''}
             type="button"
-            onClick={() => setCompareMode('platform')}
+            onClick={() => handleModeChange('platform')}
           >
             플랫폼
           </button>
+
           <button
             className={compareMode === 'price' ? 'active' : ''}
             type="button"
-            onClick={() => setCompareMode('price')}
+            onClick={() => handleModeChange('price')}
           >
             가격대 비교
           </button>
@@ -227,77 +232,13 @@ function TrendComparePage() {
 
       {!isLoading && errorMessage && <div className="trend-compare-loading">{errorMessage}</div>}
 
-      {compareMode === 'all' && (
-        <div className="trend-compare-grid">
-          <article className="trend-compare-card">
-            <TrendCardHeader title="리뷰 수 추이 비교" hideLegend />
-            <TrendLineChart data={monthlyTrends} chartType="reviews" />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="긍정 비율 추이 비교" hideLegend />
-            <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="장르별 리뷰 수 변화" hideLegend />
-            <GenreReviewChangeTable data={genreTrends} />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="가격대별 긍정 비율 변화" />
-            <PricePositiveRateBars data={priceTrends} />
-          </article>
-        </div>
-      )}
-
-      {compareMode === 'platform' && (
-        <div className="trend-compare-grid">
-          <article className="trend-compare-card">
-            <TrendCardHeader title="플랫폼별 게임 수 분포" hideLegend />
-            <PlatformDistributionBars data={platformStats} />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="플랫폼별 상세 지표" hideLegend />
-            <PlatformStatsTable data={platformStats} />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="리뷰 수 추이 비교" hideLegend />
-            <TrendLineChart data={monthlyTrends} chartType="reviews" />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="긍정 비율 추이 비교" hideLegend />
-            <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
-          </article>
-        </div>
-      )}
-
-      {compareMode === 'price' && (
-        <div className="trend-compare-grid">
-          <article className="trend-compare-card">
-            <TrendCardHeader title="가격대별 긍정 비율 변화" />
-            <PricePositiveRateBars data={priceTrends} />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="가격대별 리뷰 수 변화" hideLegend />
-            <PriceReviewChangeTable data={priceTrends} />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="리뷰 수 추이 비교" hideLegend />
-            <TrendLineChart data={monthlyTrends} chartType="reviews" />
-          </article>
-
-          <article className="trend-compare-card">
-            <TrendCardHeader title="긍정 비율 추이 비교" hideLegend />
-            <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
-          </article>
-        </div>
-      )}
+      {renderCompareContent({
+        compareMode,
+        monthlyTrends,
+        genreTrends,
+        priceTrends,
+        platformStats,
+      })}
 
       <div className="trend-compare-bottom-note">
         <strong>
@@ -307,6 +248,96 @@ function TrendComparePage() {
         <span>{getCompareModeDescription(compareMode)}</span>
       </div>
     </section>
+  )
+}
+
+function renderCompareContent({
+  compareMode,
+  monthlyTrends,
+  genreTrends,
+  priceTrends,
+  platformStats,
+}: {
+  compareMode: CompareMode
+  monthlyTrends: MonthlyTrend[]
+  genreTrends: GenreTrend[]
+  priceTrends: PriceTrend[]
+  platformStats: PlatformStat[]
+}) {
+  if (compareMode === 'platform') {
+    return (
+      <div className="trend-compare-grid" key="platform-view">
+        <article className="trend-compare-card">
+          <TrendCardHeader title="플랫폼별 게임 수 분포" hideLegend />
+          <PlatformDistributionBars data={platformStats} />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="플랫폼별 상세 지표" hideLegend />
+          <PlatformStatsTable data={platformStats} />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="전체 리뷰 수 추이" hideLegend />
+          <TrendLineChart data={monthlyTrends} chartType="reviews" />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="전체 긍정 비율 추이" hideLegend />
+          <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
+        </article>
+      </div>
+    )
+  }
+
+  if (compareMode === 'price') {
+    return (
+      <div className="trend-compare-grid" key="price-view">
+        <article className="trend-compare-card">
+          <TrendCardHeader title="가격대별 긍정 비율 변화" />
+          <PricePositiveRateBars data={priceTrends} />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="가격대별 리뷰 수 변화" hideLegend />
+          <PriceReviewChangeTable data={priceTrends} />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="전체 리뷰 수 추이" hideLegend />
+          <TrendLineChart data={monthlyTrends} chartType="reviews" />
+        </article>
+
+        <article className="trend-compare-card">
+          <TrendCardHeader title="전체 긍정 비율 추이" hideLegend />
+          <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
+        </article>
+      </div>
+    )
+  }
+
+  return (
+    <div className="trend-compare-grid" key="all-view">
+      <article className="trend-compare-card">
+        <TrendCardHeader title="리뷰 수 추이 비교" hideLegend />
+        <TrendLineChart data={monthlyTrends} chartType="reviews" />
+      </article>
+
+      <article className="trend-compare-card">
+        <TrendCardHeader title="긍정 비율 추이 비교" hideLegend />
+        <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
+      </article>
+
+      <article className="trend-compare-card">
+        <TrendCardHeader title="장르별 리뷰 수 변화" hideLegend />
+        <GenreReviewChangeTable data={genreTrends} />
+      </article>
+
+      <article className="trend-compare-card">
+        <TrendCardHeader title="가격대별 긍정 비율 변화" />
+        <PricePositiveRateBars data={priceTrends} />
+      </article>
+    </div>
   )
 }
 

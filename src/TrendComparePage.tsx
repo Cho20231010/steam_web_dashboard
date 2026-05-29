@@ -59,6 +59,22 @@ type PricePeriodGroup = {
   periods: TrendPeriodItem[]
 }
 
+const GENRE_KOREAN_LABELS: Record<string, string> = {
+  Unknown: '미분류',
+  Action: '액션',
+  Adventure: '어드벤처',
+  Indie: '인디',
+  RPG: 'RPG',
+  Strategy: '전략',
+  Simulation: '시뮬레이션',
+  Casual: '캐주얼',
+  Sports: '스포츠',
+  Racing: '레이싱',
+  'Free to Play': '무료 플레이',
+  'Early Access': '앞서 해보기',
+  'Massively Multiplayer': '대규모 멀티플레이어',
+}
+
 const INITIAL_TREND_DATA: TrendCompareData = {
   monthlyTrends: [],
   genreTrends: [],
@@ -643,7 +659,7 @@ function normalizeTopGenreTrends(rawData: unknown): GenreTrend[] {
 
   return topGenreList
     .map((item) => {
-      const genre = readString(item, ['genre', 'name', 'label', 'category'])
+      const genre = formatGenreDisplayName(readString(item, ['genre', 'name', 'label', 'category']))
       const periodData = readNestedListFromUnknown(item, ['data', 'items', 'results'])
       const periodSummaries = aggregatePeriodSummaries(periodData)
 
@@ -682,7 +698,7 @@ function normalizeGenreTrends(rawData: unknown): GenreTrend[] {
   const groupMap = new Map<string, GenrePeriodGroup>()
 
   itemList.forEach((item) => {
-    const genre = readString(item, ['genre', 'name', 'label', 'category'])
+    const genre = formatGenreDisplayName(readString(item, ['genre', 'name', 'label', 'category']))
 
     if (!genre) {
       return
@@ -946,6 +962,43 @@ function formatPeriodLabel(rawLabel: string) {
   }
 
   return label
+}
+
+function formatGenreDisplayName(rawGenre: string) {
+  const genre = rawGenre.trim()
+
+  if (!genre) {
+    return ''
+  }
+
+  if (/[가-힣]/.test(genre) && genre.includes('(') && genre.includes(')')) {
+    return genre
+  }
+
+  const englishGenres = genre
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (englishGenres.length === 0) {
+    return genre
+  }
+
+  const hasKnownGenre = englishGenres.some((item) => GENRE_KOREAN_LABELS[item])
+
+  if (!hasKnownGenre) {
+    return genre
+  }
+
+  const koreanGenres = englishGenres.map((item) => GENRE_KOREAN_LABELS[item] ?? item)
+  const koreanText = koreanGenres.join(', ')
+  const englishText = englishGenres.join(', ')
+
+  if (koreanText === englishText) {
+    return englishText
+  }
+
+  return `${koreanText} (${englishText})`
 }
 
 function readNestedListFromUnknown(rawData: unknown, keys: string[]) {

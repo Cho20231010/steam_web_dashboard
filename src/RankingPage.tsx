@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } from 'react'
 import './RankingPage.css'
 
 type SortOption =
@@ -16,14 +16,23 @@ type SearchGame = {
   id: number
   name: string
   genres: string[]
+  genreSearchText: string
   primaryGenre: string
   price: number
   isFree: boolean
   platforms: string[]
+  positiveReviews: number | null
+  negativeReviews: number | null
   positiveRatio: number | null
   reviewCount: number | null
   averagePlaytime: number | null
   imageUrl: string
+}
+
+type GamesApiMeta = {
+  loadedCount: number
+  limit: number | null
+  hasNextCursor: boolean
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -31,6 +40,11 @@ const ITEMS_PER_PAGE = 5
 
 function RankingPage() {
   const [games, setGames] = useState<SearchGame[]>([])
+  const [apiMeta, setApiMeta] = useState<GamesApiMeta>({
+    loadedCount: 0,
+    limit: null,
+    hasNextCursor: false,
+  })
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -59,9 +73,19 @@ function RankingPage() {
         const normalizedGames = normalizeGames(rawData)
 
         setGames(normalizedGames)
+        setApiMeta({
+          loadedCount: normalizedGames.length,
+          limit: readApiLimit(rawData),
+          hasNextCursor: hasNextCursor(rawData),
+        })
       } catch (error) {
         console.error('게임 목록을 불러오지 못했습니다.', error)
         setGames([])
+        setApiMeta({
+          loadedCount: 0,
+          limit: null,
+          hasNextCursor: false,
+        })
         setErrorMessage('검색 화면에 사용할 게임 데이터를 불러오지 못했습니다.')
       } finally {
         setIsLoading(false)
@@ -73,11 +97,7 @@ function RankingPage() {
 
   const genreOptions = useMemo(() => {
     const uniqueGenres = Array.from(
-      new Set(
-        games
-          .map((game) => game.primaryGenre)
-          .filter((genre) => genre && genre.trim()),
-      ),
+      new Set(games.flatMap((game) => game.genres).filter((genre) => genre && genre.trim())),
     )
 
     return ['all', ...uniqueGenres]
@@ -93,6 +113,28 @@ function RankingPage() {
     return ['all', ...uniquePlatforms]
   }, [games])
 
+  const sampleStats = useMemo(() => {
+    const freeCount = games.filter((game) => game.isFree).length
+    const paidCount = games.length - freeCount
+
+    const representativeGenre =
+      games
+        .flatMap((game) => game.genres)
+        .reduce<Record<string, number>>((acc, genre) => {
+          acc[genre] = (acc[genre] ?? 0) + 1
+          return acc
+        }, {})
+
+    const topGenre =
+      Object.entries(representativeGenre).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '-'
+
+    return {
+      freeCount,
+      paidCount,
+      topGenre,
+    }
+  }, [games])
+
   const filteredGames = useMemo(() => {
     return games.filter((game) => {
       const normalizedSearchText = appliedSearchText.trim().toLowerCase()
@@ -100,7 +142,7 @@ function RankingPage() {
       const matchesSearch =
         !normalizedSearchText ||
         game.name.toLowerCase().includes(normalizedSearchText) ||
-        game.genres.some((genre) => genre.toLowerCase().includes(normalizedSearchText))
+        game.genreSearchText.toLowerCase().includes(normalizedSearchText)
 
       const matchesGenre =
         selectedGenre === 'all' ||
@@ -178,45 +220,84 @@ function RankingPage() {
     setCurrentPage(1)
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter') {
       handleSearch()
     }
   }
 
-  function handleGenreChange(event: React.ChangeEvent<HTMLSelectElement>) {
+  function handleGenreChange(event: ChangeEvent<HTMLSelectElement>) {
     setSelectedGenre(event.target.value)
     setCurrentPage(1)
   }
 
-  function handlePriceChange(event: React.ChangeEvent<HTMLSelectElement>) {
+  function handlePriceChange(event: ChangeEvent<HTMLSelectElement>) {
     setSelectedPrice(event.target.value as PriceFilter)
     setCurrentPage(1)
   }
 
-  function handlePlatformChange(event: React.ChangeEvent<HTMLSelectElement>) {
+  function handlePlatformChange(event: ChangeEvent<HTMLSelectElement>) {
     setSelectedPlatform(event.target.value)
     setCurrentPage(1)
   }
 
-  function handleSortChange(event: React.ChangeEvent<HTMLSelectElement>) {
+  function handleSortChange(event: ChangeEvent<HTMLSelectElement>) {
     setSortBy(event.target.value as SortOption)
     setCurrentPage(1)
   }
 
-  function handleOnlyFreeChange(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleOnlyFreeChange(event: ChangeEvent<HTMLInputElement>) {
     setOnlyFree(event.target.checked)
     setCurrentPage(1)
   }
 
   return (
     <section className="search-page" aria-label="게임 검색 화면">
+      <div className="sample-notice-card">
+        <div>
+          <span>샘플 데이터 안내</span>
+          <strong>현재 검색 화면은 첫 페이지 50개 게임 기준입니다.</strong>
+          <p>
+            이 화면의 검색, 필터, 정렬 결과는 전체 Steam 데이터가 아니라{' '}
+            <b>/games API에서 현재 불러온 샘플 데이터</b>를 기준으로 표시됩니다.
+            전체 검색 기능은 백엔드 검색·페이지네이션 API가 연결되면 확장할 수 있습니다.
+          </p>
+        </div>
+
+        <div className="sample-notice-badge">
+          <strong>{apiMeta.loadedCount.toLocaleString('ko-KR')}개</strong>
+          <span>현재 불러온 게임</span>
+        </div>
+      </div>
+
+      <div className="sample-summary-grid">
+        <div>
+          <span>검색 기준</span>
+          <strong>샘플 {apiMeta.loadedCount.toLocaleString('ko-KR')}개</strong>
+        </div>
+
+        <div>
+          <span>무료 게임</span>
+          <strong>{sampleStats.freeCount.toLocaleString('ko-KR')}개</strong>
+        </div>
+
+        <div>
+          <span>유료 게임</span>
+          <strong>{sampleStats.paidCount.toLocaleString('ko-KR')}개</strong>
+        </div>
+
+        <div>
+          <span>대표 장르</span>
+          <strong>{sampleStats.topGenre}</strong>
+        </div>
+      </div>
+
       <div className="search-top-bar">
         <div className="search-input-group">
           <input
             className="search-input"
             type="text"
-            placeholder="게임명, 장르, 키워드로 검색해보세요"
+            placeholder="샘플 50개 안에서 게임명 또는 장르를 검색해보세요"
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
             onKeyDown={handleKeyDown}
@@ -226,9 +307,7 @@ function RankingPage() {
           </button>
         </div>
 
-        <button className="detail-search-button" type="button">
-          상세 검색
-        </button>
+        <div className="sample-mode-pill">샘플 검색 모드</div>
       </div>
 
       <div className="search-filter-bar">
@@ -268,8 +347,8 @@ function RankingPage() {
         <div className="search-filter-item">
           <label htmlFor="sort-filter">정렬</label>
           <select id="sort-filter" value={sortBy} onChange={handleSortChange}>
-            <option value="popular">인기순</option>
-            <option value="positive">긍정률순</option>
+            <option value="popular">리뷰 수 많은순</option>
+            <option value="positive">리뷰 긍정률순</option>
             <option value="playtimeHigh">평균 플레이시간 높은순</option>
             <option value="playtimeLow">평균 플레이시간 낮은순</option>
             <option value="priceLow">가격 낮은순</option>
@@ -286,15 +365,27 @@ function RankingPage() {
 
       <div className="search-result-card">
         <div className="search-result-header">
-          <strong>검색 결과 ({sortedGames.length.toLocaleString('ko-KR')}건)</strong>
+          <div>
+            <strong>
+              검색 결과 {sortedGames.length.toLocaleString('ko-KR')}건
+            </strong>
+            <p>
+              현재 불러온 샘플 {apiMeta.loadedCount.toLocaleString('ko-KR')}개 중 조건에 맞는
+              게임만 표시합니다.
+            </p>
+          </div>
+
+          {apiMeta.hasNextCursor && (
+            <span className="sample-cursor-note">다음 데이터 페이지가 존재합니다</span>
+          )}
         </div>
 
-        {isLoading && <div className="search-empty">게임 목록을 불러오는 중입니다.</div>}
+        {isLoading && <div className="search-empty">샘플 게임 데이터를 불러오는 중입니다.</div>}
 
         {!isLoading && errorMessage && <div className="search-empty">{errorMessage}</div>}
 
         {!isLoading && !errorMessage && visibleGames.length === 0 && (
-          <div className="search-empty">조건에 맞는 게임이 없습니다.</div>
+          <div className="search-empty">현재 샘플 데이터 안에서 조건에 맞는 게임이 없습니다.</div>
         )}
 
         {!isLoading && !errorMessage && visibleGames.length > 0 && (
@@ -305,9 +396,9 @@ function RankingPage() {
                   <tr>
                     <th>게임</th>
                     <th>장르</th>
-                    <th>가격(USD)</th>
+                    <th>가격</th>
                     <th>리뷰 수</th>
-                    <th>긍정 비율</th>
+                    <th>리뷰 긍정률</th>
                     <th>평균 플레이시간</th>
                   </tr>
                 </thead>
@@ -330,6 +421,7 @@ function RankingPage() {
                           </div>
                           <div className="game-info">
                             <strong>{game.name}</strong>
+                            <span>ID {game.id}</span>
                           </div>
                         </div>
                       </td>
@@ -401,8 +493,8 @@ function normalizeGames(rawData: unknown): SearchGame[] {
     .map((item, index) => {
       const name = readString(item, ['name', 'title', 'game_name', 'gameName']) || `게임 ${index + 1}`
       const rawGenres = readStringArray(item, ['genres', 'genre', 'tags'])
-      const genres = rawGenres.length > 0 ? rawGenres : ['기타']
-      const primaryGenre = formatGenreLabel(genres[0])
+      const genres = rawGenres.length > 0 ? rawGenres.map(formatGenreLabel) : ['기타']
+      const primaryGenre = genres[0] ?? '기타'
 
       const rawPrice =
         readOptionalNumber(item, ['price', 'final_price', 'initial_price', 'price_usd']) ?? 0
@@ -413,7 +505,28 @@ function normalizeGames(rawData: unknown): SearchGame[] {
         name.toLowerCase().includes('free')
 
       const platforms = normalizePlatforms(item)
-      const positiveRatio = normalizeRatio(
+
+      const positiveReviews = readOptionalNumber(item, [
+        'positive_reviews',
+        'positiveReviews',
+        'positive_review_count',
+      ])
+
+      const negativeReviews = readOptionalNumber(item, [
+        'negative_reviews',
+        'negativeReviews',
+        'negative_review_count',
+      ])
+
+      const reviewCount = calculateReviewCount(
+        positiveReviews,
+        negativeReviews,
+        readOptionalNumber(item, ['review_count', 'reviews', 'total_reviews', 'num_reviews']),
+      )
+
+      const positiveRatio = calculatePositiveRatio(
+        positiveReviews,
+        negativeReviews,
         readOptionalNumber(item, [
           'positive_ratio',
           'positivePercent',
@@ -421,13 +534,6 @@ function normalizeGames(rawData: unknown): SearchGame[] {
           'avg_positive_ratio',
         ]),
       )
-
-      const reviewCount = readOptionalNumber(item, [
-        'review_count',
-        'reviews',
-        'total_reviews',
-        'num_reviews',
-      ])
 
       const averagePlaytime = readOptionalNumber(item, [
         'average_playtime',
@@ -453,11 +559,14 @@ function normalizeGames(rawData: unknown): SearchGame[] {
       return {
         id,
         name,
-        genres: genres.map((genre) => formatGenreLabel(genre)),
+        genres,
+        genreSearchText: `${rawGenres.join(' ')} ${genres.join(' ')}`,
         primaryGenre,
         price,
         isFree,
         platforms,
+        positiveReviews,
+        negativeReviews,
         positiveRatio,
         reviewCount,
         averagePlaytime,
@@ -492,7 +601,7 @@ function normalizePlatforms(item: Record<string, unknown>): string[] {
   }
 
   if (result.size === 0) {
-    result.add('Windows')
+    result.add('플랫폼 정보 없음')
   }
 
   return Array.from(result)
@@ -549,8 +658,41 @@ function buildPagination(currentPage: number, totalPages: number): Array<number 
   return result
 }
 
+function calculateReviewCount(
+  positiveReviews: number | null,
+  negativeReviews: number | null,
+  fallbackReviewCount: number | null,
+): number | null {
+  if (
+    positiveReviews !== null &&
+    negativeReviews !== null &&
+    positiveReviews + negativeReviews > 0
+  ) {
+    return positiveReviews + negativeReviews
+  }
+
+  return fallbackReviewCount
+}
+
+function calculatePositiveRatio(
+  positiveReviews: number | null,
+  negativeReviews: number | null,
+  fallbackRatio: number | null,
+): number | null {
+  if (
+    positiveReviews !== null &&
+    negativeReviews !== null &&
+    positiveReviews + negativeReviews > 0
+  ) {
+    return (positiveReviews / (positiveReviews + negativeReviews)) * 100
+  }
+
+  return normalizeRatio(fallbackRatio)
+}
+
 function formatGenreLabel(genre: string): string {
-  const normalized = genre.trim().toLowerCase()
+  const trimmed = genre.trim()
+  const normalized = trimmed.toLowerCase()
 
   const genreMap: Record<string, string> = {
     action: '액션',
@@ -567,17 +709,11 @@ function formatGenreLabel(genre: string): string {
     'early access': '앞서 해보기',
   }
 
-  if (!genre || /[가-힣]/.test(genre)) {
-    return genre
+  if (!trimmed || /[가-힣]/.test(trimmed)) {
+    return trimmed
   }
 
-  const korean = genreMap[normalized]
-
-  if (!korean) {
-    return genre
-  }
-
-  return korean
+  return genreMap[normalized] ?? trimmed
 }
 
 function formatPlatformLabel(platform: string): string {
@@ -600,14 +736,14 @@ function formatPlatformLabel(platform: string): string {
 
 function formatPriceText(price: number, isFree: boolean): string {
   if (isFree || price === 0) {
-    return 'Free'
+    return '무료'
   }
 
   return `$${price.toFixed(2)}`
 }
 
 function formatCount(value: number): string {
-  return value.toLocaleString('en-US')
+  return value.toLocaleString('ko-KR')
 }
 
 function formatPlaytime(value: number | null): string {
@@ -681,6 +817,22 @@ function unwrapList(rawData: unknown): Record<string, unknown>[] {
   }
 
   return []
+}
+
+function readApiLimit(rawData: unknown): number | null {
+  if (!isRecord(rawData)) {
+    return null
+  }
+
+  return readOptionalNumber(rawData, ['limit', 'page_size', 'pageSize'])
+}
+
+function hasNextCursor(rawData: unknown): boolean {
+  if (!isRecord(rawData)) {
+    return false
+  }
+
+  return Boolean(rawData.next_cursor || rawData.nextCursor)
 }
 
 function readString(item: Record<string, unknown>, keys: string[]): string {

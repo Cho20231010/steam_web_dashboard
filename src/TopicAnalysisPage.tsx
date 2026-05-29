@@ -110,13 +110,6 @@ function TopicAnalysisPage() {
 
   return (
     <section className="topic-analysis-page" aria-label="토픽 분석 화면">
-      <header className="topic-analysis-header">
-        <div>
-          <p className="topic-analysis-eyebrow">5. 토픽 분석</p>
-          <h1>리뷰 토픽 분석</h1>
-        </div>
-      </header>
-
       <nav className="topic-analysis-tabs" aria-label="토픽 분석 탭">
         <button
           className={activeTab === 'cluster' ? 'active' : ''}
@@ -374,7 +367,9 @@ function TopicBubbleCluster({ topics }: { topics: TopicItem[] }) {
 
                 <p>{topic.keywords.slice(0, 4).join(', ') || '키워드 데이터 없음'}</p>
 
-                <em className={topic.sentimentType}>{topic.sentimentLabel}</em>
+                {topic.positiveRate !== null && (
+                  <em className={topic.sentimentType}>{topic.sentimentLabel}</em>
+                )}
               </div>
             </div>
           )
@@ -394,17 +389,21 @@ function TopicSentimentTable({ topics }: { topics: TopicItem[] }) {
         <span>감성 경향</span>
       </div>
 
-      {topics.map((topic) => (
-        <div className="topic-sentiment-row" key={topic.id}>
-          <strong>{topic.name}</strong>
-          <span>{topic.share === null ? '-' : `${topic.share.toFixed(1)}%`}</span>
-          <span>{topic.positiveRate === null ? '-' : `${topic.positiveRate.toFixed(0)}%`}</span>
-          <em className={topic.sentimentType}>
-            <i />
-            {topic.sentimentLabel}
-          </em>
-        </div>
-      ))}
+      {topics.map((topic) => {
+        const hasSentimentData = topic.positiveRate !== null
+
+        return (
+          <div className="topic-sentiment-row" key={topic.id}>
+            <strong>{topic.name}</strong>
+            <span>{topic.share === null ? '-' : `${topic.share.toFixed(1)}%`}</span>
+            <span>{hasSentimentData ? `${topic.positiveRate?.toFixed(0)}%` : '-'}</span>
+            <em className={hasSentimentData ? topic.sentimentType : 'neutral'}>
+              <i />
+              {hasSentimentData ? topic.sentimentLabel : '-'}
+            </em>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -530,7 +529,6 @@ function normalizeTopicItem(item: Record<string, unknown>, index: number): Topic
   )
 
   const neutralRate = calculateNeutralRate(positiveRate, negativeRate)
-
   const mentionCount = readOptionalNumber(item, [
     'review_count',
     'reviewCount',
@@ -545,7 +543,7 @@ function normalizeTopicItem(item: Record<string, unknown>, index: number): Topic
 
   const highlight =
     readString(item, ['highlight', 'summary', 'description', 'insight', 'comment']) ||
-    createHighlightText(name, keywords, sentiment.label)
+    createHighlightText(name, keywords, positiveRate === null ? '' : sentiment.label)
 
   const genre = readString(item, ['genre', 'genres', 'main_genre', 'mainGenre']) || '미분류'
 
@@ -617,7 +615,7 @@ function createSentimentSummary(topics: TopicItem[]) {
     ['positive', { label: '긍정 경향', count: 0, type: 'positive' }],
     ['mixed', { label: '혼합 반응', count: 0, type: 'mixed' }],
     ['negative', { label: '부정 경향', count: 0, type: 'negative' }],
-    ['neutral', { label: '중립/분석중', count: 0, type: 'neutral' }],
+    ['neutral', { label: '감성 데이터 없음', count: 0, type: 'neutral' }],
   ])
 
   topics.forEach((topic) => {
@@ -688,7 +686,7 @@ function getSentimentInfo(
   if (positiveRate === null) {
     return {
       type: 'neutral',
-      label: '분석중',
+      label: '감성 데이터 없음',
     }
   }
 
@@ -730,8 +728,12 @@ function calculateNeutralRate(positiveRate: number | null, negativeRate: number 
 function createHighlightText(name: string, keywords: string[], sentimentLabel: string) {
   const keywordText = keywords.slice(0, 3).join(', ')
 
-  if (keywordText) {
+  if (keywordText && sentimentLabel) {
     return `${keywordText} 키워드가 함께 언급되며, 전체적으로 ${sentimentLabel}으로 분류됩니다.`
+  }
+
+  if (keywordText) {
+    return `${keywordText} 키워드가 함께 언급되는 주요 토픽입니다.`
   }
 
   return `${name} 관련 리뷰가 반복적으로 언급되고 있습니다.`

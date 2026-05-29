@@ -3,13 +3,11 @@ import './MarketDistributionPage.css'
 
 type MarketTab = 'genre' | 'price' | 'platform' | 'release'
 
-type GameItem = {
-  title: string
-  genres: string[]
-  price: number | null
-  positiveRatio: number | null
-  platforms: string[]
-  releaseYear: number | null
+type SummaryStat = {
+  totalGames: number | null
+  totalReviews: number | null
+  averagePositiveRatio: number | null
+  topGenre: string | null
 }
 
 type GenreStat = {
@@ -17,6 +15,9 @@ type GenreStat = {
   label: string
   gameCount: number
   share: number
+  avgPrice: number | null
+  avgReviewCount: number | null
+  avgPositiveRatio: number | null
 }
 
 type PriceBandStat = {
@@ -24,6 +25,8 @@ type PriceBandStat = {
   label: string
   gameCount: number
   share: number
+  avgReviewCount: number | null
+  avgPositiveRatio: number | null
 }
 
 type PlatformStat = {
@@ -31,46 +34,48 @@ type PlatformStat = {
   label: string
   gameCount: number
   share: number
+  avgPositiveRatio: number | null
 }
 
 type ReleaseYearStat = {
   year: number
   gameCount: number
-}
-
-type PricePositivePoint = {
-  title: string
-  price: number
-  positiveRatio: number
+  avgReviewCount: number | null
+  avgPositiveRatio: number | null
 }
 
 type MarketDistributionData = {
+  summary: SummaryStat
   genres: GenreStat[]
   priceBands: PriceBandStat[]
   platforms: PlatformStat[]
   releaseYears: ReleaseYearStat[]
-  pricePositivePoints: PricePositivePoint[]
-  totalGames: number
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
+const INITIAL_SUMMARY: SummaryStat = {
+  totalGames: null,
+  totalReviews: null,
+  averagePositiveRatio: null,
+  topGenre: null,
+}
+
 const INITIAL_MARKET_DATA: MarketDistributionData = {
+  summary: INITIAL_SUMMARY,
   genres: [],
   priceBands: [],
   platforms: [],
   releaseYears: [],
-  pricePositivePoints: [],
-  totalGames: 0,
 }
 
 const PIE_COLORS = [
   '#5d63f1',
-  '#6aa8ff',
-  '#48c78e',
+  '#7ba7ff',
+  '#74c993',
   '#8f7cf7',
-  '#f59e0b',
-  '#ef6b6b',
+  '#f2aa3b',
+  '#df6f6f',
   '#94a3b8',
   '#2dd4bf',
 ]
@@ -79,35 +84,31 @@ const GENRE_LABEL_MAP: Record<string, string> = {
   action: '액션',
   adventure: '어드벤처',
   indie: '인디',
-  strategy: '전략',
-  casual: '캐주얼',
   rpg: 'RPG',
   simulation: '시뮬레이션',
+  strategy: '전략',
+  casual: '캐주얼',
   sports: '스포츠',
   racing: '레이싱',
-  puzzle: '퍼즐',
-  horror: '호러',
-  arcade: '아케이드',
-  platformer: '플랫폼',
-  platform: '플랫폼',
-  fighting: '격투',
-  shooter: '슈팅',
-  mmo: 'MMO',
-  mmorpg: 'MMORPG',
-  survival: '서바이벌',
-  sandbox: '샌드박스',
-  'open world': '오픈월드',
-  'visual novel': '비주얼노벨',
-  roguelike: '로그라이크',
-  roguelite: '로그라이트',
+  'free to play': '무료 플레이',
+  'massively multiplayer': '대규모 멀티플레이',
+  'early access': '앞서 해보기',
+  utilities: '유틸리티',
+  'animation modeling': '애니메이션·모델링',
+  'animation & modeling': '애니메이션·모델링',
+  'design illustration': '디자인·일러스트',
+  'design & illustration': '디자인·일러스트',
+  'video production': '영상 제작',
+  'audio production': '오디오 제작',
+  'game development': '게임 개발',
+  'photo editing': '사진 편집',
+  'software training': '소프트웨어 교육',
+  violent: '폭력성',
   unknown: '알 수 없음',
 }
 
 const PLATFORM_LABEL_MAP: Record<string, string> = {
   windows: 'Windows',
-  steam: 'Steam',
-  steamos: 'SteamOS',
-  'steam os': 'SteamOS',
   mac: 'macOS',
   macos: 'macOS',
   osx: 'macOS',
@@ -126,49 +127,41 @@ function MarketDistributionPage() {
         setIsLoading(true)
         setErrorMessage('')
 
-        const [genreResult, priceResult, platformResult, releaseYearResult, gamesResult] =
+        const [summaryResult, genreResult, priceResult, platformResult, releaseYearResult] =
           await Promise.allSettled([
-            fetchOptionalJson('/analysis/genre-stats'),
-            fetchOptionalJson('/analysis/price-band-stats'),
-            fetchOptionalJson('/analysis/platform-stats'),
-            fetchOptionalJson('/analysis/release-year-stats'),
-            fetchOptionalJson('/games'),
+            fetchRequiredJson('/dashboard/summary'),
+            fetchRequiredJson('/analysis/genre-stats'),
+            fetchRequiredJson('/analysis/price-band-stats'),
+            fetchRequiredJson('/analysis/platform-stats'),
+            fetchRequiredJson('/analysis/release-year-stats'),
           ])
 
-        const games =
-          gamesResult.status === 'fulfilled' && gamesResult.value
-            ? normalizeGames(gamesResult.value)
-            : []
+        if (summaryResult.status === 'rejected') {
+          throw summaryResult.reason
+        }
 
-        const genres =
-          genreResult.status === 'fulfilled' && genreResult.value
-            ? normalizeGenreStats(genreResult.value, games)
-            : aggregateGenreStatsFromGames(games)
+        if (genreResult.status === 'rejected') {
+          throw genreResult.reason
+        }
 
-        const priceBands =
-          priceResult.status === 'fulfilled' && priceResult.value
-            ? normalizePriceBandStats(priceResult.value, games)
-            : aggregatePriceBandStatsFromGames(games)
+        if (priceResult.status === 'rejected') {
+          throw priceResult.reason
+        }
 
-        const platforms =
-          platformResult.status === 'fulfilled' && platformResult.value
-            ? normalizePlatformStats(platformResult.value, games)
-            : aggregatePlatformStatsFromGames(games)
+        if (platformResult.status === 'rejected') {
+          throw platformResult.reason
+        }
 
-        const releaseYears =
-          releaseYearResult.status === 'fulfilled' && releaseYearResult.value
-            ? normalizeReleaseYearStats(releaseYearResult.value, games)
-            : aggregateReleaseYearStatsFromGames(games)
-
-        const pricePositivePoints = createPricePositivePoints(games)
+        if (releaseYearResult.status === 'rejected') {
+          throw releaseYearResult.reason
+        }
 
         setMarketData({
-          genres,
-          priceBands,
-          platforms,
-          releaseYears,
-          pricePositivePoints,
-          totalGames: games.length || calculateTotalCount(genres),
+          summary: normalizeSummaryStat(summaryResult.value),
+          genres: normalizeGenreStats(genreResult.value),
+          priceBands: normalizePriceBandStats(priceResult.value),
+          platforms: normalizePlatformStats(platformResult.value),
+          releaseYears: normalizeReleaseYearStats(releaseYearResult.value),
         })
       } catch (error) {
         console.error('시장 분포 데이터를 불러오지 못했습니다.', error)
@@ -186,8 +179,7 @@ function MarketDistributionPage() {
     marketData.genres.length > 0 ||
     marketData.priceBands.length > 0 ||
     marketData.platforms.length > 0 ||
-    marketData.releaseYears.length > 0 ||
-    marketData.pricePositivePoints.length > 0
+    marketData.releaseYears.length > 0
 
   return (
     <section className="market-distribution-page" aria-label="시장 분포 분석 화면">
@@ -197,10 +189,28 @@ function MarketDistributionPage() {
           <h1>시장 분포 분석</h1>
         </div>
 
-        <strong>
-          총 게임 수{' '}
-          {marketData.totalGames > 0 ? marketData.totalGames.toLocaleString('ko-KR') : '-'}
-        </strong>
+        <div className="market-summary-badges" aria-label="시장 요약 지표">
+          <strong>
+            총 게임 수{' '}
+            {marketData.summary.totalGames === null
+              ? '-'
+              : marketData.summary.totalGames.toLocaleString('ko-KR')}
+          </strong>
+
+          <strong>
+            총 리뷰 수{' '}
+            {marketData.summary.totalReviews === null
+              ? '-'
+              : marketData.summary.totalReviews.toLocaleString('ko-KR')}
+          </strong>
+
+          <strong>
+            평균 긍정률{' '}
+            {marketData.summary.averagePositiveRatio === null
+              ? '-'
+              : `${marketData.summary.averagePositiveRatio.toFixed(1)}%`}
+          </strong>
+        </div>
       </header>
 
       <nav className="market-distribution-tabs" aria-label="시장 분포 탭">
@@ -264,7 +274,7 @@ function MarketDistributionPage() {
             isFocused={activeTab === 'release'}
           />
 
-          <PricePositiveScatterCard points={marketData.pricePositivePoints} />
+          <GenrePricePositiveScatterCard genres={marketData.genres} />
         </div>
       )}
     </section>
@@ -280,12 +290,13 @@ function GenreDistributionCard({
 }) {
   const topGenres = genres.slice(0, 7)
   const pieBackground = buildPieBackground(topGenres)
+  const totalGenreCount = calculateTotalCount(genres)
 
   return (
     <article className={`market-card market-card--large ${isFocused ? 'focused' : ''}`}>
       <div className="market-card-header">
         <h2>장르별 게임 비중</h2>
-        <span>genre share</span>
+        <span>장르 비중</span>
       </div>
 
       {topGenres.length === 0 ? (
@@ -300,8 +311,8 @@ function GenreDistributionCard({
             aria-label="장르별 게임 비중 차트"
           >
             <div>
-              <span>전체</span>
-              <strong>{calculateTotalCount(genres).toLocaleString('ko-KR')}</strong>
+              <span>장르 합계</span>
+              <strong>{totalGenreCount.toLocaleString('ko-KR')}</strong>
             </div>
           </div>
 
@@ -338,14 +349,14 @@ function PriceBandDistributionCard({
     <article className={`market-card ${isFocused ? 'focused' : ''}`}>
       <div className="market-card-header">
         <h2>가격대별 게임 수 분포</h2>
-        <span>price band</span>
+        <span>가격대</span>
       </div>
 
       {priceBands.length === 0 ? (
         <div className="market-empty inside">가격대 분포 데이터가 없습니다.</div>
       ) : (
         <div className="market-bar-list">
-          {priceBands.slice(0, 6).map((item) => {
+          {priceBands.map((item) => {
             const width = (item.gameCount / maxCount) * 100
 
             return (
@@ -384,23 +395,36 @@ function PlatformDistributionCard({
     <article className={`market-card ${isFocused ? 'focused' : ''}`}>
       <div className="market-card-header">
         <h2>플랫폼별 비중</h2>
-        <span>platform</span>
+        <span>플랫폼 정보 기준</span>
       </div>
 
       {platforms.length === 0 ? (
         <div className="market-empty inside">플랫폼 분포 데이터가 없습니다.</div>
       ) : (
-        <div className="platform-grid">
-          {platforms.slice(0, 4).map((platform) => (
-            <div className="platform-item" key={platform.platform}>
-              <div className="platform-icon" aria-hidden="true">
-                {getPlatformIcon(platform.platform)}
+        <>
+          <p className="market-card-caption">
+            플랫폼 정보가 있는 게임의 수를 기준으로 비중을 계산합니다.
+          </p>
+
+          <div className="platform-grid">
+            {platforms.map((platform) => (
+              <div className="platform-item" key={platform.platform}>
+                <div className="platform-icon" aria-hidden="true">
+                  {getPlatformIcon(platform.platform)}
+                </div>
+
+                <strong>{platform.label}</strong>
+                <span>{platform.share.toFixed(1)}%</span>
+
+                <em>
+                  {platform.avgPositiveRatio === null
+                    ? '긍정률 -'
+                    : `긍정률 ${platform.avgPositiveRatio.toFixed(1)}%`}
+                </em>
               </div>
-              <strong>{platform.label}</strong>
-              <span>{platform.share.toFixed(1)}%</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
     </article>
   )
@@ -413,14 +437,14 @@ function ReleaseYearDistributionCard({
   releaseYears: ReleaseYearStat[]
   isFocused: boolean
 }) {
-  const recentYears = releaseYears.slice(-6)
+  const recentYears = releaseYears.slice(-10)
   const maxCount = Math.max(...recentYears.map((item) => item.gameCount), 1)
 
   return (
-    <article className={`market-card ${isFocused ? 'focused' : ''}`}>
+    <article className={`market-card market-card--release ${isFocused ? 'focused' : ''}`}>
       <div className="market-card-header">
         <h2>출시 연도별 게임 수</h2>
-        <span>release year</span>
+        <span>출시 연도</span>
       </div>
 
       {recentYears.length === 0 ? (
@@ -452,35 +476,60 @@ function ReleaseYearDistributionCard({
   )
 }
 
-function PricePositiveScatterCard({ points }: { points: PricePositivePoint[] }) {
+function GenrePricePositiveScatterCard({ genres }: { genres: GenreStat[] }) {
+  const points = genres
+    .filter((genre) => genre.avgPrice !== null && genre.avgPositiveRatio !== null)
+    .map((genre) => ({
+      label: genre.label,
+      price: genre.avgPrice ?? 0,
+      positiveRatio: genre.avgPositiveRatio ?? 0,
+      gameCount: genre.gameCount,
+    }))
+    .filter((point) => point.price >= 0 && point.positiveRatio >= 0)
+
   return (
-    <article className="market-card market-card--wide">
+    <article className="market-card market-card--scatter">
       <div className="market-card-header">
-        <h2>가격 vs 평균 긍정 비율</h2>
-        <span>price correlation</span>
+        <div>
+          <h2>장르별 평균 가격 vs 평균 긍정 비율</h2>
+          <p className="market-card-caption">
+            장르 통계 API의 평균 가격과 평균 긍정 비율을 기준으로 가격대와 긍정률의 관계를
+            비교합니다.
+          </p>
+        </div>
+
+        <span>가격-긍정률 관계</span>
       </div>
 
       {points.length === 0 ? (
-        <div className="market-empty inside">가격과 긍정 비율 데이터가 없습니다.</div>
+        <div className="market-empty inside">장르별 평균 가격과 긍정 비율 데이터가 없습니다.</div>
       ) : (
-        <PricePositiveScatterPlot points={points} />
+        <GenrePricePositiveScatterPlot points={points} />
       )}
     </article>
   )
 }
 
-function PricePositiveScatterPlot({ points }: { points: PricePositivePoint[] }) {
-  const chartPoints = points.slice(0, 90)
-  const width = 620
-  const height = 260
+function GenrePricePositiveScatterPlot({
+  points,
+}: {
+  points: Array<{
+    label: string
+    price: number
+    positiveRatio: number
+    gameCount: number
+  }>
+}) {
+  const width = 920
+  const height = 380
   const margin = {
-    top: 18,
-    right: 22,
-    bottom: 32,
-    left: 44,
+    top: 32,
+    right: 34,
+    bottom: 58,
+    left: 72,
   }
 
-  const xMax = Math.max(...chartPoints.map((point) => point.price), 1)
+  const xMax = Math.max(...points.map((point) => point.price), 1)
   const yMax = 100
   const plotWidth = width - margin.left - margin.right
   const plotHeight = height - margin.top - margin.bottom
@@ -488,13 +537,17 @@ function PricePositiveScatterPlot({ points }: { points: PricePositivePoint[] }) 
   const xScale = (price: number) => margin.left + (price / xMax) * plotWidth
   const yScale = (ratio: number) => margin.top + ((yMax - ratio) / yMax) * plotHeight
 
-  const regression = calculateRegression(chartPoints)
+  const regression = calculateRegression(points)
   const yTicks = [100, 75, 50, 25, 0]
-  const xTicks = [0, xMax / 2, xMax]
+  const xTicks = [0, xMax / 4, xMax / 2, (xMax / 4) * 3, xMax]
 
   return (
     <div className="price-positive-chart">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="가격 대비 긍정 비율 산점도">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label="장르별 평균 가격 대비 평균 긍정 비율 산점도"
+      >
         {yTicks.map((tick) => (
           <g key={tick}>
             <line
@@ -504,7 +557,7 @@ function PricePositiveScatterPlot({ points }: { points: PricePositivePoint[] }) 
               y2={yScale(tick)}
               className="scatter-grid-line"
             />
-            <text x={margin.left - 10} y={yScale(tick) + 4} textAnchor="end">
+            <text x={margin.left - 14} y={yScale(tick) + 4} textAnchor="end">
               {tick}%
             </text>
           </g>
@@ -512,20 +565,32 @@ function PricePositiveScatterPlot({ points }: { points: PricePositivePoint[] }) 
 
         {xTicks.map((tick) => (
           <g key={tick}>
-            <text x={xScale(tick)} y={height - 8} textAnchor="middle">
+            <line
+              x1={xScale(tick)}
+              x2={xScale(tick)}
+              y1={margin.top}
+              y2={height - margin.bottom}
+              className="scatter-grid-line vertical"
+            />
+            <text x={xScale(tick)} y={height - 24} textAnchor="middle">
               {formatPriceTick(tick)}
             </text>
           </g>
         ))}
 
-        {chartPoints.map((point, index) => (
+        {points.map((point, index) => (
           <circle
-            key={`${point.title}-${index}`}
+            key={`${point.label}-${index}`}
             cx={xScale(point.price)}
             cy={yScale(point.positiveRatio)}
-            r="3.3"
+            r={getScatterPointRadius(point.gameCount)}
             className="scatter-point"
-          />
+          >
+            <title>
+              {point.label} / 평균 가격 {Math.round(point.price).toLocaleString('ko-KR')} / 평균
+              긍정률 {point.positiveRatio.toFixed(1)}%
+            </title>
+          </circle>
         ))}
 
         {regression && (
@@ -538,273 +603,181 @@ function PricePositiveScatterPlot({ points }: { points: PricePositivePoint[] }) 
           />
         )}
 
-        <text x={width / 2} y={height - 2} textAnchor="middle" className="scatter-axis-label">
-          가격
+        <text x={width / 2} y={height - 5} textAnchor="middle" className="scatter-axis-label">
+          평균 가격
         </text>
 
         <text
-          x="14"
+          x="18"
           y={height / 2}
           textAnchor="middle"
           className="scatter-axis-label"
-          transform={`rotate(-90 14 ${height / 2})`}
+          transform={`rotate(-90 18 ${height / 2})`}
         >
-          긍정 비율
+          평균 긍정 비율
         </text>
       </svg>
+
+      <div className="scatter-note">
+        <span>점 크기: 해당 장르의 게임 수</span>
+        <span>점선: 평균 가격과 평균 긍정 비율의 추세선</span>
+      </div>
     </div>
   )
 }
 
-async function fetchOptionalJson(path: string): Promise<unknown | null> {
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`)
+async function fetchRequiredJson(path: string): Promise<unknown> {
+  const response = await fetch(`${API_BASE_URL}${path}`)
 
-    if (!response.ok) {
-      return null
-    }
+  if (!response.ok) {
+    throw new Error(`${path} API error: ${response.status}`)
+  }
 
-    return response.json()
-  } catch {
-    return null
+  return response.json()
+}
+
+function normalizeSummaryStat(rawData: unknown): SummaryStat {
+  if (!isRecord(rawData)) {
+    return INITIAL_SUMMARY
+  }
+
+  return {
+    totalGames: readOptionalNumber(rawData, ['total_games', 'totalGames']),
+    totalReviews: readOptionalNumber(rawData, ['total_reviews', 'totalReviews']),
+    averagePositiveRatio: readOptionalNumber(rawData, [
+      'average_positive_ratio',
+      'averagePositiveRatio',
+      'avg_positive_ratio',
+      'avgPositiveRatio',
+    ]),
+    topGenre: readString(rawData, ['top_genre', 'topGenre']) || null,
   }
 }
 
-function normalizeGames(rawData: unknown): GameItem[] {
+function normalizeGenreStats(rawData: unknown): GenreStat[] {
   const rawList = unwrapList(rawData)
-
-  return rawList.map((item, index) => {
-    const title = readString(item, ['name', 'title', 'game_name', 'gameName']) || `Game ${index + 1}`
-    const genres = readGenreList(item)
-    const price = readOptionalNumber(item, [
-      'price',
-      'initial_price',
-      'initialPrice',
-      'final_price',
-      'finalPrice',
-      'price_initial',
-      'priceInitial',
-    ])
-    const positiveRatio = normalizeOptionalPercent(
-      readOptionalNumber(item, [
-        'positive_ratio',
-        'positiveRatio',
-        'positive_rate',
-        'positiveRate',
-        'positive_percent',
-        'positivePercent',
-      ]),
-    )
-    const platforms = readPlatformList(item)
-    const releaseYear = readReleaseYear(item)
-
-    return {
-      title,
-      genres,
-      price,
-      positiveRatio,
-      platforms,
-      releaseYear,
-    }
-  })
-}
-
-function normalizeGenreStats(rawData: unknown, fallbackGames: GameItem[]): GenreStat[] {
-  const rawList = unwrapList(rawData)
-
-  if (rawList.length === 0) {
-    return aggregateGenreStatsFromGames(fallbackGames)
-  }
 
   const items = rawList
     .map((item) => {
       const genre = readString(item, ['genre', 'genres', 'category', 'name', 'label']) || 'Unknown'
       const gameCount = readOptionalNumber(item, ['game_count', 'gameCount', 'count', 'total']) ?? 0
-      const rawShare = readOptionalNumber(item, ['share', 'share_percent', 'sharePercent', 'percentage'])
-      const share = normalizeOptionalPercent(rawShare) ?? 0
 
       return {
         genre,
         label: formatGenreLabel(genre),
         gameCount,
-        share,
+        share: 0,
+        avgPrice: readOptionalNumber(item, ['avg_price', 'avgPrice', 'average_price', 'averagePrice']),
+        avgReviewCount: readOptionalNumber(item, [
+          'avg_review_count',
+          'avgReviewCount',
+          'average_review_count',
+          'averageReviewCount',
+        ]),
+        avgPositiveRatio: readOptionalNumber(item, [
+          'avg_positive_ratio',
+          'avgPositiveRatio',
+          'average_positive_ratio',
+          'averagePositiveRatio',
+        ]),
       }
     })
-    .filter((item) => item.gameCount > 0 || item.share > 0)
+    .filter((item) => item.gameCount > 0)
     .sort((a, b) => b.gameCount - a.gameCount)
 
   return ensureShare(items)
 }
 
-function normalizePriceBandStats(rawData: unknown, fallbackGames: GameItem[]): PriceBandStat[] {
+function normalizePriceBandStats(rawData: unknown): PriceBandStat[] {
   const rawList = unwrapList(rawData)
-
-  if (rawList.length === 0) {
-    return aggregatePriceBandStatsFromGames(fallbackGames)
-  }
 
   const items = rawList
     .map((item) => {
       const priceBand =
         readString(item, ['price_band', 'priceBand', 'band', 'range', 'label', 'name']) || 'Unknown'
       const gameCount = readOptionalNumber(item, ['game_count', 'gameCount', 'count', 'total']) ?? 0
-      const rawShare = readOptionalNumber(item, ['share', 'share_percent', 'sharePercent', 'percentage'])
-      const share = normalizeOptionalPercent(rawShare) ?? 0
 
       return {
         priceBand,
         label: formatPriceBandLabel(priceBand),
         gameCount,
-        share,
+        share: 0,
+        avgReviewCount: readOptionalNumber(item, [
+          'avg_review_count',
+          'avgReviewCount',
+          'average_review_count',
+          'averageReviewCount',
+        ]),
+        avgPositiveRatio: readOptionalNumber(item, [
+          'avg_positive_ratio',
+          'avgPositiveRatio',
+          'average_positive_ratio',
+          'averagePositiveRatio',
+        ]),
       }
     })
-    .filter((item) => item.gameCount > 0 || item.share > 0)
+    .filter((item) => item.gameCount > 0)
+    .sort((a, b) => getPriceBandOrder(a.priceBand) - getPriceBandOrder(b.priceBand))
 
   return ensureShare(items)
 }
 
-function normalizePlatformStats(rawData: unknown, fallbackGames: GameItem[]): PlatformStat[] {
+function normalizePlatformStats(rawData: unknown): PlatformStat[] {
   const rawList = unwrapList(rawData)
-
-  if (rawList.length === 0) {
-    return aggregatePlatformStatsFromGames(fallbackGames)
-  }
 
   const items = rawList
     .map((item) => {
       const platform =
         readString(item, ['platform', 'platform_name', 'platformName', 'name', 'label']) || 'Unknown'
       const gameCount = readOptionalNumber(item, ['game_count', 'gameCount', 'count', 'total']) ?? 0
-      const rawShare = readOptionalNumber(item, ['share', 'share_percent', 'sharePercent', 'percentage'])
-      const share = normalizeOptionalPercent(rawShare) ?? 0
 
       return {
         platform,
         label: formatPlatformLabel(platform),
         gameCount,
-        share,
+        share: 0,
+        avgPositiveRatio: readOptionalNumber(item, [
+          'avg_positive_ratio',
+          'avgPositiveRatio',
+          'average_positive_ratio',
+          'averagePositiveRatio',
+        ]),
       }
     })
-    .filter((item) => item.gameCount > 0 || item.share > 0)
-    .sort((a, b) => b.share - a.share)
+    .filter((item) => item.gameCount > 0)
+    .sort((a, b) => b.gameCount - a.gameCount)
 
   return ensureShare(items)
 }
 
-function normalizeReleaseYearStats(rawData: unknown, fallbackGames: GameItem[]): ReleaseYearStat[] {
+function normalizeReleaseYearStats(rawData: unknown): ReleaseYearStat[] {
   const rawList = unwrapList(rawData)
-
-  if (rawList.length === 0) {
-    return aggregateReleaseYearStatsFromGames(fallbackGames)
-  }
 
   return rawList
     .map((item) => {
-      const year = readOptionalNumber(item, ['year', 'release_year', 'releaseYear']) ?? 0
-      const gameCount = readOptionalNumber(item, ['game_count', 'gameCount', 'count', 'total']) ?? 0
+      const year =
+        readOptionalNumber(item, ['release_year', 'releaseYear', 'year']) ??
+        readOptionalNumber(item, ['period'])
 
       return {
-        year,
-        gameCount,
+        year: year ?? 0,
+        gameCount: readOptionalNumber(item, ['game_count', 'gameCount', 'count', 'total']) ?? 0,
+        avgReviewCount: readOptionalNumber(item, [
+          'avg_review_count',
+          'avgReviewCount',
+          'average_review_count',
+          'averageReviewCount',
+        ]),
+        avgPositiveRatio: readOptionalNumber(item, [
+          'avg_positive_ratio',
+          'avgPositiveRatio',
+          'average_positive_ratio',
+          'averagePositiveRatio',
+        ]),
       }
     })
     .filter((item) => item.year > 0 && item.gameCount > 0)
     .sort((a, b) => a.year - b.year)
-}
-
-function aggregateGenreStatsFromGames(games: GameItem[]): GenreStat[] {
-  const countMap = new Map<string, number>()
-
-  games.forEach((game) => {
-    const targetGenres = game.genres.length > 0 ? game.genres : ['Unknown']
-
-    targetGenres.forEach((genre) => {
-      countMap.set(genre, (countMap.get(genre) ?? 0) + 1)
-    })
-  })
-
-  const total = Array.from(countMap.values()).reduce((sum, count) => sum + count, 0)
-
-  return Array.from(countMap.entries())
-    .map(([genre, gameCount]) => ({
-      genre,
-      label: formatGenreLabel(genre),
-      gameCount,
-      share: total > 0 ? (gameCount / total) * 100 : 0,
-    }))
-    .sort((a, b) => b.gameCount - a.gameCount)
-}
-
-function aggregatePriceBandStatsFromGames(games: GameItem[]): PriceBandStat[] {
-  const bandMap = new Map<string, number>()
-
-  games.forEach((game) => {
-    const band = getPriceBand(game.price)
-    bandMap.set(band, (bandMap.get(band) ?? 0) + 1)
-  })
-
-  const total = Array.from(bandMap.values()).reduce((sum, count) => sum + count, 0)
-
-  return Array.from(bandMap.entries())
-    .map(([priceBand, gameCount]) => ({
-      priceBand,
-      label: formatPriceBandLabel(priceBand),
-      gameCount,
-      share: total > 0 ? (gameCount / total) * 100 : 0,
-    }))
-    .sort((a, b) => getPriceBandOrder(a.priceBand) - getPriceBandOrder(b.priceBand))
-}
-
-function aggregatePlatformStatsFromGames(games: GameItem[]): PlatformStat[] {
-  const platformMap = new Map<string, number>()
-
-  games.forEach((game) => {
-    const targetPlatforms = game.platforms.length > 0 ? game.platforms : []
-
-    targetPlatforms.forEach((platform) => {
-      platformMap.set(platform, (platformMap.get(platform) ?? 0) + 1)
-    })
-  })
-
-  const total = Array.from(platformMap.values()).reduce((sum, count) => sum + count, 0)
-
-  return Array.from(platformMap.entries())
-    .map(([platform, gameCount]) => ({
-      platform,
-      label: formatPlatformLabel(platform),
-      gameCount,
-      share: total > 0 ? (gameCount / total) * 100 : 0,
-    }))
-    .sort((a, b) => b.gameCount - a.gameCount)
-}
-
-function aggregateReleaseYearStatsFromGames(games: GameItem[]): ReleaseYearStat[] {
-  const yearMap = new Map<number, number>()
-
-  games.forEach((game) => {
-    if (game.releaseYear !== null) {
-      yearMap.set(game.releaseYear, (yearMap.get(game.releaseYear) ?? 0) + 1)
-    }
-  })
-
-  return Array.from(yearMap.entries())
-    .map(([year, gameCount]) => ({
-      year,
-      gameCount,
-    }))
-    .sort((a, b) => a.year - b.year)
-}
-
-function createPricePositivePoints(games: GameItem[]): PricePositivePoint[] {
-  return games
-    .filter((game) => game.price !== null && game.positiveRatio !== null)
-    .map((game) => ({
-      title: game.title,
-      price: game.price ?? 0,
-      positiveRatio: game.positiveRatio ?? 0,
-    }))
-    .filter((point) => point.price >= 0 && point.positiveRatio >= 0)
-    .sort((a, b) => b.price - a.price)
 }
 
 function buildPieBackground(items: GenreStat[]): string {
@@ -813,6 +786,7 @@ function buildPieBackground(items: GenreStat[]): string {
   }
 
   let current = 0
+
   const segments = items.map((item, index) => {
     const start = current
     current += item.share
@@ -828,12 +802,6 @@ function buildPieBackground(items: GenreStat[]): string {
 }
 
 function ensureShare<T extends { gameCount: number; share: number }>(items: T[]): T[] {
-  const hasShare = items.some((item) => item.share > 0)
-
-  if (hasShare) {
-    return items
-  }
-
   const total = items.reduce((sum, item) => sum + item.gameCount, 0)
 
   if (total <= 0) {
@@ -850,7 +818,7 @@ function calculateTotalCount(items: Array<{ gameCount: number }>): number {
   return items.reduce((sum, item) => sum + item.gameCount, 0)
 }
 
-function calculateRegression(points: PricePositivePoint[]):
+function calculateRegression(points: Array<{ price: number; positiveRatio: number }>):
   | {
       slope: number
       intercept: number
@@ -880,149 +848,46 @@ function calculateRegression(points: PricePositivePoint[]):
   }
 }
 
-function readGenreList(item: Record<string, unknown>): string[] {
-  const rawValue = item.genres ?? item.genre ?? item.categories ?? item.tags
-
-  if (Array.isArray(rawValue)) {
-    return rawValue
-      .map((entry) => {
-        if (typeof entry === 'string') {
-          return entry.trim()
-        }
-
-        if (isRecord(entry)) {
-          return readString(entry, ['description', 'name', 'genre', 'label'])
-        }
-
-        return ''
-      })
-      .filter((entry) => entry.length > 0)
+function getScatterPointRadius(gameCount: number): number {
+  if (gameCount >= 500) {
+    return 7
   }
 
-  if (typeof rawValue === 'string') {
-    return rawValue
-      .split(/[,/|;]/)
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0)
+  if (gameCount >= 250) {
+    return 6
   }
 
-  return []
-}
-
-function readPlatformList(item: Record<string, unknown>): string[] {
-  const platforms = new Set<string>()
-
-  const rawValue = item.platforms ?? item.platform ?? item.supported_platforms
-
-  if (Array.isArray(rawValue)) {
-    rawValue.forEach((entry) => {
-      if (typeof entry === 'string' && entry.trim()) {
-        platforms.add(entry.trim())
-      }
-
-      if (isRecord(entry)) {
-        const platform = readString(entry, ['name', 'platform', 'label'])
-
-        if (platform) {
-          platforms.add(platform)
-        }
-      }
-    })
+  if (gameCount >= 100) {
+    return 5
   }
 
-  if (typeof rawValue === 'string') {
-    rawValue
-      .split(/[,/|;]/)
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0)
-      .forEach((entry) => platforms.add(entry))
+  if (gameCount >= 30) {
+    return 4
   }
 
-  if (readBoolean(item, ['windows', 'is_windows', 'support_windows', 'supports_windows'])) {
-    platforms.add('Windows')
-  }
-
-  if (readBoolean(item, ['mac', 'macos', 'is_mac', 'support_mac', 'supports_mac'])) {
-    platforms.add('macOS')
-  }
-
-  if (readBoolean(item, ['linux', 'is_linux', 'support_linux', 'supports_linux'])) {
-    platforms.add('Linux')
-  }
-
-  return Array.from(platforms)
-}
-
-function readReleaseYear(item: Record<string, unknown>): number | null {
-  const directYear = readOptionalNumber(item, ['release_year', 'releaseYear', 'year'])
-
-  if (directYear !== null && directYear > 1900) {
-    return Math.trunc(directYear)
-  }
-
-  const releaseDate = readString(item, [
-    'release_date',
-    'releaseDate',
-    'released_at',
-    'releasedAt',
-    'date',
-  ])
-
-  const matched = releaseDate.match(/\b(19|20)\d{2}\b/)
-
-  if (!matched) {
-    return null
-  }
-
-  const year = Number(matched[0])
-
-  return Number.isFinite(year) ? year : null
-}
-
-function getPriceBand(price: number | null): string {
-  if (price === null || price <= 0) {
-    return 'Free'
-  }
-
-  if (price <= 5000) {
-    return '0-5000'
-  }
-
-  if (price <= 15000) {
-    return '5000-15000'
-  }
-
-  if (price <= 30000) {
-    return '15000-30000'
-  }
-
-  if (price <= 50000) {
-    return '30000-50000'
-  }
-
-  return '50000+'
+  return 3.4
 }
 
 function getPriceBandOrder(priceBand: string): number {
-  const normalized = priceBand.toLowerCase()
+  const normalized = normalizeToken(priceBand)
 
   if (normalized.includes('free')) {
     return 0
   }
 
-  if (normalized.includes('0-5000') || normalized.includes('0~5000')) {
+  if (normalized.includes('0 5000')) {
     return 1
   }
 
-  if (normalized.includes('5000-15000') || normalized.includes('5000~15000')) {
+  if (normalized.includes('5000 15000')) {
     return 2
   }
 
-  if (normalized.includes('15000-30000') || normalized.includes('15000~30000')) {
+  if (normalized.includes('15000 30000')) {
     return 3
   }
 
-  if (normalized.includes('30000-50000') || normalized.includes('30000~50000')) {
+  if (normalized.includes('30000 50000')) {
     return 4
   }
 
@@ -1031,7 +896,7 @@ function getPriceBandOrder(priceBand: string): number {
 
 function formatPriceBandLabel(priceBand: string): string {
   const trimmed = priceBand.trim()
-  const normalized = trimmed.toLowerCase()
+  const normalized = normalizeToken(trimmed)
 
   if (!trimmed) {
     return '알 수 없음'
@@ -1069,28 +934,14 @@ function formatGenreLabel(genre: string): string {
     return trimmedGenre
   }
 
-  const originalParts = trimmedGenre
-    .split(',')
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0)
+  const normalizedGenre = normalizeToken(trimmedGenre)
+  const koreanLabel = GENRE_LABEL_MAP[normalizedGenre]
 
-  if (originalParts.length === 0) {
+  if (!koreanLabel) {
     return trimmedGenre
   }
 
-  const koreanParts = originalParts.map((part) => {
-    const normalizedPart = normalizeToken(part)
-
-    return GENRE_LABEL_MAP[normalizedPart] ?? part
-  })
-
-  const hasChanged = koreanParts.some((part, index) => part !== originalParts[index])
-
-  if (!hasChanged) {
-    return trimmedGenre
-  }
-
-  return `${koreanParts.join(', ')} (${trimmedGenre})`
+  return `${koreanLabel} (${trimmedGenre})`
 }
 
 function formatPlatformLabel(platform: string): string {
@@ -1112,11 +963,7 @@ function getPlatformIcon(platform: string): string {
     return '▦'
   }
 
-  if (normalized.includes('steam')) {
-    return '●'
-  }
-
-  if (normalized.includes('mac') || normalized.includes('osx')) {
+  if (normalized.includes('mac')) {
     return '◐'
   }
 
@@ -1144,23 +991,11 @@ function formatPriceTick(value: number): string {
     return `${Math.round(value / 1000)}K`
   }
 
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`
+  }
+
   return Math.round(value).toLocaleString('ko-KR')
-}
-
-function normalizeOptionalPercent(value: number | null): number | null {
-  if (value === null) {
-    return null
-  }
-
-  if (value <= 0) {
-    return 0
-  }
-
-  if (value <= 1) {
-    return value * 100
-  }
-
-  return Math.min(value, 100)
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -1180,7 +1015,6 @@ function unwrapList(rawData: unknown): Record<string, unknown>[] {
     'items',
     'data',
     'results',
-    'games',
     'stats',
     'genres',
     'platforms',
@@ -1247,34 +1081,11 @@ function readOptionalNumber(item: Record<string, unknown>, keys: string[]): numb
   return null
 }
 
-function readBoolean(item: Record<string, unknown>, keys: string[]): boolean {
-  for (const key of keys) {
-    const value = item[key]
-
-    if (typeof value === 'boolean') {
-      return value
-    }
-
-    if (typeof value === 'number') {
-      return value > 0
-    }
-
-    if (typeof value === 'string') {
-      const normalized = value.trim().toLowerCase()
-
-      if (['true', 'yes', '1', 'y'].includes(normalized)) {
-        return true
-      }
-    }
-  }
-
-  return false
-}
-
 function normalizeToken(text: string): string {
   return text
     .trim()
     .toLowerCase()
+    .replace(/&/g, ' ')
     .replace(/[^a-z0-9가-힣]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()

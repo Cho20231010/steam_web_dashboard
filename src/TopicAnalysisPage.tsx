@@ -32,25 +32,112 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 const TOPIC_LABEL_MAP: Record<string, string> = {
   gameplay: '게임플레이',
   game: '게임플레이',
+  play: '게임플레이',
+  fun: '재미 요소',
   story: '스토리',
   narrative: '스토리',
+  feel: '몰입감',
   graphic: '그래픽',
   graphics: '그래픽',
+  art: '아트',
+  design: '디자인',
   sound: '사운드',
-  music: '사운드',
+  music: '음악',
   bug: '버그/성능',
   bugs: '버그/성능',
-  performance: '버그/성능',
+  performance: '성능',
   optimization: '최적화',
+  fps: 'FPS/성능',
   price: '가격/과금',
   payment: '가격/과금',
+  dlc: 'DLC',
   content: '콘텐츠',
   update: '업데이트',
   multiplayer: '멀티플레이',
+  online: '온라인',
+  server: '서버',
   community: '커뮤니티',
   control: '조작감',
+  controls: '조작감',
   ui: 'UI/UX',
   ux: 'UI/UX',
+  players: '플레이어 접근성',
+  player: '플레이어',
+  access: '접근성',
+  war: '전쟁',
+  quest: '퀘스트',
+  quests: '퀘스트',
+  character: '캐릭터',
+  characters: '캐릭터',
+  weapon: '무기',
+  weapons: '무기',
+  map: '맵',
+  mode: '모드',
+  system: '시스템',
+  difficulty: '난이도',
+  level: '레벨',
+}
+
+const KEYWORD_LABEL_MAP: Record<string, string> = {
+  gameplay: '게임플레이',
+  game: '게임',
+  games: '게임',
+  play: '플레이',
+  playing: '플레이',
+  fun: '재미',
+  good: '긍정',
+  great: '훌륭함',
+  like: '선호',
+  likes: '선호',
+  don: '부정 표현',
+  story: '스토리',
+  narrative: '서사',
+  feel: '몰입감',
+  feeling: '몰입감',
+  graphic: '그래픽',
+  graphics: '그래픽',
+  art: '아트',
+  design: '디자인',
+  sound: '사운드',
+  music: '음악',
+  bug: '버그',
+  bugs: '버그',
+  performance: '성능',
+  optimization: '최적화',
+  fps: 'FPS',
+  price: '가격',
+  payment: '과금',
+  paid: '유료',
+  free: '무료',
+  dlc: 'DLC',
+  content: '콘텐츠',
+  update: '업데이트',
+  multiplayer: '멀티플레이',
+  online: '온라인',
+  server: '서버',
+  community: '커뮤니티',
+  control: '조작감',
+  controls: '조작감',
+  ui: 'UI',
+  ux: 'UX',
+  players: '플레이어',
+  player: '플레이어',
+  access: '접근성',
+  war: '전쟁',
+  quest: '퀘스트',
+  quests: '퀘스트',
+  character: '캐릭터',
+  characters: '캐릭터',
+  weapon: '무기',
+  weapons: '무기',
+  map: '맵',
+  mode: '모드',
+  system: '시스템',
+  difficulty: '난이도',
+  level: '레벨',
+  review: '리뷰',
+  reviews: '리뷰',
+  steam: '스팀',
 }
 
 const BUBBLE_LAYOUTS: BubbleLayout[] = [
@@ -255,7 +342,7 @@ function TopicTrendView({ topics }: { topics: TopicItem[] }) {
             <div className="topic-trend-item" key={topic.id}>
               <div className="topic-trend-title">
                 <strong>{topic.name}</strong>
-                <span>{topic.keywords.slice(0, 4).join(', ') || '키워드 없음'}</span>
+                <span>{formatKeywordList(topic.keywords.slice(0, 4)) || '키워드 없음'}</span>
               </div>
 
               <div className="topic-trend-track">
@@ -365,7 +452,7 @@ function TopicBubbleCluster({ topics }: { topics: TopicItem[] }) {
                   <span>{topic.share === null ? '비중 없음' : `${topic.share.toFixed(1)}%`}</span>
                 </div>
 
-                <p>{topic.keywords.slice(0, 4).join(', ') || '키워드 데이터 없음'}</p>
+                <p>{formatKeywordList(topic.keywords.slice(0, 4)) || '키워드 데이터 없음'}</p>
 
                 {topic.positiveRate !== null && (
                   <em className={topic.sentimentType}>{topic.sentimentLabel}</em>
@@ -424,7 +511,7 @@ function TopicPositiveRanking({ topics }: { topics: TopicItem[] }) {
         <div className="topic-positive-item" key={topic.id}>
           <div>
             <strong>{topic.name}</strong>
-            <span>{topic.keywords.slice(0, 3).join(', ')}</span>
+            <span>{formatKeywordList(topic.keywords.slice(0, 3))}</span>
           </div>
 
           <em>{topic.positiveRate?.toFixed(0)}%</em>
@@ -652,28 +739,129 @@ function formatTopicName(rawName: string, keywords: string[]) {
   const name = rawName.trim()
 
   if (!name) {
-    return keywords[0] ?? ''
+    return formatKeyword(keywords[0] ?? '')
+  }
+
+  if (/[가-힣]/.test(name) && name.includes('(') && name.includes(')')) {
+    return name
   }
 
   if (/[가-힣]/.test(name)) {
     return name
   }
 
-  const lowerName = name.toLowerCase()
+  const lowerName = normalizeToken(name)
+  const matchedKoreanLabel = findTopicKoreanLabel(lowerName, keywords)
 
-  for (const [key, value] of Object.entries(TOPIC_LABEL_MAP)) {
-    if (lowerName.includes(key)) {
-      return value
+  if (matchedKoreanLabel) {
+    return `${matchedKoreanLabel} (${name})`
+  }
+
+  return translateEnglishPhrase(name)
+}
+
+function findTopicKoreanLabel(lowerName: string, keywords: string[]) {
+  for (const [english, korean] of Object.entries(TOPIC_LABEL_MAP)) {
+    if (lowerName.includes(english)) {
+      return korean
     }
   }
 
-  const keywordLabel = keywords.find((keyword) => /[가-힣]/.test(keyword))
+  const keywordText = keywords.map((keyword) => normalizeToken(keyword)).join(' ')
 
-  if (keywordLabel) {
-    return keywordLabel
+  for (const [english, korean] of Object.entries(TOPIC_LABEL_MAP)) {
+    if (keywordText.includes(english)) {
+      return korean
+    }
   }
 
-  return name
+  return ''
+}
+
+function translateEnglishPhrase(text: string) {
+  const trimmedText = text.trim()
+
+  if (!trimmedText) {
+    return ''
+  }
+
+  if (/[가-힣]/.test(trimmedText)) {
+    return trimmedText
+  }
+
+  const tokens = splitEnglishTokens(trimmedText)
+
+  if (tokens.length === 0) {
+    return `기타 (${trimmedText})`
+  }
+
+  const translatedTokens = tokens.map((token) => getKoreanKeywordLabel(token))
+  const koreanText = translatedTokens.join(', ')
+
+  return `${koreanText} (${trimmedText})`
+}
+
+function formatKeywordList(keywords: string[]) {
+  return keywords
+    .map((keyword) => formatKeyword(keyword))
+    .filter(Boolean)
+    .join(', ')
+}
+
+function formatKeyword(keyword: string) {
+  const trimmedKeyword = keyword.trim()
+
+  if (!trimmedKeyword) {
+    return ''
+  }
+
+  if (/[가-힣]/.test(trimmedKeyword) && trimmedKeyword.includes('(') && trimmedKeyword.includes(')')) {
+    return trimmedKeyword
+  }
+
+  if (/[가-힣]/.test(trimmedKeyword)) {
+    return trimmedKeyword
+  }
+
+  const koreanLabel = getKoreanKeywordLabel(trimmedKeyword)
+
+  return `${koreanLabel} (${trimmedKeyword})`
+}
+
+function getKoreanKeywordLabel(keyword: string) {
+  const normalizedKeyword = normalizeToken(keyword)
+
+  if (!normalizedKeyword) {
+    return '기타'
+  }
+
+  if (KEYWORD_LABEL_MAP[normalizedKeyword]) {
+    return KEYWORD_LABEL_MAP[normalizedKeyword]
+  }
+
+  for (const [english, korean] of Object.entries(KEYWORD_LABEL_MAP)) {
+    if (normalizedKeyword.includes(english)) {
+      return korean
+    }
+  }
+
+  return '기타'
+}
+
+function splitEnglishTokens(text: string) {
+  return text
+    .split(/[,/|]+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+}
+
+function normalizeToken(text: string) {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function getSentimentInfo(
@@ -726,7 +914,7 @@ function calculateNeutralRate(positiveRate: number | null, negativeRate: number 
 }
 
 function createHighlightText(name: string, keywords: string[], sentimentLabel: string) {
-  const keywordText = keywords.slice(0, 3).join(', ')
+  const keywordText = formatKeywordList(keywords.slice(0, 3))
 
   if (keywordText && sentimentLabel) {
     return `${keywordText} 키워드가 함께 언급되며, 전체적으로 ${sentimentLabel}으로 분류됩니다.`

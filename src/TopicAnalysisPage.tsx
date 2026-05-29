@@ -90,7 +90,7 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   playing: '플레이',
   fun: '재미',
   good: '긍정',
-  great: '훌륭함',
+  great: '호평',
   bad: '부정',
   like: '선호',
   likes: '선호',
@@ -166,7 +166,7 @@ const KEYWORD_LABEL_MAP: Record<string, string> = {
   nt: '기타',
   de: '기타',
   doi: '기타',
-  friends: '기타',
+  friends: '친구',
 }
 
 const COMPACT_KEYWORD_LABEL_MAP: Record<string, string> = {
@@ -177,7 +177,7 @@ const COMPACT_KEYWORD_LABEL_MAP: Record<string, string> = {
   playing: '플레이',
   fun: '재미',
   good: '긍정',
-  great: '긍정',
+  great: '호평',
   bad: '부정',
   like: '선호',
   likes: '선호',
@@ -227,6 +227,35 @@ const COMPACT_KEYWORD_LABEL_MAP: Record<string, string> = {
   quest: '퀘스트',
   character: '캐릭터',
   characters: '캐릭터',
+  friends: '친구',
+}
+
+const GENRE_LABEL_MAP: Record<string, string> = {
+  action: '액션',
+  adventure: '어드벤처',
+  indie: '인디',
+  strategy: '전략',
+  casual: '캐주얼',
+  rpg: 'RPG',
+  simulation: '시뮬레이션',
+  sports: '스포츠',
+  racing: '레이싱',
+  puzzle: '퍼즐',
+  horror: '호러',
+  arcade: '아케이드',
+  platformer: '플랫폼',
+  platform: '플랫폼',
+  fighting: '격투',
+  shooter: '슈팅',
+  mmo: 'MMO',
+  mmorpg: 'MMORPG',
+  survival: '서바이벌',
+  sandbox: '샌드박스',
+  'open world': '오픈월드',
+  'visual novel': '비주얼노벨',
+  roguelike: '로그라이크',
+  roguelite: '로그라이트',
+  unknown: '알 수 없음',
 }
 
 const TITLE_EXCLUDED_KEYWORDS = new Set([
@@ -236,7 +265,6 @@ const TITLE_EXCLUDED_KEYWORDS = new Set([
   'de',
   'doi',
   'don',
-  'friends',
   'review',
   'reviews',
   'steam',
@@ -785,13 +813,24 @@ function GenreTopicDistributionView({ genreTopics }: { genreTopics: GenreTopicIt
 
   const [selectedGenre, setSelectedGenre] = useState('all')
 
-  const currentGenre = selectedGenre === 'all' || genres.includes(selectedGenre) ? selectedGenre : 'all'
+  const currentGenre =
+    selectedGenre === 'all' || genres.includes(selectedGenre) ? selectedGenre : 'all'
 
   const filteredGenreTopics = useMemo(() => {
     const filteredItems =
-      currentGenre === 'all' ? genreTopics : genreTopics.filter((item) => item.genre === currentGenre)
+      currentGenre === 'all'
+        ? genreTopics
+        : genreTopics.filter((item) => item.genre === currentGenre)
 
-    return [...filteredItems].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
+    return [...filteredItems].sort((a, b) => {
+      const weightDiff = (b.weight ?? 0) - (a.weight ?? 0)
+
+      if (weightDiff !== 0) {
+        return weightDiff
+      }
+
+      return (b.gameCount ?? 0) - (a.gameCount ?? 0)
+    })
   }, [currentGenre, genreTopics])
 
   return (
@@ -816,7 +855,7 @@ function GenreTopicDistributionView({ genreTopics }: { genreTopics: GenreTopicIt
               <option value="all">전체 장르</option>
               {genres.map((genre) => (
                 <option key={genre} value={genre}>
-                  {genre}
+                  {formatGenreLabel(genre)}
                 </option>
               ))}
             </select>
@@ -825,7 +864,11 @@ function GenreTopicDistributionView({ genreTopics }: { genreTopics: GenreTopicIt
       </article>
 
       <article className="topic-analysis-card topic-analysis-card--wide">
-        <h2>{currentGenre === 'all' ? '장르별 대표 토픽 분포' : `${currentGenre} 대표 토픽 분포`}</h2>
+        <h2>
+          {currentGenre === 'all'
+            ? '장르별 대표 토픽 분포'
+            : `${formatGenreLabel(currentGenre)} 대표 토픽 분포`}
+        </h2>
         <p className="topic-card-caption">
           Topic은 리뷰 키워드를 묶어 만든 주제 번호이며, weight는 해당 장르에서 그 토픽이
           얼마나 강하게 나타나는지를 의미합니다. game count는 해당 장르·토픽 조합에 포함된
@@ -839,7 +882,7 @@ function GenreTopicDistributionView({ genreTopics }: { genreTopics: GenreTopicIt
             {filteredGenreTopics.slice(0, 20).map((item, index) => (
               <div className="genre-topic-item" key={`${item.genre}-${item.topicId}-${index}`}>
                 <div className="genre-topic-title">
-                  <strong>{item.genre}</strong>
+                  <strong>{formatGenreLabel(item.genre)}</strong>
                   <span>Topic {item.topicId ?? '-'}</span>
                 </div>
 
@@ -1077,44 +1120,50 @@ function getSentimentInfo(
 }
 
 function createTopicTitleFromKeywords(keywords: string[], topicId: number | null): string {
-  const normalizedKeywords = keywords.map((keyword) => normalizeToken(keyword))
+  const normalizedKeywords = keywords
+    .map((keyword) => normalizeToken(keyword))
+    .filter((keyword) => keyword.length > 0)
+
+  if (normalizedKeywords.length === 0) {
+    return topicId === null ? '대표 토픽' : `Topic ${topicId}`
+  }
 
   if (hasKeyword(normalizedKeywords, ['story', 'feel', 'combat'])) {
     return '스토리·몰입·전투'
   }
 
-  if (hasKeyword(normalizedKeywords, ['fps', 'bad', 'performance', 'lag', 'optimization'])) {
-    return 'FPS 성능·긍부정 반응'
+  if (hasKeyword(normalizedKeywords, ['fps', 'bad', 'performance'])) {
+    return 'FPS 성능·부정 반응'
   }
 
-  if (hasKeyword(normalizedKeywords, ['players', 'access'])) {
-    return '플레이어 접근성·전쟁'
+  if (hasKeyword(normalizedKeywords, ['players', 'access', 'war'])) {
+    return '플레이어·접근성·전쟁'
   }
 
-  if (hasKeyword(normalizedKeywords, ['fun', 'good', 'great'])) {
-    return '재미·긍정 플레이'
-  }
-
-  if (hasKeyword(normalizedKeywords, ['like', 'time'])) {
-    return '선호·플레이 시간'
-  }
-
-  const meaningfulKeywords = normalizedKeywords
-    .filter((keyword) => keyword && !TITLE_EXCLUDED_KEYWORDS.has(keyword))
+  const meaningfulLabels = normalizedKeywords
+    .filter((keyword) => !TITLE_EXCLUDED_KEYWORDS.has(keyword))
     .map((keyword) => getCompactKeywordLabel(keyword))
-    .filter(Boolean)
+    .filter((label) => label && label !== '기타')
 
-  const uniqueLabels = Array.from(new Set(meaningfulKeywords)).slice(0, 3)
+  const uniqueLabels = Array.from(new Set(meaningfulLabels))
 
-  if (uniqueLabels.length > 0) {
+  if (uniqueLabels.length >= 3) {
+    return uniqueLabels.slice(0, 3).join('·')
+  }
+
+  if (uniqueLabels.length === 2) {
     return uniqueLabels.join('·')
+  }
+
+  if (uniqueLabels.length === 1) {
+    return uniqueLabels[0]
   }
 
   return topicId === null ? '대표 토픽' : `Topic ${topicId}`
 }
 
 function hasKeyword(keywords: string[], candidates: string[]): boolean {
-  return candidates.some((candidate) => keywords.includes(candidate))
+  return candidates.every((candidate) => keywords.includes(candidate))
 }
 
 function getCompactKeywordLabel(keyword: string): string {
@@ -1125,6 +1174,40 @@ function getCompactKeywordLabel(keyword: string): string {
   }
 
   return COMPACT_KEYWORD_LABEL_MAP[normalizedKeyword] ?? getKoreanKeywordLabel(normalizedKeyword)
+}
+
+function formatGenreLabel(genre: string): string {
+  const trimmedGenre = genre.trim()
+
+  if (!trimmedGenre) {
+    return '알 수 없음'
+  }
+
+  if (/[가-힣]/.test(trimmedGenre) && trimmedGenre.includes('(') && trimmedGenre.includes(')')) {
+    return trimmedGenre
+  }
+
+  const originalParts = trimmedGenre
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+
+  if (originalParts.length === 0) {
+    return trimmedGenre
+  }
+
+  const koreanParts = originalParts.map((part) => {
+    const normalizedPart = normalizeToken(part)
+    return GENRE_LABEL_MAP[normalizedPart] ?? part
+  })
+
+  const hasChanged = koreanParts.some((part, index) => part !== originalParts[index])
+
+  if (!hasChanged) {
+    return trimmedGenre
+  }
+
+  return `${koreanParts.join(', ')} (${trimmedGenre})`
 }
 
 function createRepresentativeTopicLabelMap(topics: RepresentativeTopic[]): Map<number, string> {
@@ -1187,7 +1270,8 @@ function formatCategoryName(category: string): string {
   }
 
   const normalizedCategory = normalizeToken(trimmedCategory)
-  const koreanLabel = CATEGORY_LABEL_MAP[normalizedCategory] ?? getKoreanKeywordLabel(normalizedCategory)
+  const koreanLabel =
+    CATEGORY_LABEL_MAP[normalizedCategory] ?? getKoreanKeywordLabel(normalizedCategory)
 
   return `${koreanLabel} (${trimmedCategory})`
 }

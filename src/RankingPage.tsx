@@ -2,14 +2,18 @@ import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } fr
 import './RankingPage.css'
 
 type SortOption =
-  | 'popular'
+  | 'reviewHigh'
+  | 'reviewLow'
   | 'positiveHigh'
   | 'positiveLow'
   | 'playtimeHigh'
   | 'playtimeLow'
   | 'priceLow'
   | 'priceHigh'
-  | 'name'
+  | 'nameEnAsc'
+  | 'nameEnDesc'
+  | 'nameKoAsc'
+  | 'nameKoDesc'
 
 type PriceFilter = 'all' | 'free' | '0-10' | '10-30' | '30plus'
 
@@ -40,7 +44,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 const ITEMS_PER_PAGE = 5
 
 // 원화 표시는 프론트 임시 환율 기준입니다.
-// 필요하면 1350 값을 프로젝트 기준 환율에 맞게 조정하면 됩니다.
+// 필요하면 프로젝트 기준 환율에 맞게 숫자만 바꾸면 됩니다.
 const USD_TO_KRW_RATE = 1350
 
 function RankingPage() {
@@ -58,7 +62,7 @@ function RankingPage() {
   const [selectedGenre, setSelectedGenre] = useState('all')
   const [selectedPrice, setSelectedPrice] = useState<PriceFilter>('all')
   const [selectedPlatform, setSelectedPlatform] = useState('all')
-  const [sortBy, setSortBy] = useState<SortOption>('popular')
+  const [sortBy, setSortBy] = useState<SortOption>('reviewHigh')
   const [onlyFree, setOnlyFree] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -168,30 +172,46 @@ function RankingPage() {
     const copied = [...filteredGames]
 
     copied.sort((a, b) => {
-      if (sortBy === 'popular') {
-        return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
+      if (sortBy === 'reviewHigh') {
+        return (
+          getNullableNumberForSort(b.reviewCount, 'high') -
+          getNullableNumberForSort(a.reviewCount, 'high')
+        )
+      }
+
+      if (sortBy === 'reviewLow') {
+        return (
+          getNullableNumberForSort(a.reviewCount, 'low') -
+          getNullableNumberForSort(b.reviewCount, 'low')
+        )
       }
 
       if (sortBy === 'positiveHigh') {
         return (
-          getPositiveRatioForSort(b.positiveRatio, 'high') -
-          getPositiveRatioForSort(a.positiveRatio, 'high')
+          getNullableNumberForSort(b.positiveRatio, 'high') -
+          getNullableNumberForSort(a.positiveRatio, 'high')
         )
       }
 
       if (sortBy === 'positiveLow') {
         return (
-          getPositiveRatioForSort(a.positiveRatio, 'low') -
-          getPositiveRatioForSort(b.positiveRatio, 'low')
+          getNullableNumberForSort(a.positiveRatio, 'low') -
+          getNullableNumberForSort(b.positiveRatio, 'low')
         )
       }
 
       if (sortBy === 'playtimeHigh') {
-        return (b.averagePlaytime ?? 0) - (a.averagePlaytime ?? 0)
+        return (
+          getNullableNumberForSort(b.averagePlaytime, 'high') -
+          getNullableNumberForSort(a.averagePlaytime, 'high')
+        )
       }
 
       if (sortBy === 'playtimeLow') {
-        return (a.averagePlaytime ?? 0) - (b.averagePlaytime ?? 0)
+        return (
+          getNullableNumberForSort(a.averagePlaytime, 'low') -
+          getNullableNumberForSort(b.averagePlaytime, 'low')
+        )
       }
 
       if (sortBy === 'priceLow') {
@@ -202,8 +222,20 @@ function RankingPage() {
         return b.price - a.price
       }
 
-      if (sortBy === 'name') {
-        return a.name.localeCompare(b.name)
+      if (sortBy === 'nameEnAsc') {
+        return compareGameName(a.name, b.name, 'en-US', 'asc')
+      }
+
+      if (sortBy === 'nameEnDesc') {
+        return compareGameName(a.name, b.name, 'en-US', 'desc')
+      }
+
+      if (sortBy === 'nameKoAsc') {
+        return compareGameName(a.name, b.name, 'ko-KR', 'asc')
+      }
+
+      if (sortBy === 'nameKoDesc') {
+        return compareGameName(a.name, b.name, 'ko-KR', 'desc')
       }
 
       return 0
@@ -361,14 +393,18 @@ function RankingPage() {
         <div className="search-filter-item">
           <label htmlFor="sort-filter">정렬</label>
           <select id="sort-filter" value={sortBy} onChange={handleSortChange}>
-            <option value="popular">리뷰 수 많은순</option>
+            <option value="reviewHigh">리뷰 수 많은순</option>
+            <option value="reviewLow">리뷰 수 적은순</option>
             <option value="positiveHigh">리뷰 긍정률 높은순</option>
             <option value="positiveLow">리뷰 긍정률 낮은순</option>
             <option value="playtimeHigh">평균 플레이시간 높은순</option>
             <option value="playtimeLow">평균 플레이시간 낮은순</option>
             <option value="priceLow">가격 낮은순</option>
             <option value="priceHigh">가격 높은순</option>
-            <option value="name">이름순</option>
+            <option value="nameEnAsc">이름순 - 영어 기준 오름차순 A→Z</option>
+            <option value="nameEnDesc">이름순 - 영어 기준 내림차순 Z→A</option>
+            <option value="nameKoAsc">이름순 - 한글 기준 오름차순 ㄱ→ㅎ</option>
+            <option value="nameKoDesc">이름순 - 한글 기준 내림차순 ㅎ→ㄱ</option>
           </select>
         </div>
 
@@ -703,12 +739,26 @@ function calculatePositiveRatio(
   return normalizeRatio(fallbackRatio)
 }
 
-function getPositiveRatioForSort(value: number | null, direction: 'high' | 'low'): number {
+function getNullableNumberForSort(value: number | null, direction: 'high' | 'low'): number {
   if (value === null || !Number.isFinite(value)) {
-    return direction === 'high' ? -1 : 101
+    return direction === 'high' ? -1 : Number.POSITIVE_INFINITY
   }
 
   return value
+}
+
+function compareGameName(
+  firstName: string,
+  secondName: string,
+  locale: 'en-US' | 'ko-KR',
+  direction: 'asc' | 'desc',
+): number {
+  const result = firstName.localeCompare(secondName, locale, {
+    numeric: true,
+    sensitivity: 'base',
+  })
+
+  return direction === 'asc' ? result : -result
 }
 
 function formatGenreLabel(genre: string): string {

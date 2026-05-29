@@ -588,3 +588,53 @@ html.theme-dark .trend-compare-loading {
   }
 }
 
+/* 장르별 추이 카드: 긴 장르명 표시 보강 */
+.trend-compare-bar-list--genre {
+  gap: 20px;
+}
+
+.trend-compare-bar-item {
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr) 72px;
+  gap: 16px;
+}
+
+.trend-compare-bar-label {
+  display: block;
+  min-width: 0;
+}
+
+.trend-compare-bar-label--genre {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.trend-compare-bar-value {
+  white-space: nowrap;
+  text-align: right;
+}
+
+@media (max-width: 1280px) {
+  .trend-compare-bar-item {
+    grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) 72px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .trend-compare-bar-item {
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) 68px;
+  }
+}
+
+@media (max-width: 720px) {
+  .trend-compare-bar-item {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .trend-compare-bar-value {
+    text-align: left;
+  }
+}

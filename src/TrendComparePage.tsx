@@ -534,12 +534,14 @@ function GenreReviewTrendBars({ data }: { data: GenreTrend[] }) {
   )
 
   return (
-    <div className="trend-compare-price-list">
+    <div className="trend-compare-price-list trend-compare-bar-list trend-compare-bar-list--genre">
       {data.map((item) => (
-        <div className="trend-compare-price-item" key={item.genre}>
-          <span className="trend-compare-price-label">{item.genre}</span>
+        <div className="trend-compare-price-item trend-compare-bar-item" key={item.genre}>
+          <span className="trend-compare-price-label trend-compare-bar-label trend-compare-bar-label--genre">
+            {item.genre}
+          </span>
 
-          <div className="trend-compare-price-track">
+          <div className="trend-compare-price-track trend-compare-bar-track">
             {item.previousReviews !== null && (
               <div
                 className="trend-compare-price-bar previous"
@@ -553,7 +555,9 @@ function GenreReviewTrendBars({ data }: { data: GenreTrend[] }) {
             />
           </div>
 
-          <strong>{formatCompactNumber(item.currentReviews)}</strong>
+          <strong className="trend-compare-bar-value">
+            {formatCompactNumber(item.currentReviews)}
+          </strong>
         </div>
       ))}
     </div>
@@ -574,24 +578,29 @@ function GenrePositiveRateTrendBars({ data }: { data: GenreTrend[] }) {
   }
 
   return (
-    <div className="trend-compare-price-list">
+    <div className="trend-compare-price-list trend-compare-bar-list trend-compare-bar-list--genre">
       {filteredData.map((item) => {
         const currentRate = item.currentPositiveRate ?? 0
         const previousRate = item.previousPositiveRate ?? 0
 
         return (
-          <div className="trend-compare-price-item" key={item.genre}>
-            <span className="trend-compare-price-label">{item.genre}</span>
+          <div className="trend-compare-price-item trend-compare-bar-item" key={item.genre}>
+            <span className="trend-compare-price-label trend-compare-bar-label trend-compare-bar-label--genre">
+              {item.genre}
+            </span>
 
-            <div className="trend-compare-price-track">
+            <div className="trend-compare-price-track trend-compare-bar-track">
               <div
                 className="trend-compare-price-bar previous"
                 style={{ width: `${previousRate}%` }}
               />
-              <div className="trend-compare-price-bar current" style={{ width: `${currentRate}%` }} />
+              <div
+                className="trend-compare-price-bar current"
+                style={{ width: `${currentRate}%` }}
+              />
             </div>
 
-            <strong>{currentRate.toFixed(1)}%</strong>
+            <strong className="trend-compare-bar-value">{currentRate.toFixed(1)}%</strong>
           </div>
         )
       })}

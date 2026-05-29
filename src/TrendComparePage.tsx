@@ -268,12 +268,12 @@ function renderCompareContent({
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="장르별 리뷰 수 추이" />
+          <TrendCardHeader title="장르별 리뷰 수 추이" hideLegend />
           <GenreReviewTrendBars data={genreTrends} />
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="장르별 긍정 비율 추이" />
+          <TrendCardHeader title="장르별 긍정 비율 추이" hideLegend />
           <GenrePositiveRateTrendBars data={genreTrends} />
         </article>
       </div>
@@ -534,32 +534,44 @@ function GenreReviewTrendBars({ data }: { data: GenreTrend[] }) {
   )
 
   return (
-    <div className="trend-compare-price-list trend-compare-bar-list trend-compare-bar-list--genre">
-      {data.map((item) => (
-        <div className="trend-compare-price-item trend-compare-bar-item" key={item.genre}>
-          <span className="trend-compare-price-label trend-compare-bar-label trend-compare-bar-label--genre">
-            {item.genre}
-          </span>
+    <div className="trend-compare-stacked-list">
+      {data.map((item) => {
+        const previousReviews = item.previousReviews ?? 0
+        const previousWidth = (previousReviews / maxReviewCount) * 100
+        const currentWidth = (item.currentReviews / maxReviewCount) * 100
 
-          <div className="trend-compare-price-track trend-compare-bar-track">
-            {item.previousReviews !== null && (
-              <div
-                className="trend-compare-price-bar previous"
-                style={{ width: `${(item.previousReviews / maxReviewCount) * 100}%` }}
-              />
-            )}
+        return (
+          <div className="trend-compare-stacked-item" key={item.genre}>
+            <strong className="trend-compare-stacked-title">{item.genre}</strong>
 
-            <div
-              className="trend-compare-price-bar current"
-              style={{ width: `${(item.currentReviews / maxReviewCount) * 100}%` }}
-            />
+            <div className="trend-compare-stacked-row">
+              <span className="trend-compare-stacked-period">이전 기간</span>
+              <div className="trend-compare-stacked-track">
+                <div
+                  className="trend-compare-stacked-bar previous"
+                  style={{ width: `${previousWidth}%` }}
+                />
+              </div>
+              <span className="trend-compare-stacked-value">
+                {formatCompactNumber(previousReviews)}
+              </span>
+            </div>
+
+            <div className="trend-compare-stacked-row">
+              <span className="trend-compare-stacked-period">현재 기간</span>
+              <div className="trend-compare-stacked-track">
+                <div
+                  className="trend-compare-stacked-bar current"
+                  style={{ width: `${currentWidth}%` }}
+                />
+              </div>
+              <span className="trend-compare-stacked-value current">
+                {formatCompactNumber(item.currentReviews)}
+              </span>
+            </div>
           </div>
-
-          <strong className="trend-compare-bar-value">
-            {formatCompactNumber(item.currentReviews)}
-          </strong>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -578,29 +590,38 @@ function GenrePositiveRateTrendBars({ data }: { data: GenreTrend[] }) {
   }
 
   return (
-    <div className="trend-compare-price-list trend-compare-bar-list trend-compare-bar-list--genre">
+    <div className="trend-compare-stacked-list">
       {filteredData.map((item) => {
         const currentRate = item.currentPositiveRate ?? 0
         const previousRate = item.previousPositiveRate ?? 0
 
         return (
-          <div className="trend-compare-price-item trend-compare-bar-item" key={item.genre}>
-            <span className="trend-compare-price-label trend-compare-bar-label trend-compare-bar-label--genre">
-              {item.genre}
-            </span>
+          <div className="trend-compare-stacked-item" key={item.genre}>
+            <strong className="trend-compare-stacked-title">{item.genre}</strong>
 
-            <div className="trend-compare-price-track trend-compare-bar-track">
-              <div
-                className="trend-compare-price-bar previous"
-                style={{ width: `${previousRate}%` }}
-              />
-              <div
-                className="trend-compare-price-bar current"
-                style={{ width: `${currentRate}%` }}
-              />
+            <div className="trend-compare-stacked-row">
+              <span className="trend-compare-stacked-period">이전 기간</span>
+              <div className="trend-compare-stacked-track">
+                <div
+                  className="trend-compare-stacked-bar previous"
+                  style={{ width: `${previousRate}%` }}
+                />
+              </div>
+              <span className="trend-compare-stacked-value">{previousRate.toFixed(1)}%</span>
             </div>
 
-            <strong className="trend-compare-bar-value">{currentRate.toFixed(1)}%</strong>
+            <div className="trend-compare-stacked-row">
+              <span className="trend-compare-stacked-period">현재 기간</span>
+              <div className="trend-compare-stacked-track">
+                <div
+                  className="trend-compare-stacked-bar current"
+                  style={{ width: `${currentRate}%` }}
+                />
+              </div>
+              <span className="trend-compare-stacked-value current">
+                {currentRate.toFixed(1)}%
+              </span>
+            </div>
           </div>
         )
       })}

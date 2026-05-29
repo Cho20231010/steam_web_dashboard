@@ -127,7 +127,7 @@
   border-radius: 18px;
   background: var(--panel, #ffffff);
   box-shadow: var(--shadow, 0 10px 24px rgba(15, 23, 42, 0.05));
-  overflow: hidden;
+  overflow: visible;
 }
 
 .trend-compare-card-header {
@@ -303,6 +303,8 @@
   font-size: 13px;
   font-weight: 950;
   word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
 }
 
 .trend-compare-genre-row span {
@@ -382,6 +384,83 @@
   text-align: right;
 }
 
+.trend-compare-stacked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 4px;
+}
+
+.trend-compare-stacked-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf0f7;
+}
+
+.trend-compare-stacked-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.trend-compare-stacked-title {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.trend-compare-stacked-row {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 58px;
+  align-items: center;
+  gap: 10px;
+}
+
+.trend-compare-stacked-period {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.trend-compare-stacked-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #edf1ff;
+  overflow: hidden;
+}
+
+.trend-compare-stacked-bar {
+  height: 100%;
+  min-width: 3px;
+  border-radius: 999px;
+}
+
+.trend-compare-stacked-bar.previous {
+  background: #aab7ff;
+}
+
+.trend-compare-stacked-bar.current {
+  background: var(--blue, #5d63f1);
+}
+
+.trend-compare-stacked-value {
+  color: #3b4561;
+  font-size: 12px;
+  font-weight: 950;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.trend-compare-stacked-value.current {
+  color: #172033;
+}
+
 .trend-compare-bottom-note {
   display: flex;
   align-items: center;
@@ -422,6 +501,8 @@ html.theme-dark .trend-compare-card-header h2,
 html.theme-dark .trend-compare-genre-row strong,
 html.theme-dark .trend-compare-price-label,
 html.theme-dark .trend-compare-price-item strong,
+html.theme-dark .trend-compare-stacked-title,
+html.theme-dark .trend-compare-stacked-value.current,
 html.theme-dark .trend-compare-bottom-note strong {
   color: #f8fafc;
 }
@@ -445,6 +526,8 @@ html.theme-dark .trend-compare-y-axis span,
 html.theme-dark .trend-compare-x-axis span,
 html.theme-dark .trend-compare-genre-head span,
 html.theme-dark .trend-compare-genre-row span,
+html.theme-dark .trend-compare-stacked-period,
+html.theme-dark .trend-compare-stacked-value,
 html.theme-dark .trend-compare-bottom-note span {
   color: #cbd5e1;
 }
@@ -454,7 +537,8 @@ html.theme-dark .trend-compare-genre-head {
   background: #0f172a;
 }
 
-html.theme-dark .trend-compare-genre-row {
+html.theme-dark .trend-compare-genre-row,
+html.theme-dark .trend-compare-stacked-item {
   border-bottom-color: rgba(148, 163, 184, 0.18);
 }
 
@@ -462,7 +546,8 @@ html.theme-dark .trend-compare-grid-lines line {
   stroke: rgba(148, 163, 184, 0.18);
 }
 
-html.theme-dark .trend-compare-price-track {
+html.theme-dark .trend-compare-price-track,
+html.theme-dark .trend-compare-stacked-track {
   background: #1e293b;
 }
 
@@ -586,55 +671,9 @@ html.theme-dark .trend-compare-loading {
   .trend-compare-price-item strong {
     text-align: left;
   }
-}
 
-/* 장르별 추이 카드: 긴 장르명 표시 보강 */
-.trend-compare-bar-list--genre {
-  gap: 20px;
-}
-
-.trend-compare-bar-item {
-  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr) 72px;
-  gap: 16px;
-}
-
-.trend-compare-bar-label {
-  display: block;
-  min-width: 0;
-}
-
-.trend-compare-bar-label--genre {
-  white-space: normal;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-  line-height: 1.45;
-  font-size: 13px;
-}
-
-.trend-compare-bar-value {
-  white-space: nowrap;
-  text-align: right;
-}
-
-@media (max-width: 1280px) {
-  .trend-compare-bar-item {
-    grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) 72px;
-  }
-}
-
-@media (max-width: 1100px) {
-  .trend-compare-bar-item {
-    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) 68px;
-  }
-}
-
-@media (max-width: 720px) {
-  .trend-compare-bar-item {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-  }
-
-  .trend-compare-bar-value {
-    text-align: left;
+  .trend-compare-stacked-row {
+    grid-template-columns: 58px minmax(0, 1fr) 56px;
+    gap: 8px;
   }
 }

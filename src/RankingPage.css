@@ -350,10 +350,12 @@
 }
 
 .game-cell {
-  display: grid;
-  grid-template-columns: 200px 220px;
+  display: inline-grid;
+  grid-template-columns: 200px auto;
   align-items: center;
   column-gap: 14px;
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -387,8 +389,8 @@
 }
 
 .game-info {
-  width: 220px;
-  min-width: 0;
+  width: fit-content;
+  min-width: 90px;
   max-width: 220px;
   padding: 8px 0;
 }
@@ -396,6 +398,7 @@
 .game-info strong {
   display: -webkit-box;
   overflow: hidden;
+  max-width: 220px;
   color: #172033;
   font-size: 14px;
   font-weight: 700;
@@ -649,4 +652,3 @@ html.theme-dark .sample-cursor-note {
     min-width: 1260px;
   }
 }
-

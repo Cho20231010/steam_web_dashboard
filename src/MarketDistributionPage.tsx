@@ -143,25 +143,11 @@ function MarketDistributionPage() {
             fetchRequiredJson('/analysis/release-year-stats'),
           ])
 
-        if (summaryResult.status === 'rejected') {
-          throw summaryResult.reason
-        }
-
-        if (genreResult.status === 'rejected') {
-          throw genreResult.reason
-        }
-
-        if (priceResult.status === 'rejected') {
-          throw priceResult.reason
-        }
-
-        if (platformResult.status === 'rejected') {
-          throw platformResult.reason
-        }
-
-        if (releaseYearResult.status === 'rejected') {
-          throw releaseYearResult.reason
-        }
+        if (summaryResult.status === 'rejected') throw summaryResult.reason
+        if (genreResult.status === 'rejected') throw genreResult.reason
+        if (priceResult.status === 'rejected') throw priceResult.reason
+        if (platformResult.status === 'rejected') throw platformResult.reason
+        if (releaseYearResult.status === 'rejected') throw releaseYearResult.reason
 
         setMarketData({
           summary: normalizeSummaryStat(summaryResult.value),
@@ -190,35 +176,7 @@ function MarketDistributionPage() {
 
   return (
     <section className="market-distribution-page" aria-label="시장 분포 분석 화면">
-      <header className="market-distribution-header">
-        <div>
-          <span>6. 시장 분포</span>
-          <h1>시장 분포 분석</h1>
-        </div>
-
-        <div className="market-summary-badges" aria-label="시장 요약 지표">
-          <strong>
-            총 게임 수{' '}
-            {marketData.summary.totalGames === null
-              ? '-'
-              : marketData.summary.totalGames.toLocaleString('ko-KR')}
-          </strong>
-
-          <strong>
-            총 리뷰 수{' '}
-            {marketData.summary.totalReviews === null
-              ? '-'
-              : marketData.summary.totalReviews.toLocaleString('ko-KR')}
-          </strong>
-
-          <strong>
-            평균 긍정률{' '}
-            {marketData.summary.averagePositiveRatio === null
-              ? '-'
-              : `${marketData.summary.averagePositiveRatio.toFixed(1)}%`}
-          </strong>
-        </div>
-      </header>
+      <MarketSummaryBar summary={marketData.summary} />
 
       <nav className="market-distribution-tabs" aria-label="시장 분포 탭">
         <button
@@ -263,44 +221,107 @@ function MarketDistributionPage() {
       )}
 
       {!isLoading && !errorMessage && hasAnyData && (
-        <div className="market-dashboard-grid">
-          <GenreDistributionCard genres={marketData.genres} isFocused={activeTab === 'genre'} />
+        <>
+          {activeTab === 'genre' && <GenreDistributionView genres={marketData.genres} />}
 
-          <PriceBandDistributionCard
-            priceBands={marketData.priceBands}
-            isFocused={activeTab === 'price'}
-          />
+          {activeTab === 'price' && <PriceDistributionView priceBands={marketData.priceBands} />}
 
-          <PlatformDistributionCard
-            platforms={marketData.platforms}
-            isFocused={activeTab === 'platform'}
-          />
+          {activeTab === 'platform' && (
+            <PlatformDistributionView platforms={marketData.platforms} />
+          )}
 
-          <ReleaseYearDistributionCard
-            releaseYears={marketData.releaseYears}
-            isFocused={activeTab === 'release'}
-          />
-
-          <ReleasePositiveTrendCard releaseYears={marketData.releaseYears} />
-        </div>
+          {activeTab === 'release' && (
+            <ReleaseDistributionView releaseYears={marketData.releaseYears} />
+          )}
+        </>
       )}
     </section>
   )
 }
 
-function GenreDistributionCard({
-  genres,
-  isFocused,
-}: {
-  genres: GenreStat[]
-  isFocused: boolean
-}) {
+function MarketSummaryBar({ summary }: { summary: SummaryStat }) {
+  return (
+    <div className="market-summary-strip" aria-label="시장 요약 지표">
+      <div>
+        <span>총 게임 수</span>
+        <strong>{summary.totalGames === null ? '-' : summary.totalGames.toLocaleString('ko-KR')}</strong>
+      </div>
+
+      <div>
+        <span>총 리뷰 수</span>
+        <strong>
+          {summary.totalReviews === null ? '-' : summary.totalReviews.toLocaleString('ko-KR')}
+        </strong>
+      </div>
+
+      <div>
+        <span>평균 긍정률</span>
+        <strong>
+          {summary.averagePositiveRatio === null
+            ? '-'
+            : `${summary.averagePositiveRatio.toFixed(1)}%`}
+        </strong>
+      </div>
+
+      <div>
+        <span>대표 장르</span>
+        <strong>{summary.topGenre ? formatGenreLabel(summary.topGenre) : '-'}</strong>
+      </div>
+    </div>
+  )
+}
+
+function GenreDistributionView({ genres }: { genres: GenreStat[] }) {
+  return (
+    <div className="market-dashboard-grid">
+      <GenreDistributionCard genres={genres} />
+
+      <GenrePositiveRankingCard genres={genres} />
+
+      <GenreAveragePriceCard genres={genres} />
+    </div>
+  )
+}
+
+function PriceDistributionView({ priceBands }: { priceBands: PriceBandStat[] }) {
+  return (
+    <div className="market-dashboard-grid">
+      <PriceBandDistributionCard priceBands={priceBands} />
+
+      <PricePositiveRatioCard priceBands={priceBands} />
+
+      <PriceReviewCountCard priceBands={priceBands} />
+    </div>
+  )
+}
+
+function PlatformDistributionView({ platforms }: { platforms: PlatformStat[] }) {
+  return (
+    <div className="market-dashboard-grid">
+      <PlatformDistributionCard platforms={platforms} />
+
+      <PlatformPositiveRatioCard platforms={platforms} />
+    </div>
+  )
+}
+
+function ReleaseDistributionView({ releaseYears }: { releaseYears: ReleaseYearStat[] }) {
+  return (
+    <div className="market-dashboard-grid">
+      <ReleaseYearDistributionCard releaseYears={releaseYears} />
+
+      <ReleasePositiveTrendCard releaseYears={releaseYears} />
+    </div>
+  )
+}
+
+function GenreDistributionCard({ genres }: { genres: GenreStat[] }) {
   const topGenres = genres.slice(0, 7)
   const pieBackground = buildPieBackground(topGenres)
   const totalGenreCount = calculateTotalCount(genres)
 
   return (
-    <article className={`market-card market-card--large ${isFocused ? 'focused' : ''}`}>
+    <article className="market-card market-card--large">
       <div className="market-card-header">
         <h2>장르별 게임 비중</h2>
         <span>장르 비중</span>
@@ -312,9 +333,7 @@ function GenreDistributionCard({
         <div className="genre-distribution-body">
           <div
             className="genre-pie-chart"
-            style={{
-              background: pieBackground,
-            }}
+            style={{ background: pieBackground }}
             aria-label="장르별 게임 비중 차트"
           >
             <div>
@@ -326,12 +345,7 @@ function GenreDistributionCard({
           <div className="genre-legend-list">
             {topGenres.map((genre, index) => (
               <div className="genre-legend-item" key={`${genre.genre}-${index}`}>
-                <i
-                  style={{
-                    background: PIE_COLORS[index % PIE_COLORS.length],
-                  }}
-                  aria-hidden="true"
-                />
+                <i style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
                 <span>{genre.label}</span>
                 <strong>{genre.share.toFixed(1)}%</strong>
               </div>
@@ -343,17 +357,73 @@ function GenreDistributionCard({
   )
 }
 
-function PriceBandDistributionCard({
-  priceBands,
-  isFocused,
-}: {
-  priceBands: PriceBandStat[]
-  isFocused: boolean
-}) {
+function GenrePositiveRankingCard({ genres }: { genres: GenreStat[] }) {
+  const items = genres
+    .filter((genre) => genre.avgPositiveRatio !== null)
+    .sort((a, b) => (b.avgPositiveRatio ?? 0) - (a.avgPositiveRatio ?? 0))
+    .slice(0, 8)
+
+  return (
+    <article className="market-card">
+      <div className="market-card-header">
+        <h2>장르별 평균 긍정률</h2>
+        <span>긍정률</span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="market-empty inside">장르별 긍정률 데이터가 없습니다.</div>
+      ) : (
+        <MetricList
+          items={items.map((item) => ({
+            label: item.label,
+            value: item.avgPositiveRatio ?? 0,
+            valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
+            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
+          }))}
+          maxValue={100}
+        />
+      )}
+    </article>
+  )
+}
+
+function GenreAveragePriceCard({ genres }: { genres: GenreStat[] }) {
+  const items = genres
+    .filter((genre) => genre.avgPrice !== null)
+    .sort((a, b) => (b.avgPrice ?? 0) - (a.avgPrice ?? 0))
+    .slice(0, 8)
+
+  const maxValue = Math.max(...items.map((item) => item.avgPrice ?? 0), 1)
+
+  return (
+    <article className="market-card">
+      <div className="market-card-header">
+        <h2>장르별 평균 가격</h2>
+        <span>평균 가격</span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="market-empty inside">장르별 평균 가격 데이터가 없습니다.</div>
+      ) : (
+        <MetricList
+          items={items.map((item) => ({
+            label: item.label,
+            value: item.avgPrice ?? 0,
+            valueText: Math.round(item.avgPrice ?? 0).toLocaleString('ko-KR'),
+            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
+          }))}
+          maxValue={maxValue}
+        />
+      )}
+    </article>
+  )
+}
+
+function PriceBandDistributionCard({ priceBands }: { priceBands: PriceBandStat[] }) {
   const maxCount = Math.max(...priceBands.map((item) => item.gameCount), 1)
 
   return (
-    <article className={`market-card ${isFocused ? 'focused' : ''}`}>
+    <article className="market-card market-card--large">
       <div className="market-card-header">
         <h2>가격대별 게임 수 분포</h2>
         <span>가격대</span>
@@ -374,11 +444,7 @@ function PriceBandDistributionCard({
                 </div>
 
                 <div className="market-bar-track">
-                  <div
-                    style={{
-                      width: `${width}%`,
-                    }}
-                  />
+                  <div style={{ width: `${width}%` }} />
                 </div>
 
                 <em>{item.gameCount.toLocaleString('ko-KR')}</em>
@@ -391,15 +457,64 @@ function PriceBandDistributionCard({
   )
 }
 
-function PlatformDistributionCard({
-  platforms,
-  isFocused,
-}: {
-  platforms: PlatformStat[]
-  isFocused: boolean
-}) {
+function PricePositiveRatioCard({ priceBands }: { priceBands: PriceBandStat[] }) {
+  const items = priceBands.filter((item) => item.avgPositiveRatio !== null)
+
   return (
-    <article className={`market-card ${isFocused ? 'focused' : ''}`}>
+    <article className="market-card">
+      <div className="market-card-header">
+        <h2>가격대별 평균 긍정률</h2>
+        <span>긍정률</span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="market-empty inside">가격대별 긍정률 데이터가 없습니다.</div>
+      ) : (
+        <MetricList
+          items={items.map((item) => ({
+            label: item.label,
+            value: item.avgPositiveRatio ?? 0,
+            valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
+            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
+          }))}
+          maxValue={100}
+        />
+      )}
+    </article>
+  )
+}
+
+function PriceReviewCountCard({ priceBands }: { priceBands: PriceBandStat[] }) {
+  const items = priceBands.filter((item) => item.avgReviewCount !== null)
+  const maxValue = Math.max(...items.map((item) => item.avgReviewCount ?? 0), 1)
+
+  return (
+    <article className="market-card">
+      <div className="market-card-header">
+        <h2>가격대별 평균 리뷰 수</h2>
+        <span>리뷰 수</span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="market-empty inside">가격대별 평균 리뷰 수 데이터가 없습니다.</div>
+      ) : (
+        <MetricList
+          items={items.map((item) => ({
+            label: item.label,
+            value: item.avgReviewCount ?? 0,
+            valueText: Math.round(item.avgReviewCount ?? 0).toLocaleString('ko-KR'),
+            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
+          }))}
+          maxValue={maxValue}
+        />
+      )}
+    </article>
+  )
+}
+
+function PlatformDistributionCard({ platforms }: { platforms: PlatformStat[] }) {
+  return (
+    <article className="market-card market-card--large">
       <div className="market-card-header">
         <h2>플랫폼별 비중</h2>
         <span>플랫폼 정보 기준</span>
@@ -416,13 +531,9 @@ function PlatformDistributionCard({
           <div className="platform-grid">
             {platforms.map((platform) => (
               <div className="platform-item" key={platform.platform}>
-                <div className="platform-icon" aria-hidden="true">
-                  {getPlatformIcon(platform.platform)}
-                </div>
-
+                <div className="platform-icon">{getPlatformIcon(platform.platform)}</div>
                 <strong>{platform.label}</strong>
                 <span>{platform.share.toFixed(1)}%</span>
-
                 <em>
                   {platform.avgPositiveRatio === null
                     ? '긍정률 -'
@@ -437,18 +548,39 @@ function PlatformDistributionCard({
   )
 }
 
-function ReleaseYearDistributionCard({
-  releaseYears,
-  isFocused,
-}: {
-  releaseYears: ReleaseYearStat[]
-  isFocused: boolean
-}) {
+function PlatformPositiveRatioCard({ platforms }: { platforms: PlatformStat[] }) {
+  const items = platforms.filter((platform) => platform.avgPositiveRatio !== null)
+
+  return (
+    <article className="market-card market-card--wide">
+      <div className="market-card-header">
+        <h2>플랫폼별 평균 긍정률 비교</h2>
+        <span>긍정률</span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="market-empty inside">플랫폼별 긍정률 데이터가 없습니다.</div>
+      ) : (
+        <MetricList
+          items={items.map((item) => ({
+            label: item.label,
+            value: item.avgPositiveRatio ?? 0,
+            valueText: `${(item.avgPositiveRatio ?? 0).toFixed(1)}%`,
+            subText: `${item.gameCount.toLocaleString('ko-KR')}개 게임`,
+          }))}
+          maxValue={100}
+        />
+      )}
+    </article>
+  )
+}
+
+function ReleaseYearDistributionCard({ releaseYears }: { releaseYears: ReleaseYearStat[] }) {
   const recentYears = releaseYears.slice(-10)
   const maxCount = Math.max(...recentYears.map((item) => item.gameCount), 1)
 
   return (
-    <article className={`market-card market-card--release ${isFocused ? 'focused' : ''}`}>
+    <article className="market-card market-card--release">
       <div className="market-card-header">
         <h2>출시 연도별 게임 수</h2>
         <span>출시 연도</span>
@@ -464,12 +596,7 @@ function ReleaseYearDistributionCard({
             return (
               <div className="release-year-item" key={item.year}>
                 <div className="release-year-bar-wrap">
-                  <div
-                    className="release-year-bar"
-                    style={{
-                      height: `${height}%`,
-                    }}
-                  />
+                  <div className="release-year-bar" style={{ height: `${height}%` }} />
                 </div>
 
                 <strong>{formatLargeNumber(item.gameCount)}</strong>
@@ -506,10 +633,8 @@ function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearS
 
   const minValue = Math.min(...trendData.map((item) => item.value))
   const maxValue = Math.max(...trendData.map((item) => item.value))
-  const paddedMin = Math.floor((minValue - 1.5) / 5) * 5
-  const paddedMax = Math.ceil((maxValue + 1.5) / 5) * 5
-  const chartMin = Math.max(0, paddedMin)
-  const chartMax = Math.min(100, Math.max(paddedMax, chartMin + 5))
+  const chartMin = Math.max(0, Math.floor((minValue - 1.5) / 5) * 5)
+  const chartMax = Math.min(100, Math.ceil((maxValue + 1.5) / 5) * 5)
   const yTicks = buildYAxisTicks(chartMin, chartMax)
 
   const points = createTrendPoints(trendData, {
@@ -557,13 +682,7 @@ function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearS
 
             return (
               <g key={tick}>
-                <line
-                  x1="56"
-                  y1={y}
-                  x2="1038"
-                  y2={y}
-                  className="trend-grid-line"
-                />
+                <line x1="56" y1={y} x2="1038" y2={y} className="trend-grid-line" />
                 <text x="8" y={y + 6} className="trend-y-tick">
                   {tick}%
                 </text>
@@ -589,14 +708,7 @@ function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearS
                   {point.value.toFixed(1)}%
                 </text>
 
-                {isLast && (
-                  <circle
-                    cx={point.x}
-                    cy={point.y}
-                    r="16"
-                    className="trend-point-glow"
-                  />
-                )}
+                {isLast && <circle cx={point.x} cy={point.y} r="16" className="trend-point-glow" />}
 
                 <circle
                   cx={point.x}
@@ -605,12 +717,7 @@ function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearS
                   className={`trend-point-dot ${isLast ? 'last' : ''}`}
                 />
 
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r={isLast ? 3.4 : 2.4}
-                  className="trend-point-core"
-                />
+                <circle cx={point.x} cy={point.y} r={isLast ? 3.4 : 2.4} className="trend-point-core" />
 
                 <text x={point.x} y="350" className="trend-x-tick" textAnchor="middle">
                   {point.year}
@@ -645,30 +752,59 @@ function ReleasePositiveTrendCard({ releaseYears }: { releaseYears: ReleaseYearS
       </div>
 
       <div className="trend-insight">
-        {previousPoint ? (
-          <>
-            <span className="trend-insight-icon" aria-hidden="true">
-              ↗
-            </span>
-            <p>
+        <span className="trend-insight-icon">↗</span>
+        <p>
+          {previousPoint ? (
+            <>
               {previousPoint.year}년 <strong>{previousPoint.value.toFixed(1)}%</strong>에서{' '}
               {latestPoint.year}년 <strong>{latestPoint.value.toFixed(1)}%</strong>로{' '}
               {latestPoint.value >= previousPoint.value ? '상승' : '하락'} 흐름이 나타납니다.
-            </p>
-          </>
-        ) : (
-          <>
-            <span className="trend-insight-icon" aria-hidden="true">
-              ↗
-            </span>
-            <p>
-              {latestPoint.year}년 평균 긍정 비율은 <strong>{latestPoint.value.toFixed(1)}%</strong>
-              입니다.
-            </p>
-          </>
-        )}
+            </>
+          ) : (
+            <>
+              {latestPoint.year}년 평균 긍정 비율은{' '}
+              <strong>{latestPoint.value.toFixed(1)}%</strong>입니다.
+            </>
+          )}
+        </p>
       </div>
     </article>
+  )
+}
+
+function MetricList({
+  items,
+  maxValue,
+}: {
+  items: Array<{
+    label: string
+    value: number
+    valueText: string
+    subText: string
+  }>
+  maxValue: number
+}) {
+  return (
+    <div className="metric-list">
+      {items.map((item) => {
+        const width = maxValue <= 0 ? 0 : Math.max((item.value / maxValue) * 100, 2)
+
+        return (
+          <div className="metric-list-row" key={item.label}>
+            <div className="metric-list-label">
+              <strong>{item.label}</strong>
+              <span>{item.subText}</span>
+            </div>
+
+            <div className="metric-list-track">
+              <div style={{ width: `${width}%` }} />
+            </div>
+
+            <em>{item.valueText}</em>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -683,9 +819,7 @@ async function fetchRequiredJson(path: string): Promise<unknown> {
 }
 
 function normalizeSummaryStat(rawData: unknown): SummaryStat {
-  if (!isRecord(rawData)) {
-    return INITIAL_SUMMARY
-  }
+  if (!isRecord(rawData)) return INITIAL_SUMMARY
 
   return {
     totalGames: readOptionalNumber(rawData, ['total_games', 'totalGames']),
@@ -827,9 +961,7 @@ function normalizeReleaseYearStats(rawData: unknown): ReleaseYearStat[] {
 }
 
 function buildPieBackground(items: GenreStat[]): string {
-  if (items.length === 0) {
-    return '#edf1ff'
-  }
+  if (items.length === 0) return '#edf1ff'
 
   let current = 0
 
@@ -850,9 +982,7 @@ function buildPieBackground(items: GenreStat[]): string {
 function ensureShare<T extends { gameCount: number; share: number }>(items: T[]): T[] {
   const total = items.reduce((sum, item) => sum + item.gameCount, 0)
 
-  if (total <= 0) {
-    return items
-  }
+  if (total <= 0) return items
 
   return items.map((item) => ({
     ...item,
@@ -904,8 +1034,7 @@ function createTrendPoints(
 
   return data.map((item, index) => {
     const ratioX = data.length === 1 ? 0.5 : index / (data.length - 1)
-    const ratioY =
-      maxValue === minValue ? 0.5 : (item.value - minValue) / (maxValue - minValue)
+    const ratioY = maxValue === minValue ? 0.5 : (item.value - minValue) / (maxValue - minValue)
 
     return {
       x: paddingLeft + chartWidth * ratioX,
@@ -917,14 +1046,8 @@ function createTrendPoints(
 }
 
 function buildSmoothPath(points: TrendPoint[]): string {
-  if (points.length === 0) {
-    return ''
-  }
-
-  if (points.length === 1) {
-    const point = points[0]
-    return `M ${point.x} ${point.y}`
-  }
+  if (points.length === 0) return ''
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`
 
   let path = `M ${points[0].x} ${points[0].y}`
 
@@ -949,31 +1072,18 @@ function getYPosition(
 ): number {
   const chartHeight = height - paddingTop - paddingBottom
   const ratio = maxValue === minValue ? 0.5 : (value - minValue) / (maxValue - minValue)
+
   return paddingTop + chartHeight * (1 - ratio)
 }
 
 function getPriceBandOrder(priceBand: string): number {
   const normalized = normalizeToken(priceBand)
 
-  if (normalized.includes('free')) {
-    return 0
-  }
-
-  if (normalized.includes('0 5000')) {
-    return 1
-  }
-
-  if (normalized.includes('5000 15000')) {
-    return 2
-  }
-
-  if (normalized.includes('15000 30000')) {
-    return 3
-  }
-
-  if (normalized.includes('30000 50000')) {
-    return 4
-  }
+  if (normalized.includes('free')) return 0
+  if (normalized.includes('0 5000')) return 1
+  if (normalized.includes('5000 15000')) return 2
+  if (normalized.includes('15000 30000')) return 3
+  if (normalized.includes('30000 50000')) return 4
 
   return 5
 }
@@ -982,13 +1092,8 @@ function formatPriceBandLabel(priceBand: string): string {
   const trimmed = priceBand.trim()
   const normalized = normalizeToken(trimmed)
 
-  if (!trimmed) {
-    return '알 수 없음'
-  }
-
-  if (normalized.includes('free')) {
-    return '무료'
-  }
+  if (!trimmed) return '알 수 없음'
+  if (normalized.includes('free')) return '무료'
 
   const matchedRange = trimmed.match(/(\d+)\s*[-~]\s*(\d+)/)
 
@@ -1010,9 +1115,7 @@ function formatPriceBandLabel(priceBand: string): string {
 function formatGenreLabel(genre: string): string {
   const trimmedGenre = genre.trim()
 
-  if (!trimmedGenre) {
-    return '알 수 없음'
-  }
+  if (!trimmedGenre) return '알 수 없음'
 
   if (/[가-힣]/.test(trimmedGenre) && trimmedGenre.includes('(') && trimmedGenre.includes(')')) {
     return trimmedGenre
@@ -1021,9 +1124,7 @@ function formatGenreLabel(genre: string): string {
   const normalizedGenre = normalizeToken(trimmedGenre)
   const koreanLabel = GENRE_LABEL_MAP[normalizedGenre]
 
-  if (!koreanLabel) {
-    return trimmedGenre
-  }
+  if (!koreanLabel) return trimmedGenre
 
   return `${koreanLabel} (${trimmedGenre})`
 }
@@ -1031,9 +1132,7 @@ function formatGenreLabel(genre: string): string {
 function formatPlatformLabel(platform: string): string {
   const trimmed = platform.trim()
 
-  if (!trimmed) {
-    return '알 수 없음'
-  }
+  if (!trimmed) return '알 수 없음'
 
   const normalized = normalizeToken(trimmed)
 
@@ -1043,29 +1142,16 @@ function formatPlatformLabel(platform: string): string {
 function getPlatformIcon(platform: string): string {
   const normalized = normalizeToken(platform)
 
-  if (normalized.includes('windows')) {
-    return '▦'
-  }
-
-  if (normalized.includes('mac')) {
-    return '◐'
-  }
-
-  if (normalized.includes('linux')) {
-    return '◇'
-  }
+  if (normalized.includes('windows')) return '▦'
+  if (normalized.includes('mac')) return '◐'
+  if (normalized.includes('linux')) return '◇'
 
   return '◆'
 }
 
 function formatLargeNumber(value: number): string {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`
-  }
-
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`
-  }
+  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`
 
   return value.toLocaleString('ko-KR')
 }

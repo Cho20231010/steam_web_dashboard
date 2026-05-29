@@ -52,13 +52,6 @@ type MarketDistributionData = {
   releaseYears: ReleaseYearStat[]
 }
 
-type ScatterPoint = {
-  label: string
-  price: number
-  positiveRatio: number
-  gameCount: number
-}
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const INITIAL_SUMMARY: SummaryStat = {
@@ -281,7 +274,7 @@ function MarketDistributionPage() {
             isFocused={activeTab === 'release'}
           />
 
-          <GenrePricePositiveScatterCard genres={marketData.genres} />
+          <GenreMetricComparisonCard genres={marketData.genres} />
         </div>
       )}
     </section>
@@ -483,294 +476,112 @@ function ReleaseYearDistributionCard({
   )
 }
 
-function GenrePricePositiveScatterCard({ genres }: { genres: GenreStat[] }) {
-  const points = genres
-    .filter((genre) => genre.avgPrice !== null && genre.avgPositiveRatio !== null)
-    .map((genre) => ({
-      label: genre.label,
-      price: genre.avgPrice ?? 0,
-      positiveRatio: genre.avgPositiveRatio ?? 0,
-      gameCount: genre.gameCount,
-    }))
-    .filter((point) => point.price >= 0 && point.positiveRatio >= 0)
+function GenreMetricComparisonCard({ genres }: { genres: GenreStat[] }) {
+  const validGenres = genres.filter(
+    (genre) => genre.avgPrice !== null && genre.avgPositiveRatio !== null,
+  )
+
+  const representativeGenres = [...validGenres].sort((a, b) => b.gameCount - a.gameCount).slice(0, 8)
+
+  const overallAveragePrice = calculateAverage(
+    validGenres.map((genre) => genre.avgPrice ?? 0),
+  )
+  const overallAveragePositiveRatio = calculateAverage(
+    validGenres.map((genre) => genre.avgPositiveRatio ?? 0),
+  )
+
+  const maxPrice = Math.max(...representativeGenres.map((genre) => genre.avgPrice ?? 0), 1)
 
   return (
-    <article className="market-card market-card--scatter">
+    <article className="market-card market-card--comparison">
       <div className="market-card-header">
         <div>
-          <h2>장르별 평균 가격 vs 평균 긍정 비율</h2>
+          <h2>대표 장르 평균 가격 · 긍정 비율 비교</h2>
           <p className="market-card-caption">
-            장르 통계 API의 평균 가격과 평균 긍정 비율을 기준으로 가격대와 긍정률의 관계를
-            비교합니다.
+            게임 수가 많은 대표 장르를 기준으로 평균 긍정 비율과 평균 가격을 나란히 비교합니다.
           </p>
         </div>
 
-        <span>가격-긍정률 관계</span>
+        <span>장르 비교</span>
       </div>
 
-      {points.length === 0 ? (
-        <div className="market-empty inside">장르별 평균 가격과 긍정 비율 데이터가 없습니다.</div>
+      {representativeGenres.length === 0 ? (
+        <div className="market-empty inside">장르 평균 가격·긍정 비율 데이터가 없습니다.</div>
       ) : (
-        <GenrePricePositiveScatterPlot points={points} />
+        <>
+          <div className="comparison-summary-badges">
+            <strong>전체 평균 긍정률 {overallAveragePositiveRatio.toFixed(1)}%</strong>
+            <strong>전체 평균 가격 {Math.round(overallAveragePrice).toLocaleString('ko-KR')}</strong>
+          </div>
+
+          <div className="genre-metric-list">
+            {representativeGenres.map((genre) => {
+              const positiveRatio = genre.avgPositiveRatio ?? 0
+              const avgPrice = genre.avgPrice ?? 0
+              const positiveWidth = Math.max(Math.min(positiveRatio, 100), 0)
+              const priceWidth = maxPrice === 0 ? 0 : (avgPrice / maxPrice) * 100
+              const positiveDelta = positiveRatio - overallAveragePositiveRatio
+              const priceDelta = avgPrice - overallAveragePrice
+
+              return (
+                <div className="genre-metric-item" key={genre.genre}>
+                  <div className="genre-metric-header">
+                    <div className="genre-metric-title">
+                      <strong>{genre.label}</strong>
+                      <span>{genre.gameCount.toLocaleString('ko-KR')}개 게임</span>
+                    </div>
+
+                    <div className="genre-metric-share">{genre.share.toFixed(1)}%</div>
+                  </div>
+
+                  <div className="genre-metric-bars">
+                    <div className="metric-bar-row">
+                      <div className="metric-bar-label">평균 긍정 비율</div>
+
+                      <div className="metric-bar-track">
+                        <div
+                          className="metric-bar-fill metric-bar-fill--positive"
+                          style={{
+                            width: `${positiveWidth}%`,
+                          }}
+                        />
+                      </div>
+
+                      <div className="metric-bar-value">
+                        <strong>{positiveRatio.toFixed(1)}%</strong>
+                        <span className={getDeltaClassName(positiveDelta)}>
+                          {formatRatioDelta(positiveDelta)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="metric-bar-row">
+                      <div className="metric-bar-label">평균 가격</div>
+
+                      <div className="metric-bar-track">
+                        <div
+                          className="metric-bar-fill metric-bar-fill--price"
+                          style={{
+                            width: `${priceWidth}%`,
+                          }}
+                        />
+                      </div>
+
+                      <div className="metric-bar-value">
+                        <strong>{Math.round(avgPrice).toLocaleString('ko-KR')}</strong>
+                        <span className={getDeltaClassName(priceDelta)}>
+                          {formatNumberDelta(priceDelta)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
       )}
     </article>
-  )
-}
-
-function GenrePricePositiveScatterPlot({ points }: { points: ScatterPoint[] }) {
-  const width = 980
-  const height = 500
-  const margin = {
-    top: 88,
-    right: 44,
-    bottom: 62,
-    left: 82,
-  }
-
-  const xMax = Math.max(...points.map((point) => point.price), 1)
-  const yMax = 100
-  const plotWidth = width - margin.left - margin.right
-  const plotHeight = height - margin.top - margin.bottom
-
-  const xScale = (price: number) => margin.left + (price / xMax) * plotWidth
-  const yScale = (ratio: number) => margin.top + ((yMax - ratio) / yMax) * plotHeight
-
-  const avgPrice = calculateAverage(points.map((point) => point.price))
-  const avgPositiveRatio = calculateAverage(points.map((point) => point.positiveRatio))
-  const regression = calculateRegression(points)
-
-  const yTicks = [100, 75, 50, 25, 0]
-  const xTicks = [0, xMax / 4, xMax / 2, (xMax / 4) * 3, xMax]
-
-  const topCountPoint = [...points].sort((a, b) => b.gameCount - a.gameCount)[0]
-  const topPositivePoint = [...points].sort((a, b) => b.positiveRatio - a.positiveRatio)[0]
-
-  const labelTargets = createScatterLabelTargets(points)
-
-  const verticalAverageX = xScale(avgPrice)
-  const horizontalAverageY = yScale(avgPositiveRatio)
-
-  return (
-    <div className="price-positive-chart">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label="장르별 평균 가격 대비 평균 긍정 비율 산점도"
-      >
-        <rect
-          x={margin.left}
-          y={margin.top}
-          width={verticalAverageX - margin.left}
-          height={horizontalAverageY - margin.top}
-          className="scatter-quadrant scatter-quadrant--top-left"
-        />
-        <rect
-          x={verticalAverageX}
-          y={margin.top}
-          width={width - margin.right - verticalAverageX}
-          height={horizontalAverageY - margin.top}
-          className="scatter-quadrant scatter-quadrant--top-right"
-        />
-        <rect
-          x={margin.left}
-          y={horizontalAverageY}
-          width={verticalAverageX - margin.left}
-          height={height - margin.bottom - horizontalAverageY}
-          className="scatter-quadrant scatter-quadrant--bottom-left"
-        />
-        <rect
-          x={verticalAverageX}
-          y={horizontalAverageY}
-          width={width - margin.right - verticalAverageX}
-          height={height - margin.bottom - horizontalAverageY}
-          className="scatter-quadrant scatter-quadrant--bottom-right"
-        />
-
-        <text x={margin.left} y={34} textAnchor="start" className="scatter-axis-title">
-          Y축: 평균 긍정 비율
-        </text>
-
-        <text x={width - margin.right} y={34} textAnchor="end" className="scatter-axis-title">
-          X축: 평균 가격
-        </text>
-
-        <text
-          x={margin.left + 10}
-          y={margin.top + 20}
-          textAnchor="start"
-          className="scatter-quadrant-label"
-        >
-          저가 · 고평가
-        </text>
-        <text
-          x={width - margin.right - 10}
-          y={margin.top + 20}
-          textAnchor="end"
-          className="scatter-quadrant-label"
-        >
-          고가 · 고평가
-        </text>
-        <text
-          x={margin.left + 10}
-          y={height - margin.bottom - 10}
-          textAnchor="start"
-          className="scatter-quadrant-label"
-        >
-          저가 · 저평가
-        </text>
-        <text
-          x={width - margin.right - 10}
-          y={height - margin.bottom - 10}
-          textAnchor="end"
-          className="scatter-quadrant-label"
-        >
-          고가 · 저평가
-        </text>
-
-        {yTicks.map((tick) => (
-          <g key={`y-${tick}`}>
-            <line
-              x1={margin.left}
-              x2={width - margin.right}
-              y1={yScale(tick)}
-              y2={yScale(tick)}
-              className="scatter-grid-line"
-            />
-            <text x={margin.left - 14} y={yScale(tick) + 4} textAnchor="end">
-              {tick}%
-            </text>
-          </g>
-        ))}
-
-        {xTicks.map((tick) => (
-          <g key={`x-${tick}`}>
-            <line
-              x1={xScale(tick)}
-              x2={xScale(tick)}
-              y1={margin.top}
-              y2={height - margin.bottom}
-              className="scatter-grid-line vertical"
-            />
-            <text x={xScale(tick)} y={height - 24} textAnchor="middle">
-              {formatPriceTick(tick)}
-            </text>
-          </g>
-        ))}
-
-        <line
-          x1={verticalAverageX}
-          x2={verticalAverageX}
-          y1={margin.top}
-          y2={height - margin.bottom}
-          className="scatter-average-line"
-        />
-        <line
-          x1={margin.left}
-          x2={width - margin.right}
-          y1={horizontalAverageY}
-          y2={horizontalAverageY}
-          className="scatter-average-line"
-        />
-
-        <text
-          x={verticalAverageX + 8}
-          y={height - margin.bottom + 20}
-          textAnchor="start"
-          className="scatter-average-text"
-        >
-          평균 가격선 {Math.round(avgPrice).toLocaleString('ko-KR')}
-        </text>
-
-        <text
-          x={margin.left + 8}
-          y={horizontalAverageY - 8}
-          textAnchor="start"
-          className="scatter-average-text"
-        >
-          평균 긍정률선 {avgPositiveRatio.toFixed(1)}%
-        </text>
-
-        {points.map((point, index) => (
-          <circle
-            key={`${point.label}-${index}`}
-            cx={xScale(point.price)}
-            cy={yScale(point.positiveRatio)}
-            r={getScatterPointRadius(point.gameCount)}
-            className="scatter-point"
-          >
-            <title>
-              {point.label} / 평균 가격 {Math.round(point.price).toLocaleString('ko-KR')} / 평균
-              긍정률 {point.positiveRatio.toFixed(1)}% / 게임 수 {point.gameCount.toLocaleString('ko-KR')}
-            </title>
-          </circle>
-        ))}
-
-        {labelTargets.map((point, index) => {
-          const position = getScatterLabelPosition(index)
-          const pointX = xScale(point.price)
-          const pointY = yScale(point.positiveRatio)
-          const textX = pointX + position.dx
-          const textY = pointY + position.dy
-
-          return (
-            <g key={`label-${point.label}-${index}`}>
-              <line
-                x1={pointX}
-                y1={pointY}
-                x2={textX}
-                y2={textY}
-                className="scatter-label-line"
-              />
-              <text x={textX} y={textY} className="scatter-point-label">
-                {getShortLabel(point.label)}
-              </text>
-            </g>
-          )
-        })}
-
-        {regression && (
-          <line
-            x1={xScale(0)}
-            y1={yScale(clamp(regression.intercept, 0, 100))}
-            x2={xScale(xMax)}
-            y2={yScale(clamp(regression.slope * xMax + regression.intercept, 0, 100))}
-            className="scatter-regression-line"
-          />
-        )}
-      </svg>
-
-      <div className="scatter-note">
-        <span>점 크기: 해당 장르의 게임 수</span>
-        <span>점선: 평균 가격과 평균 긍정 비율의 추세선</span>
-        <span>세로/가로 기준선: 전체 장르 평균선</span>
-      </div>
-
-      <div className="scatter-summary-grid">
-        <div className="scatter-summary-card">
-          <strong>평균 가격</strong>
-          <span>{Math.round(avgPrice).toLocaleString('ko-KR')}</span>
-        </div>
-
-        <div className="scatter-summary-card">
-          <strong>평균 긍정률</strong>
-          <span>{avgPositiveRatio.toFixed(1)}%</span>
-        </div>
-
-        <div className="scatter-summary-card">
-          <strong>최고 긍정률 장르</strong>
-          <span>
-            {topPositivePoint ? `${topPositivePoint.label} · ${topPositivePoint.positiveRatio.toFixed(1)}%` : '-'}
-          </span>
-        </div>
-
-        <div className="scatter-summary-card">
-          <strong>가장 큰 장르 규모</strong>
-          <span>
-            {topCountPoint ? `${topCountPoint.label} · ${topCountPoint.gameCount.toLocaleString('ko-KR')}개` : '-'}
-          </span>
-        </div>
-      </div>
-    </div>
   )
 }
 
@@ -974,85 +785,6 @@ function calculateAverage(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
-function calculateRegression(points: Array<{ price: number; positiveRatio: number }>):
-  | {
-      slope: number
-      intercept: number
-    }
-  | null {
-  if (points.length < 2) {
-    return null
-  }
-
-  const n = points.length
-  const sumX = points.reduce((sum, point) => sum + point.price, 0)
-  const sumY = points.reduce((sum, point) => sum + point.positiveRatio, 0)
-  const sumXY = points.reduce((sum, point) => sum + point.price * point.positiveRatio, 0)
-  const sumXX = points.reduce((sum, point) => sum + point.price * point.price, 0)
-  const denominator = n * sumXX - sumX * sumX
-
-  if (denominator === 0) {
-    return null
-  }
-
-  const slope = (n * sumXY - sumX * sumY) / denominator
-  const intercept = (sumY - slope * sumX) / n
-
-  return {
-    slope,
-    intercept,
-  }
-}
-
-function createScatterLabelTargets(points: ScatterPoint[]): ScatterPoint[] {
-  const byGameCount = [...points].sort((a, b) => b.gameCount - a.gameCount).slice(0, 6)
-  const byPositive = [...points].sort((a, b) => b.positiveRatio - a.positiveRatio).slice(0, 2)
-  const byPrice = [...points].sort((a, b) => b.price - a.price).slice(0, 2)
-
-  const uniqueMap = new Map<string, ScatterPoint>()
-
-  ;[...byGameCount, ...byPositive, ...byPrice].forEach((point) => {
-    uniqueMap.set(point.label, point)
-  })
-
-  return Array.from(uniqueMap.values())
-}
-
-function getScatterLabelPosition(index: number): { dx: number; dy: number } {
-  const positions = [
-    { dx: 12, dy: -12 },
-    { dx: 12, dy: 18 },
-    { dx: -72, dy: -12 },
-    { dx: -72, dy: 18 },
-    { dx: 16, dy: -22 },
-    { dx: 16, dy: 28 },
-    { dx: -86, dy: -22 },
-    { dx: -86, dy: 28 },
-  ]
-
-  return positions[index % positions.length]
-}
-
-function getScatterPointRadius(gameCount: number): number {
-  if (gameCount >= 500) {
-    return 10
-  }
-
-  if (gameCount >= 250) {
-    return 8
-  }
-
-  if (gameCount >= 100) {
-    return 6
-  }
-
-  if (gameCount >= 30) {
-    return 5
-  }
-
-  return 4
-}
-
 function getPriceBandOrder(priceBand: string): number {
   const normalized = normalizeToken(priceBand)
 
@@ -1171,24 +903,30 @@ function formatLargeNumber(value: number): string {
   return value.toLocaleString('ko-KR')
 }
 
-function formatPriceTick(value: number): string {
-  if (value >= 10000) {
-    return `${Math.round(value / 1000)}K`
+function formatRatioDelta(delta: number): string {
+  if (Math.abs(delta) < 0.05) {
+    return '평균 수준'
   }
 
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`
+  const sign = delta > 0 ? '+' : '-'
+  return `평균 대비 ${sign}${Math.abs(delta).toFixed(1)}%p`
+}
+
+function formatNumberDelta(delta: number): string {
+  if (Math.abs(delta) < 0.5) {
+    return '평균 수준'
   }
 
-  return Math.round(value).toLocaleString('ko-KR')
+  const sign = delta > 0 ? '+' : '-'
+  return `평균 대비 ${sign}${Math.round(Math.abs(delta)).toLocaleString('ko-KR')}`
 }
 
-function getShortLabel(label: string): string {
-  return label.split(' (')[0].trim()
-}
+function getDeltaClassName(delta: number): string {
+  if (Math.abs(delta) < 0.05) {
+    return 'metric-delta neutral'
+  }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value))
+  return delta > 0 ? 'metric-delta positive' : 'metric-delta negative'
 }
 
 function unwrapList(rawData: unknown): Record<string, unknown>[] {

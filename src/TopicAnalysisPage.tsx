@@ -54,12 +54,12 @@ const TOPIC_LABEL_MAP: Record<string, string> = {
 }
 
 const BUBBLE_LAYOUTS: BubbleLayout[] = [
-  { x: 45, y: 42, size: 108, tone: 'blue' },
-  { x: 70, y: 54, size: 88, tone: 'purple' },
-  { x: 30, y: 67, size: 78, tone: 'red' },
-  { x: 56, y: 77, size: 72, tone: 'indigo' },
-  { x: 75, y: 78, size: 64, tone: 'orange' },
-  { x: 48, y: 58, size: 60, tone: 'sky' },
+  { x: 42, y: 39, size: 106, tone: 'blue' },
+  { x: 70, y: 55, size: 88, tone: 'purple' },
+  { x: 30, y: 68, size: 76, tone: 'red' },
+  { x: 55, y: 78, size: 72, tone: 'indigo' },
+  { x: 76, y: 78, size: 66, tone: 'orange' },
+  { x: 50, y: 58, size: 58, tone: 'sky' },
 ]
 
 function TopicAnalysisPage() {
@@ -125,6 +125,7 @@ function TopicAnalysisPage() {
         >
           토픽 클러스터
         </button>
+
         <button
           className={activeTab === 'sentiment' ? 'active' : ''}
           type="button"
@@ -132,6 +133,7 @@ function TopicAnalysisPage() {
         >
           토픽 감성 분석
         </button>
+
         <button
           className={activeTab === 'trend' ? 'active' : ''}
           type="button"
@@ -139,6 +141,7 @@ function TopicAnalysisPage() {
         >
           토픽별 트렌드
         </button>
+
         <button
           className={activeTab === 'genre' ? 'active' : ''}
           type="button"
@@ -328,30 +331,55 @@ function TopicBubbleCluster({ topics }: { topics: TopicItem[] }) {
   const maxShare = Math.max(...topics.map((topic) => topic.share ?? 0), 1)
 
   return (
-    <div className="topic-bubble-stage" aria-label="토픽 클러스터 버블 차트">
-      {topics.map((topic, index) => {
-        const layout = BUBBLE_LAYOUTS[index] ?? BUBBLE_LAYOUTS[BUBBLE_LAYOUTS.length - 1]
-        const share = topic.share ?? 0
-        const sizeRatio = topic.share === null ? 0.76 : Math.max(0.66, share / maxShare)
-        const size = Math.round(layout.size * sizeRatio)
+    <div className="topic-cluster-layout">
+      <div className="topic-bubble-stage" aria-label="토픽 클러스터 버블 차트">
+        {topics.map((topic, index) => {
+          const layout = BUBBLE_LAYOUTS[index] ?? BUBBLE_LAYOUTS[BUBBLE_LAYOUTS.length - 1]
+          const share = topic.share ?? 0
+          const sizeRatio = topic.share === null ? 0.74 : Math.max(0.68, share / maxShare)
+          const size = Math.max(58, Math.round(layout.size * sizeRatio))
 
-        return (
-          <div
-            className={`topic-bubble ${layout.tone}`}
-            key={topic.id}
-            style={{
-              left: `${layout.x}%`,
-              top: `${layout.y}%`,
-              width: `${size}px`,
-              height: `${size}px`,
-            }}
-            title={topic.name}
-          >
-            <strong>{topic.name}</strong>
-            <span>{topic.share === null ? '비중 없음' : `${topic.share.toFixed(1)}%`}</span>
-          </div>
-        )
-      })}
+          return (
+            <div
+              className={`topic-bubble ${layout.tone}`}
+              key={topic.id}
+              style={{
+                left: `${layout.x}%`,
+                top: `${layout.y}%`,
+                width: `${size}px`,
+                height: `${size}px`,
+              }}
+              title={`${topic.name} ${topic.share === null ? '' : `${topic.share.toFixed(1)}%`}`}
+            >
+              <strong>{index + 1}</strong>
+              <span>{topic.share === null ? '-' : `${topic.share.toFixed(1)}%`}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="topic-cluster-info-list" aria-label="토픽 클러스터 설명">
+        {topics.map((topic, index) => {
+          const layout = BUBBLE_LAYOUTS[index] ?? BUBBLE_LAYOUTS[BUBBLE_LAYOUTS.length - 1]
+
+          return (
+            <div className={`topic-cluster-info-item ${layout.tone}`} key={topic.id}>
+              <div className="topic-cluster-info-index">{index + 1}</div>
+
+              <div className="topic-cluster-info-body">
+                <div className="topic-cluster-info-title">
+                  <strong>{topic.name}</strong>
+                  <span>{topic.share === null ? '비중 없음' : `${topic.share.toFixed(1)}%`}</span>
+                </div>
+
+                <p>{topic.keywords.slice(0, 4).join(', ') || '키워드 데이터 없음'}</p>
+
+                <em className={topic.sentimentType}>{topic.sentimentLabel}</em>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -473,6 +501,7 @@ function normalizeTopicItem(item: Record<string, unknown>, index: number): Topic
       'topic_share',
       'topicShare',
       'prevalence',
+      'weight_percent',
     ]),
   )
 

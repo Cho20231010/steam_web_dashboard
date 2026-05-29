@@ -142,7 +142,7 @@
 
 .market-card--scatter {
   grid-column: span 3;
-  min-height: 460px;
+  min-height: 620px;
 }
 
 .market-card-header {
@@ -435,7 +435,7 @@
 
 .price-positive-chart svg {
   width: 100%;
-  min-width: 820px;
+  min-width: 860px;
   height: auto;
   display: block;
 }
@@ -446,31 +446,80 @@
   font-weight: 800;
 }
 
+.scatter-quadrant {
+  opacity: 0.32;
+}
+
+.scatter-quadrant--top-left {
+  fill: #eef7ff;
+}
+
+.scatter-quadrant--top-right {
+  fill: #f4f0ff;
+}
+
+.scatter-quadrant--bottom-left {
+  fill: #f8faff;
+}
+
+.scatter-quadrant--bottom-right {
+  fill: #fff8ef;
+}
+
 .scatter-grid-line {
-  stroke: #e9edf5;
+  stroke: #dce3ef;
   stroke-width: 1;
 }
 
 .scatter-grid-line.vertical {
-  opacity: 0.62;
+  opacity: 0.55;
 }
 
 .scatter-point {
   fill: var(--blue, #5d63f1);
-  opacity: 0.82;
+  opacity: 0.78;
+}
+
+.scatter-label-line {
+  stroke: #8d97ae;
+  stroke-width: 1.1;
+}
+
+.scatter-point-label {
+  fill: #172033;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .scatter-regression-line {
-  stroke: #53607a;
-  stroke-width: 2;
-  stroke-dasharray: 5 4;
-  opacity: 0.75;
+  stroke: #667085;
+  stroke-width: 2.5;
+  stroke-dasharray: 8 6;
+  opacity: 0.9;
 }
 
-.scatter-axis-label {
+.scatter-average-line {
+  stroke: #9aa6c0;
+  stroke-width: 1.6;
+  stroke-dasharray: 5 5;
+}
+
+.scatter-average-text {
   fill: #53607a;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.scatter-axis-title {
+  fill: #53607a;
+  font-size: 13px;
   font-weight: 950;
+}
+
+.scatter-quadrant-label {
+  fill: #7b849a;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .scatter-note {
@@ -478,7 +527,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .scatter-note span {
@@ -491,6 +540,36 @@
   color: #53607a;
   font-size: 11px;
   font-weight: 900;
+}
+
+.scatter-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.scatter-summary-card {
+  padding: 14px 16px;
+  border: 1px solid #e6eaf2;
+  border-radius: 14px;
+  background: #f8faff;
+}
+
+.scatter-summary-card strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #172033;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.scatter-summary-card span {
+  color: #53607a;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+  word-break: keep-all;
 }
 
 html.theme-dark .market-distribution-header,
@@ -508,7 +587,8 @@ html.theme-dark .genre-pie-chart strong,
 html.theme-dark .genre-legend-item strong,
 html.theme-dark .market-bar-label strong,
 html.theme-dark .platform-item strong,
-html.theme-dark .release-year-item strong {
+html.theme-dark .release-year-item strong,
+html.theme-dark .scatter-summary-card strong {
   color: #f8fafc;
 }
 
@@ -543,12 +623,17 @@ html.theme-dark .market-bar-label span,
 html.theme-dark .market-bar-row em,
 html.theme-dark .platform-item span,
 html.theme-dark .platform-item em,
-html.theme-dark .release-year-item span {
+html.theme-dark .release-year-item span,
+html.theme-dark .scatter-summary-card span,
+html.theme-dark .scatter-average-text,
+html.theme-dark .scatter-quadrant-label {
   color: #cbd5e1;
+  fill: #cbd5e1;
 }
 
 html.theme-dark .platform-item,
-html.theme-dark .release-year-bar-wrap {
+html.theme-dark .release-year-bar-wrap,
+html.theme-dark .scatter-summary-card {
   border-color: rgba(148, 163, 184, 0.18);
   background: #0f172a;
 }
@@ -562,12 +647,34 @@ html.theme-dark .scatter-grid-line {
 }
 
 html.theme-dark .price-positive-chart text,
-html.theme-dark .scatter-axis-label {
-  fill: #cbd5e1;
+html.theme-dark .scatter-axis-title,
+html.theme-dark .scatter-point-label {
+  fill: #e2e8f0;
 }
 
 html.theme-dark .scatter-regression-line {
   stroke: #cbd5e1;
+}
+
+html.theme-dark .scatter-average-line,
+html.theme-dark .scatter-label-line {
+  stroke: #94a3b8;
+}
+
+html.theme-dark .scatter-quadrant--top-left {
+  fill: rgba(59, 130, 246, 0.12);
+}
+
+html.theme-dark .scatter-quadrant--top-right {
+  fill: rgba(99, 102, 241, 0.12);
+}
+
+html.theme-dark .scatter-quadrant--bottom-left {
+  fill: rgba(148, 163, 184, 0.1);
+}
+
+html.theme-dark .scatter-quadrant--bottom-right {
+  fill: rgba(245, 158, 11, 0.1);
 }
 
 html.theme-dark .market-empty {
@@ -590,6 +697,10 @@ html.theme-dark .market-empty {
   .release-year-chart {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     height: 320px;
+  }
+
+  .scatter-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -636,6 +747,10 @@ html.theme-dark .market-empty {
 
   .release-year-chart {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .scatter-summary-grid {
+    grid-template-columns: 1fr;
   }
 }
 

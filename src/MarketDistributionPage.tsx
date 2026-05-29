@@ -52,6 +52,13 @@ type MarketDistributionData = {
   releaseYears: ReleaseYearStat[]
 }
 
+type ScatterPoint = {
+  label: string
+  price: number
+  positiveRatio: number
+  gameCount: number
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const INITIAL_SUMMARY: SummaryStat = {
@@ -510,23 +517,14 @@ function GenrePricePositiveScatterCard({ genres }: { genres: GenreStat[] }) {
   )
 }
 
-function GenrePricePositiveScatterPlot({
-  points,
-}: {
-  points: Array<{
-    label: string
-    price: number
-    positiveRatio: number
-    gameCount: number
-  }>
-}) {
-  const width = 920
-  const height = 400
+function GenrePricePositiveScatterPlot({ points }: { points: ScatterPoint[] }) {
+  const width = 980
+  const height = 500
   const margin = {
-    top: 58,
-    right: 34,
-    bottom: 46,
-    left: 72,
+    top: 88,
+    right: 44,
+    bottom: 62,
+    left: 82,
   }
 
   const xMax = Math.max(...points.map((point) => point.price), 1)
@@ -537,9 +535,20 @@ function GenrePricePositiveScatterPlot({
   const xScale = (price: number) => margin.left + (price / xMax) * plotWidth
   const yScale = (ratio: number) => margin.top + ((yMax - ratio) / yMax) * plotHeight
 
+  const avgPrice = calculateAverage(points.map((point) => point.price))
+  const avgPositiveRatio = calculateAverage(points.map((point) => point.positiveRatio))
   const regression = calculateRegression(points)
+
   const yTicks = [100, 75, 50, 25, 0]
   const xTicks = [0, xMax / 4, xMax / 2, (xMax / 4) * 3, xMax]
+
+  const topCountPoint = [...points].sort((a, b) => b.gameCount - a.gameCount)[0]
+  const topPositivePoint = [...points].sort((a, b) => b.positiveRatio - a.positiveRatio)[0]
+
+  const labelTargets = createScatterLabelTargets(points)
+
+  const verticalAverageX = xScale(avgPrice)
+  const horizontalAverageY = yScale(avgPositiveRatio)
 
   return (
     <div className="price-positive-chart">
@@ -548,26 +557,78 @@ function GenrePricePositiveScatterPlot({
         role="img"
         aria-label="장르별 평균 가격 대비 평균 긍정 비율 산점도"
       >
-        <text
+        <rect
           x={margin.left}
-          y={24}
-          textAnchor="start"
-          className="scatter-axis-label"
-        >
+          y={margin.top}
+          width={verticalAverageX - margin.left}
+          height={horizontalAverageY - margin.top}
+          className="scatter-quadrant scatter-quadrant--top-left"
+        />
+        <rect
+          x={verticalAverageX}
+          y={margin.top}
+          width={width - margin.right - verticalAverageX}
+          height={horizontalAverageY - margin.top}
+          className="scatter-quadrant scatter-quadrant--top-right"
+        />
+        <rect
+          x={margin.left}
+          y={horizontalAverageY}
+          width={verticalAverageX - margin.left}
+          height={height - margin.bottom - horizontalAverageY}
+          className="scatter-quadrant scatter-quadrant--bottom-left"
+        />
+        <rect
+          x={verticalAverageX}
+          y={horizontalAverageY}
+          width={width - margin.right - verticalAverageX}
+          height={height - margin.bottom - horizontalAverageY}
+          className="scatter-quadrant scatter-quadrant--bottom-right"
+        />
+
+        <text x={margin.left} y={34} textAnchor="start" className="scatter-axis-title">
           Y축: 평균 긍정 비율
         </text>
 
-        <text
-          x={width - margin.right}
-          y={24}
-          textAnchor="end"
-          className="scatter-axis-label"
-        >
+        <text x={width - margin.right} y={34} textAnchor="end" className="scatter-axis-title">
           X축: 평균 가격
         </text>
 
+        <text
+          x={margin.left + 10}
+          y={margin.top + 20}
+          textAnchor="start"
+          className="scatter-quadrant-label"
+        >
+          저가 · 고평가
+        </text>
+        <text
+          x={width - margin.right - 10}
+          y={margin.top + 20}
+          textAnchor="end"
+          className="scatter-quadrant-label"
+        >
+          고가 · 고평가
+        </text>
+        <text
+          x={margin.left + 10}
+          y={height - margin.bottom - 10}
+          textAnchor="start"
+          className="scatter-quadrant-label"
+        >
+          저가 · 저평가
+        </text>
+        <text
+          x={width - margin.right - 10}
+          y={height - margin.bottom - 10}
+          textAnchor="end"
+          className="scatter-quadrant-label"
+        >
+          고가 · 저평가
+        </text>
+
         {yTicks.map((tick) => (
-          <g key={tick}>
+          <g key={`y-${tick}`}>
             <line
               x1={margin.left}
               x2={width - margin.right}
@@ -582,7 +643,7 @@ function GenrePricePositiveScatterPlot({
         ))}
 
         {xTicks.map((tick) => (
-          <g key={tick}>
+          <g key={`x-${tick}`}>
             <line
               x1={xScale(tick)}
               x2={xScale(tick)}
@@ -590,11 +651,44 @@ function GenrePricePositiveScatterPlot({
               y2={height - margin.bottom}
               className="scatter-grid-line vertical"
             />
-            <text x={xScale(tick)} y={height - 20} textAnchor="middle">
+            <text x={xScale(tick)} y={height - 24} textAnchor="middle">
               {formatPriceTick(tick)}
             </text>
           </g>
         ))}
+
+        <line
+          x1={verticalAverageX}
+          x2={verticalAverageX}
+          y1={margin.top}
+          y2={height - margin.bottom}
+          className="scatter-average-line"
+        />
+        <line
+          x1={margin.left}
+          x2={width - margin.right}
+          y1={horizontalAverageY}
+          y2={horizontalAverageY}
+          className="scatter-average-line"
+        />
+
+        <text
+          x={verticalAverageX + 8}
+          y={height - margin.bottom + 20}
+          textAnchor="start"
+          className="scatter-average-text"
+        >
+          평균 가격선 {Math.round(avgPrice).toLocaleString('ko-KR')}
+        </text>
+
+        <text
+          x={margin.left + 8}
+          y={horizontalAverageY - 8}
+          textAnchor="start"
+          className="scatter-average-text"
+        >
+          평균 긍정률선 {avgPositiveRatio.toFixed(1)}%
+        </text>
 
         {points.map((point, index) => (
           <circle
@@ -606,10 +700,33 @@ function GenrePricePositiveScatterPlot({
           >
             <title>
               {point.label} / 평균 가격 {Math.round(point.price).toLocaleString('ko-KR')} / 평균
-              긍정률 {point.positiveRatio.toFixed(1)}%
+              긍정률 {point.positiveRatio.toFixed(1)}% / 게임 수 {point.gameCount.toLocaleString('ko-KR')}
             </title>
           </circle>
         ))}
+
+        {labelTargets.map((point, index) => {
+          const position = getScatterLabelPosition(index)
+          const pointX = xScale(point.price)
+          const pointY = yScale(point.positiveRatio)
+          const textX = pointX + position.dx
+          const textY = pointY + position.dy
+
+          return (
+            <g key={`label-${point.label}-${index}`}>
+              <line
+                x1={pointX}
+                y1={pointY}
+                x2={textX}
+                y2={textY}
+                className="scatter-label-line"
+              />
+              <text x={textX} y={textY} className="scatter-point-label">
+                {getShortLabel(point.label)}
+              </text>
+            </g>
+          )
+        })}
 
         {regression && (
           <line
@@ -625,6 +742,33 @@ function GenrePricePositiveScatterPlot({
       <div className="scatter-note">
         <span>점 크기: 해당 장르의 게임 수</span>
         <span>점선: 평균 가격과 평균 긍정 비율의 추세선</span>
+        <span>세로/가로 기준선: 전체 장르 평균선</span>
+      </div>
+
+      <div className="scatter-summary-grid">
+        <div className="scatter-summary-card">
+          <strong>평균 가격</strong>
+          <span>{Math.round(avgPrice).toLocaleString('ko-KR')}</span>
+        </div>
+
+        <div className="scatter-summary-card">
+          <strong>평균 긍정률</strong>
+          <span>{avgPositiveRatio.toFixed(1)}%</span>
+        </div>
+
+        <div className="scatter-summary-card">
+          <strong>최고 긍정률 장르</strong>
+          <span>
+            {topPositivePoint ? `${topPositivePoint.label} · ${topPositivePoint.positiveRatio.toFixed(1)}%` : '-'}
+          </span>
+        </div>
+
+        <div className="scatter-summary-card">
+          <strong>가장 큰 장르 규모</strong>
+          <span>
+            {topCountPoint ? `${topCountPoint.label} · ${topCountPoint.gameCount.toLocaleString('ko-KR')}개` : '-'}
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -822,6 +966,14 @@ function calculateTotalCount(items: Array<{ gameCount: number }>): number {
   return items.reduce((sum, item) => sum + item.gameCount, 0)
 }
 
+function calculateAverage(values: number[]): number {
+  if (values.length === 0) {
+    return 0
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
 function calculateRegression(points: Array<{ price: number; positiveRatio: number }>):
   | {
       slope: number
@@ -852,24 +1004,53 @@ function calculateRegression(points: Array<{ price: number; positiveRatio: numbe
   }
 }
 
+function createScatterLabelTargets(points: ScatterPoint[]): ScatterPoint[] {
+  const byGameCount = [...points].sort((a, b) => b.gameCount - a.gameCount).slice(0, 6)
+  const byPositive = [...points].sort((a, b) => b.positiveRatio - a.positiveRatio).slice(0, 2)
+  const byPrice = [...points].sort((a, b) => b.price - a.price).slice(0, 2)
+
+  const uniqueMap = new Map<string, ScatterPoint>()
+
+  ;[...byGameCount, ...byPositive, ...byPrice].forEach((point) => {
+    uniqueMap.set(point.label, point)
+  })
+
+  return Array.from(uniqueMap.values())
+}
+
+function getScatterLabelPosition(index: number): { dx: number; dy: number } {
+  const positions = [
+    { dx: 12, dy: -12 },
+    { dx: 12, dy: 18 },
+    { dx: -72, dy: -12 },
+    { dx: -72, dy: 18 },
+    { dx: 16, dy: -22 },
+    { dx: 16, dy: 28 },
+    { dx: -86, dy: -22 },
+    { dx: -86, dy: 28 },
+  ]
+
+  return positions[index % positions.length]
+}
+
 function getScatterPointRadius(gameCount: number): number {
   if (gameCount >= 500) {
-    return 7
+    return 10
   }
 
   if (gameCount >= 250) {
-    return 6
+    return 8
   }
 
   if (gameCount >= 100) {
-    return 5
+    return 6
   }
 
   if (gameCount >= 30) {
-    return 4
+    return 5
   }
 
-  return 3.4
+  return 4
 }
 
 function getPriceBandOrder(priceBand: string): number {
@@ -1000,6 +1181,10 @@ function formatPriceTick(value: number): string {
   }
 
   return Math.round(value).toLocaleString('ko-KR')
+}
+
+function getShortLabel(label: string): string {
+  return label.split(' (')[0].trim()
 }
 
 function clamp(value: number, min: number, max: number): number {

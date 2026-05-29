@@ -3,10 +3,10 @@ import './TrendComparePage.css'
 import { getAnalysisTrends, getGenreTrends, getPriceTrends } from './api'
 
 type CompareStandard = 'reviews' | 'positiveRate'
-type PeriodOption = '3months' | '6months' | '12months'
 type CompareMode = 'all' | 'platform' | 'price'
 
 type MonthlyTrend = {
+  period: string
   month: string
   currentReviews: number | null
   previousReviews: number | null
@@ -33,6 +33,7 @@ type TrendCompareData = {
 }
 
 type LineChartType = 'reviews' | 'positiveRate'
+
 type TrendValueKey = keyof Pick<
   MonthlyTrend,
   'currentReviews' | 'previousReviews' | 'currentPositiveRate' | 'previousPositiveRate'
@@ -44,7 +45,7 @@ type LinePoint = {
   month: string
 }
 
-type PeriodSummary = {
+type TrendPeriodItem = {
   period: string
   reviewCount: number
   positiveReviews: number
@@ -52,12 +53,14 @@ type PeriodSummary = {
   positiveRatio: number | null
 }
 
-type PriceTrendCandidate = {
+type GenrePeriodGroup = {
+  genre: string
+  periods: TrendPeriodItem[]
+}
+
+type PricePeriodGroup = {
   priceBand: string
-  currentPositiveRate: number
-  previousPositiveRate: number | null
-  currentWeight: number
-  previousWeight: number | null
+  periods: TrendPeriodItem[]
 }
 
 const INITIAL_TREND_DATA: TrendCompareData = {
@@ -68,7 +71,6 @@ const INITIAL_TREND_DATA: TrendCompareData = {
 
 function TrendComparePage() {
   const [compareStandard, setCompareStandard] = useState<CompareStandard>('reviews')
-  const [period, setPeriod] = useState<PeriodOption>('6months')
   const [compareMode, setCompareMode] = useState<CompareMode>('all')
   const [trendData, setTrendData] = useState<TrendCompareData>(INITIAL_TREND_DATA)
   const [isLoading, setIsLoading] = useState(false)
@@ -90,17 +92,19 @@ function TrendComparePage() {
 
         const monthlyTrends = trendApiData ? normalizeMonthlyTrends(trendApiData) : []
 
-        const genreApiTrends =
-          genreResult.status === 'fulfilled' ? normalizeGenreTrends(genreResult.value) : []
-
-        const trendApiGenreTrends = trendApiData ? normalizeTopGenreTrends(trendApiData) : []
+        const genreTrends =
+          genreResult.status === 'fulfilled'
+            ? normalizeGenreTrends(genreResult.value)
+            : trendApiData
+              ? normalizeTopGenreTrends(trendApiData)
+              : []
 
         const priceTrends =
           priceResult.status === 'fulfilled' ? normalizePriceTrends(priceResult.value) : []
 
         setTrendData({
           monthlyTrends,
-          genreTrends: genreApiTrends.length > 0 ? genreApiTrends : trendApiGenreTrends,
+          genreTrends,
           priceTrends,
         })
 
@@ -124,8 +128,8 @@ function TrendComparePage() {
   }, [])
 
   const monthlyTrends = useMemo(() => {
-    return getPeriodLimitedMonthlyTrends(trendData.monthlyTrends, period)
-  }, [period, trendData.monthlyTrends])
+    return getLatestTwoMonthlyTrends(trendData.monthlyTrends)
+  }, [trendData.monthlyTrends])
 
   const genreTrends = useMemo(() => {
     return trendData.genreTrends.slice(0, compareMode === 'platform' ? 4 : 5)
@@ -134,6 +138,10 @@ function TrendComparePage() {
   const priceTrends = useMemo(() => {
     return trendData.priceTrends.slice(0, 5)
   }, [trendData.priceTrends])
+
+  const periodMeta = useMemo(() => {
+    return getPeriodMeta(monthlyTrends)
+  }, [monthlyTrends])
 
   return (
     <section className="trend-compare-page" aria-label="트렌드 비교 화면">
@@ -151,24 +159,18 @@ function TrendComparePage() {
         </div>
 
         <div className="trend-compare-filter-item">
-          <label htmlFor="trend-compare-period">기간 선택</label>
-          <select
-            id="trend-compare-period"
-            value={period}
-            onChange={(event) => setPeriod(event.target.value as PeriodOption)}
-          >
-            <option value="3months">3개월</option>
-            <option value="6months">6개월</option>
-            <option value="12months">12개월</option>
+          <label htmlFor="trend-current-period">현재 기간</label>
+          <select id="trend-current-period" value="current" disabled>
+            <option value="current">{periodMeta.currentPeriodLabel}</option>
           </select>
         </div>
 
         <strong className="trend-compare-vs">VS</strong>
 
         <div className="trend-compare-filter-item">
-          <label htmlFor="trend-compare-previous-period">이전 기간</label>
-          <select id="trend-compare-previous-period" value="previous" disabled>
-            <option value="previous">이전 6개월</option>
+          <label htmlFor="trend-previous-period">이전 기간</label>
+          <select id="trend-previous-period" value="previous" disabled>
+            <option value="previous">{periodMeta.previousPeriodLabel}</option>
           </select>
         </div>
 
@@ -205,12 +207,12 @@ function TrendComparePage() {
 
       <div className="trend-compare-grid">
         <article className="trend-compare-card">
-          <TrendCardHeader title="리뷰 수 추이 비교" />
+          <TrendCardHeader title="리뷰 수 추이 비교" hideLegend />
           <TrendLineChart data={monthlyTrends} chartType="reviews" />
         </article>
 
         <article className="trend-compare-card">
-          <TrendCardHeader title="긍정 비율 추이 비교" />
+          <TrendCardHeader title="긍정 비율 추이 비교" hideLegend />
           <TrendLineChart data={monthlyTrends} chartType="positiveRate" />
         </article>
 
@@ -227,11 +229,12 @@ function TrendComparePage() {
 
       <div className="trend-compare-bottom-note">
         <strong>
-          {compareStandard === 'reviews' ? '리뷰 수 기준 비교' : '긍정 비율 기준 비교'}
+          최근 2개월 기준 비교
+          {periodMeta.periodRangeLabel ? ` (${periodMeta.periodRangeLabel})` : ''}
         </strong>
         <span>
-          현재 기간과 이전 기간의 변화 흐름을 한 화면에서 비교해 시장 반응, 장르별 성장률,
-          가격대별 긍정 비율 차이를 빠르게 확인할 수 있습니다.
+          현재 백엔드 데이터에 포함된 최신 2개월을 기준으로 리뷰 수, 긍정 비율, 장르별 리뷰 수,
+          가격대별 긍정 비율 변화를 비교합니다.
         </span>
       </div>
     </section>
@@ -272,13 +275,10 @@ function TrendLineChart({
 }) {
   const currentKey: TrendValueKey =
     chartType === 'reviews' ? 'currentReviews' : 'currentPositiveRate'
-  const previousKey: TrendValueKey =
-    chartType === 'reviews' ? 'previousReviews' : 'previousPositiveRate'
 
   const hasCurrentData = data.some((item) => getNumberOrNull(item[currentKey]) !== null)
-  const hasPreviousData = data.some((item) => getNumberOrNull(item[previousKey]) !== null)
 
-  if (data.length === 0 || (!hasCurrentData && !hasPreviousData)) {
+  if (data.length === 0 || !hasCurrentData) {
     return (
       <div className="trend-compare-loading">
         표시할 {chartType === 'reviews' ? '리뷰 수' : '긍정 비율'} 추이 데이터가 없습니다.
@@ -290,11 +290,7 @@ function TrendLineChart({
     chartType === 'positiveRate'
       ? 100
       : getRoundedMaxValue(
-          Math.max(
-            ...data.map((item) => getNumberOrNull(item.currentReviews) ?? 0),
-            ...data.map((item) => getNumberOrNull(item.previousReviews) ?? 0),
-            1,
-          ),
+          Math.max(...data.map((item) => getNumberOrNull(item.currentReviews) ?? 0), 1),
         )
 
   const yAxisLabels =
@@ -303,7 +299,6 @@ function TrendLineChart({
       : createReviewYAxisLabels(maxValue)
 
   const currentPoints = createLinePoints(data, currentKey, maxValue)
-  const previousPoints = createLinePoints(data, previousKey, maxValue)
 
   return (
     <div className="trend-compare-line-chart">
@@ -321,29 +316,12 @@ function TrendLineChart({
             ))}
           </g>
 
-          {previousPoints.length > 0 && (
-            <polyline
-              className="trend-compare-line previous"
-              points={convertPointsToSvg(previousPoints)}
-            />
-          )}
-
           {currentPoints.length > 0 && (
             <polyline
               className="trend-compare-line current"
               points={convertPointsToSvg(currentPoints)}
             />
           )}
-
-          {previousPoints.map((point) => (
-            <circle
-              className="trend-compare-dot previous"
-              cx={point.x}
-              cy={point.y}
-              key={`previous-${point.month}`}
-              r="4"
-            />
-          ))}
 
           {currentPoints.map((point) => (
             <circle
@@ -361,7 +339,7 @@ function TrendLineChart({
           style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}
         >
           {data.map((item) => (
-            <span key={item.month}>{item.month}</span>
+            <span key={item.period}>{item.month}</span>
           ))}
         </div>
       </div>
@@ -472,14 +450,21 @@ function convertPointsToSvg(points: LinePoint[]) {
   return points.map((point) => `${point.x},${point.y}`).join(' ')
 }
 
-function getPeriodLimitedMonthlyTrends(data: MonthlyTrend[], period: PeriodOption) {
-  const limitMap: Record<PeriodOption, number> = {
-    '3months': 3,
-    '6months': 6,
-    '12months': 12,
-  }
+function getLatestTwoMonthlyTrends(data: MonthlyTrend[]) {
+  return sortMonthlyTrends(data).slice(-2)
+}
 
-  return data.slice(-limitMap[period])
+function getPeriodMeta(data: MonthlyTrend[]) {
+  const sortedData = sortMonthlyTrends(data)
+  const previousPeriod = sortedData.length >= 2 ? sortedData[sortedData.length - 2] : null
+  const currentPeriod = sortedData.length >= 1 ? sortedData[sortedData.length - 1] : null
+
+  return {
+    previousPeriodLabel: previousPeriod ? previousPeriod.month : '-',
+    currentPeriodLabel: currentPeriod ? currentPeriod.month : '-',
+    periodRangeLabel:
+      previousPeriod && currentPeriod ? `${previousPeriod.month} ~ ${currentPeriod.month}` : '',
+  }
 }
 
 function calculateChangeRate(currentValue: number, previousValue: number | null) {
@@ -531,39 +516,30 @@ function normalizeMonthlyTrends(rawData: unknown): MonthlyTrend[] {
   }
 
   const rawList = unwrapListFromUnknown(rawData)
-
   return normalizeMarketList(rawList)
 }
 
 function normalizeMarketList(rawList: Record<string, unknown>[]) {
   return rawList
     .map((item, index) => {
-      const month =
-        formatPeriodLabel(
-          readDisplayLabel(
-            item,
-            ['period_ko', 'month_ko', 'label_ko', 'date_ko'],
-            ['period', 'month', 'label', 'date', 'year_month', 'release_month'],
-          ),
-        ) || `기간 ${index + 1}`
-
-      const reviewCount = readOptionalNumber(item, [
-        'review_count',
-        'reviewCount',
-        'reviews',
-        'total_reviews',
-        'totalReviews',
-        'count',
-        'total',
-      ])
-
-      const positiveRatio = readPositiveRatio(item)
+      const rawPeriod =
+        readString(item, ['period', 'month', 'label', 'date', 'year_month', 'release_month']) ||
+        `period-${index + 1}`
 
       return {
-        month,
-        currentReviews: reviewCount,
+        period: rawPeriod,
+        month: formatPeriodLabel(rawPeriod),
+        currentReviews: readOptionalNumber(item, [
+          'review_count',
+          'reviewCount',
+          'reviews',
+          'total_reviews',
+          'totalReviews',
+          'count',
+          'total',
+        ]),
         previousReviews: null,
-        currentPositiveRate: positiveRatio,
+        currentPositiveRate: readPositiveRatio(item),
         previousPositiveRate: null,
       }
     })
@@ -583,12 +559,7 @@ function normalizeTopGenreTrends(rawData: unknown): GenreTrend[] {
 
   return topGenreList
     .map((item) => {
-      const genre = readDisplayLabel(
-        item,
-        ['genre_ko', 'genre_kor', 'korean_genre', 'name_ko', 'label_ko', 'category_ko'],
-        ['genre', 'name', 'label', 'category'],
-      )
-
+      const genre = readString(item, ['genre', 'name', 'label', 'category'])
       const periodData = readNestedListFromUnknown(item, ['data', 'items', 'results'])
       const periodSummaries = aggregatePeriodSummaries(periodData)
 
@@ -600,9 +571,7 @@ function normalizeTopGenreTrends(rawData: unknown): GenreTrend[] {
         }
       }
 
-      const sortedPeriodSummaries = periodSummaries.sort((a, b) =>
-        a.period.localeCompare(b.period),
-      )
+      const sortedPeriodSummaries = sortTrendPeriodItems(periodSummaries)
       const currentPeriod = sortedPeriodSummaries[sortedPeriodSummaries.length - 1]
       const previousPeriod =
         sortedPeriodSummaries.length >= 2
@@ -620,220 +589,158 @@ function normalizeTopGenreTrends(rawData: unknown): GenreTrend[] {
 }
 
 function normalizeGenreTrends(rawData: unknown): GenreTrend[] {
-  const topGenreTrends = normalizeTopGenreTrends(rawData)
+  const itemList = readNestedListFromUnknown(rawData, ['items'])
 
-  if (topGenreTrends.length > 0) {
-    return topGenreTrends
+  if (itemList.length === 0) {
+    return normalizeTopGenreTrends(rawData)
   }
 
-  const rawList = unwrapListFromUnknown(rawData)
+  const groupMap = new Map<string, GenrePeriodGroup>()
 
-  const normalizedList = rawList
-    .map((item) => {
-      const genre = readDisplayLabel(
-        item,
-        ['genre_ko', 'genre_kor', 'korean_genre', 'name_ko', 'label_ko', 'category_ko'],
-        ['genre', 'name', 'label', 'category'],
-      )
+  itemList.forEach((item) => {
+    const genre = readString(item, ['genre', 'name', 'label', 'category'])
+
+    if (!genre) {
+      return
+    }
+
+    const periodItem = normalizeTrendPeriodItem(item)
+
+    if (!periodItem) {
+      return
+    }
+
+    const savedGroup = groupMap.get(genre) ?? {
+      genre,
+      periods: [],
+    }
+
+    savedGroup.periods.push(periodItem)
+    groupMap.set(genre, savedGroup)
+  })
+
+  return Array.from(groupMap.values())
+    .map((group) => {
+      const periodSummaries = aggregateTrendPeriodItems(group.periods)
+      const sortedPeriodSummaries = sortTrendPeriodItems(periodSummaries)
+      const currentPeriod = sortedPeriodSummaries[sortedPeriodSummaries.length - 1]
+      const previousPeriod =
+        sortedPeriodSummaries.length >= 2
+          ? sortedPeriodSummaries[sortedPeriodSummaries.length - 2]
+          : null
 
       return {
-        genre,
-        currentReviews:
-          readOptionalNumber(item, [
-            'current_reviews',
-            'currentReviews',
-            'current_review_count',
-            'reviews_current',
-            'review_count_current',
-            'current_total_reviews',
-            'review_count',
-            'reviewCount',
-            'reviews',
-            'total_reviews',
-            'totalReviews',
-            'count',
-            'total',
-          ]) ?? 0,
-        previousReviews: readOptionalNumber(item, [
-          'previous_reviews',
-          'previousReviews',
-          'previous_review_count',
-          'reviews_previous',
-          'review_count_previous',
-          'previous_total_reviews',
-          'previous',
-          'previous_value',
-        ]),
+        genre: group.genre,
+        currentReviews: currentPeriod ? currentPeriod.reviewCount : 0,
+        previousReviews: previousPeriod ? previousPeriod.reviewCount : null,
       }
     })
     .filter((item) => item.genre.trim().length > 0)
-
-  return aggregateGenreTrends(normalizedList)
+    .sort((a, b) => b.currentReviews - a.currentReviews)
 }
 
 function normalizePriceTrends(rawData: unknown): PriceTrend[] {
-  const rawList = unwrapListFromUnknown(rawData)
+  const itemList = readNestedListFromUnknown(rawData, ['items'])
+  const rawList = itemList.length > 0 ? itemList : unwrapListFromUnknown(rawData)
 
-  const normalizedList: PriceTrendCandidate[] = rawList
-    .map((item) => {
-      const priceBand = readDisplayLabel(
-        item,
-        ['price_band_ko', 'priceBandKo', 'label_ko', 'range_ko', 'name_ko'],
-        ['price_band', 'priceBand', 'price_range', 'priceRange', 'label', 'range', 'name'],
-      )
+  const groupMap = new Map<string, PricePeriodGroup>()
 
-      const currentPositiveRate = readPositiveRatio(item)
+  rawList.forEach((item) => {
+    const priceBand = readString(item, [
+      'price_band',
+      'priceBand',
+      'price_range',
+      'priceRange',
+      'label',
+      'range',
+      'name',
+    ])
 
-      const previousPositiveRate = normalizeOptionalPercent(
-        readOptionalNumber(item, [
-          'previous_positive_rate',
-          'previousPositiveRate',
-          'positive_rate_previous',
-          'previous_positive_ratio',
-          'positive_ratio_previous',
-          'previous',
-          'previous_value',
-        ]),
-      )
+    if (!priceBand) {
+      return
+    }
 
-      const currentWeight =
-        readOptionalNumber(item, [
-          'current_reviews',
-          'currentReviews',
-          'current_review_count',
-          'reviews_current',
-          'review_count_current',
-          'review_count',
-          'reviewCount',
-          'reviews',
-          'total_reviews',
-          'totalReviews',
-          'count',
-          'total',
-        ]) ?? 1
+    const periodItem = normalizeTrendPeriodItem(item)
 
-      const previousWeight = readOptionalNumber(item, [
-        'previous_reviews',
-        'previousReviews',
-        'previous_review_count',
-        'reviews_previous',
-        'review_count_previous',
-      ])
+    if (!periodItem) {
+      return
+    }
+
+    const savedGroup = groupMap.get(priceBand) ?? {
+      priceBand,
+      periods: [],
+    }
+
+    savedGroup.periods.push(periodItem)
+    groupMap.set(priceBand, savedGroup)
+  })
+
+  return Array.from(groupMap.values())
+    .map((group) => {
+      const periodSummaries = aggregateTrendPeriodItems(group.periods)
+      const sortedPeriodSummaries = sortTrendPeriodItems(periodSummaries)
+      const currentPeriod = sortedPeriodSummaries[sortedPeriodSummaries.length - 1]
+      const previousPeriod =
+        sortedPeriodSummaries.length >= 2
+          ? sortedPeriodSummaries[sortedPeriodSummaries.length - 2]
+          : null
 
       return {
-        priceBand,
-        currentPositiveRate: currentPositiveRate ?? 0,
-        previousPositiveRate,
-        currentWeight,
-        previousWeight,
+        priceBand: group.priceBand,
+        currentPositiveRate: currentPeriod?.positiveRatio ?? 0,
+        previousPositiveRate: previousPeriod?.positiveRatio ?? null,
       }
     })
     .filter((item) => item.priceBand.trim().length > 0)
-
-  return aggregatePriceTrends(normalizedList)
-}
-
-function aggregateGenreTrends(data: GenreTrend[]) {
-  const map = new Map<string, GenreTrend>()
-
-  data.forEach((item) => {
-    const savedItem = map.get(item.genre)
-
-    if (!savedItem) {
-      map.set(item.genre, { ...item })
-      return
-    }
-
-    savedItem.currentReviews += item.currentReviews
-
-    if (item.previousReviews !== null) {
-      savedItem.previousReviews = (savedItem.previousReviews ?? 0) + item.previousReviews
-    }
-  })
-
-  return Array.from(map.values()).sort((a, b) => b.currentReviews - a.currentReviews)
-}
-
-function aggregatePriceTrends(data: PriceTrendCandidate[]) {
-  const map = new Map<
-    string,
-    {
-      currentWeightedSum: number
-      currentWeightSum: number
-      previousWeightedSum: number
-      previousWeightSum: number
-    }
-  >()
-
-  data.forEach((item) => {
-    const savedItem =
-      map.get(item.priceBand) ??
-      {
-        currentWeightedSum: 0,
-        currentWeightSum: 0,
-        previousWeightedSum: 0,
-        previousWeightSum: 0,
-      }
-
-    const currentWeight = item.currentWeight > 0 ? item.currentWeight : 1
-
-    savedItem.currentWeightedSum += item.currentPositiveRate * currentWeight
-    savedItem.currentWeightSum += currentWeight
-
-    if (item.previousPositiveRate !== null) {
-      const previousWeight =
-        item.previousWeight !== null && item.previousWeight > 0 ? item.previousWeight : 1
-
-      savedItem.previousWeightedSum += item.previousPositiveRate * previousWeight
-      savedItem.previousWeightSum += previousWeight
-    }
-
-    map.set(item.priceBand, savedItem)
-  })
-
-  return Array.from(map.entries())
-    .map(([priceBand, value]) => ({
-      priceBand,
-      currentPositiveRate:
-        value.currentWeightSum > 0 ? value.currentWeightedSum / value.currentWeightSum : 0,
-      previousPositiveRate:
-        value.previousWeightSum > 0 ? value.previousWeightedSum / value.previousWeightSum : null,
-    }))
     .sort((a, b) => b.currentPositiveRate - a.currentPositiveRate)
 }
 
+function normalizeTrendPeriodItem(item: Record<string, unknown>) {
+  const period = readString(item, ['period', 'month', 'label', 'date', 'year_month'])
+
+  if (!period) {
+    return null
+  }
+
+  return {
+    period,
+    reviewCount:
+      readOptionalNumber(item, ['review_count', 'reviewCount', 'reviews', 'total_reviews']) ?? 0,
+    positiveReviews:
+      readOptionalNumber(item, ['positive_reviews', 'positiveReviews', 'positive_count']) ?? 0,
+    negativeReviews:
+      readOptionalNumber(item, ['negative_reviews', 'negativeReviews', 'negative_count']) ?? 0,
+    positiveRatio: readPositiveRatio(item),
+  }
+}
+
 function aggregatePeriodSummaries(data: Record<string, unknown>[]) {
-  const map = new Map<string, PeriodSummary>()
+  const items = data
+    .map((item) => normalizeTrendPeriodItem(item))
+    .filter((item): item is TrendPeriodItem => item !== null)
+
+  return aggregateTrendPeriodItems(items)
+}
+
+function aggregateTrendPeriodItems(data: TrendPeriodItem[]) {
+  const map = new Map<string, TrendPeriodItem>()
 
   data.forEach((item) => {
-    const period = readString(item, ['period', 'month', 'label', 'date', 'year_month'])
-
-    if (!period) {
-      return
-    }
-
     const savedItem =
-      map.get(period) ??
+      map.get(item.period) ??
       {
-        period,
+        period: item.period,
         reviewCount: 0,
         positiveReviews: 0,
         negativeReviews: 0,
         positiveRatio: null,
       }
 
-    const reviewCount =
-      readOptionalNumber(item, ['review_count', 'reviewCount', 'reviews', 'total_reviews']) ?? 0
-    const positiveReviews =
-      readOptionalNumber(item, ['positive_reviews', 'positiveReviews', 'positive_count']) ?? 0
-    const negativeReviews =
-      readOptionalNumber(item, ['negative_reviews', 'negativeReviews', 'negative_count']) ?? 0
+    savedItem.reviewCount += item.reviewCount
+    savedItem.positiveReviews += item.positiveReviews
+    savedItem.negativeReviews += item.negativeReviews
 
-    savedItem.reviewCount += reviewCount
-    savedItem.positiveReviews += positiveReviews
-    savedItem.negativeReviews += negativeReviews
-
-    map.set(period, savedItem)
+    map.set(item.period, savedItem)
   })
 
   return Array.from(map.values()).map((item) => ({
@@ -841,6 +748,10 @@ function aggregatePeriodSummaries(data: Record<string, unknown>[]) {
     positiveRatio:
       item.reviewCount > 0 ? Math.min((item.positiveReviews / item.reviewCount) * 100, 100) : null,
   }))
+}
+
+function sortTrendPeriodItems(data: TrendPeriodItem[]) {
+  return [...data].sort((a, b) => getPeriodSortTime(a.period) - getPeriodSortTime(b.period))
 }
 
 function readPositiveRatio(item: Record<string, unknown>) {
@@ -869,6 +780,7 @@ function readPositiveRatio(item: Record<string, unknown>) {
     'count',
     'total',
   ])
+
   const positiveReviews = readOptionalNumber(item, [
     'positive_reviews',
     'positiveReviews',
@@ -882,27 +794,52 @@ function readPositiveRatio(item: Record<string, unknown>) {
   return null
 }
 
-function readDisplayLabel(
-  item: Record<string, unknown>,
-  koreanKeys: string[],
-  englishKeys: string[],
-) {
-  const koreanLabel = readString(item, koreanKeys)
-  const englishLabel = readString(item, englishKeys)
-
-  if (koreanLabel && englishLabel && !isSameLabel(koreanLabel, englishLabel)) {
-    if (koreanLabel.includes(`(${englishLabel})`)) {
-      return koreanLabel
-    }
-
-    return `${koreanLabel} (${englishLabel})`
-  }
-
-  return koreanLabel || englishLabel
+function sortMonthlyTrends(data: MonthlyTrend[]) {
+  return [...data].sort((a, b) => getPeriodSortTime(a.period) - getPeriodSortTime(b.period))
 }
 
-function isSameLabel(firstLabel: string, secondLabel: string) {
-  return firstLabel.trim().toLowerCase() === secondLabel.trim().toLowerCase()
+function getPeriodSortTime(period: string) {
+  const date = parseYearMonthToDate(period)
+
+  if (date) {
+    return date.getTime()
+  }
+
+  return 0
+}
+
+function parseYearMonthToDate(period: string) {
+  const periodKey = normalizeYearMonthKey(period)
+
+  if (!periodKey) {
+    return null
+  }
+
+  const [year, month] = periodKey.split('-').map(Number)
+
+  if (!year || !month) {
+    return null
+  }
+
+  return new Date(year, month - 1, 1)
+}
+
+function normalizeYearMonthKey(period: string) {
+  const trimmedPeriod = period.trim()
+  const yearMonthMatch = trimmedPeriod.match(/^(\d{4})[-./](\d{1,2})/)
+
+  if (!yearMonthMatch) {
+    return ''
+  }
+
+  const year = Number(yearMonthMatch[1])
+  const month = Number(yearMonthMatch[2])
+
+  if (!year || month < 1 || month > 12) {
+    return ''
+  }
+
+  return `${year}-${String(month).padStart(2, '0')}`
 }
 
 function formatPeriodLabel(rawLabel: string) {

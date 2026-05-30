@@ -201,10 +201,7 @@ html.theme-dark .settings-status-inline strong {
 
 /* 설명/보조 텍스트 */
 html.theme-dark p,
-html.theme-dark span,
-html.theme-dark em,
 html.theme-dark label,
-html.theme-dark small,
 html.theme-dark .home-v2-header p,
 html.theme-dark .home-v2-card-header p,
 html.theme-dark .home-v2-game-text p,
@@ -406,14 +403,42 @@ html.theme-dark [class*='bubble-label'] {
   font-weight: 900;
 }
 
-/* 게임 상세 분석 - 검색 결과 게임 목록 */
+/* 게임 상세 분석 - 다크 모드 빈 공간 보정 */
+html.theme-dark .game-detail-layout {
+  align-items: flex-start;
+}
+
 html.theme-dark .game-detail-result-panel {
+  align-self: flex-start;
   background: var(--panel);
   border-color: var(--line);
 }
 
+html.theme-dark .game-detail-main-area {
+  align-self: flex-start;
+  height: auto;
+  min-height: 0;
+  justify-content: flex-start;
+  align-content: flex-start;
+}
+
+html.theme-dark .game-detail-summary-grid {
+  margin-top: 0;
+  align-items: stretch;
+}
+
+html.theme-dark .game-detail-summary-card {
+  min-height: 148px;
+  height: auto;
+}
+
+html.theme-dark .game-detail-chart-grid {
+  margin-top: 0;
+}
+
+/* 게임 상세 분석 - 검색 결과 게임 목록 */
 html.theme-dark .game-detail-result-list {
-  max-height: min(720px, calc(100vh - 270px));
+  max-height: calc(100vh - 300px);
   overflow-y: auto;
   padding-right: 6px;
 }

@@ -17,8 +17,15 @@ import {
   type ApiRecord,
 } from './api/gameDetailApi'
 
+/**
+ * 게임 상세 분석 화면에서 사용할 기간 옵션입니다.
+ * 7일 데이터는 제공되지 않는 것으로 판단해서 30일, 90일만 사용합니다.
+ */
 type PeriodOption = 30 | 90
 
+/**
+ * 왼쪽 게임 목록과 검색 결과에서 사용하는 간단한 게임 정보 타입입니다.
+ */
 type GameSummary = {
   id: string
   gameId: string | number
@@ -29,6 +36,9 @@ type GameSummary = {
   image?: string
 }
 
+/**
+ * 오른쪽 게임 상세 카드와 요약 카드에서 사용하는 정규화된 게임 상세 타입입니다.
+ */
 type GameDetailView = {
   id: string
   gameId: string | number
@@ -54,6 +64,9 @@ type GameDetailView = {
   image?: string
 }
 
+/**
+ * 리뷰 감성 분석 카드와 모달에서 사용하는 데이터 타입입니다.
+ */
 type SentimentView = {
   positive: number
   neutral: number
@@ -64,6 +77,9 @@ type SentimentView = {
   totalCount: number
 }
 
+/**
+ * 키워드 그룹 영역에서 사용하는 토픽 데이터 타입입니다.
+ */
 type TopicView = {
   id: string
   groupName: string
@@ -73,6 +89,9 @@ type TopicView = {
   sentimentLabel: string
 }
 
+/**
+ * 하단 토픽 분석 요약 카드에서 사용하는 타입입니다.
+ */
 type TopicSummaryView = {
   topicCount: number
   strongestTopicRate: number
@@ -80,6 +99,9 @@ type TopicSummaryView = {
   mainKeywords: string
 }
 
+/**
+ * 가격 변동 추이, 리뷰 수 & 긍정 비율 추이 그래프에 쓰이는 데이터 타입입니다.
+ */
 type TrendPoint = {
   label: string
   price: number
@@ -87,11 +109,17 @@ type TrendPoint = {
   reviewCount: number
 }
 
+/**
+ * 리뷰 인사이트 API 응답을 화면에 맞게 정리한 타입입니다.
+ */
 type ReviewInsight = {
   positiveSummary: string
   negativeSummary: string
 }
 
+/**
+ * [전체] 선택 시 여러 게임 데이터를 합산/평균 처리하기 위한 타입입니다.
+ */
 type AggregateGameStats = {
   totalGames: number
   positiveReviews: number
@@ -156,6 +184,9 @@ function GameDetailPage() {
 
   const isAllSelected = selectedGameId === ALL_GAME_ID
 
+  /**
+   * 관심 게임 목록을 localStorage와 동기화합니다.
+   */
   useEffect(() => {
     function syncFavoriteGames() {
       setFavoriteGames(readFavoriteGames())
@@ -172,6 +203,9 @@ function GameDetailPage() {
     }
   }, [])
 
+  /**
+   * 최초 화면 진입 시 게임 목록을 불러오고 기본 선택값을 [전체]로 설정합니다.
+   */
   useEffect(() => {
     async function loadGames() {
       try {
@@ -192,6 +226,9 @@ function GameDetailPage() {
     loadGames()
   }, [])
 
+  /**
+   * [전체] 토픽 분석에 필요한 전체 토픽 데이터를 불러옵니다.
+   */
   useEffect(() => {
     async function loadOverallTopics() {
       try {
@@ -221,6 +258,10 @@ function GameDetailPage() {
     return games.map((game, index) => normalizeGameSummary(game, index))
   }, [games])
 
+  /**
+   * 검색창 포커스 시 보여줄 장르 추천 목록입니다.
+   * 추천 게임명 목록은 표시하지 않고 장르만 보여줍니다.
+   */
   const searchSuggestions = useMemo(() => {
     const genreSet = new Set<string>()
 
@@ -237,6 +278,9 @@ function GameDetailPage() {
     }
   }, [gameSummaries])
 
+  /**
+   * 검색어에 따라 왼쪽 게임 목록을 필터링합니다.
+   */
   const filteredGames = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -254,6 +298,9 @@ function GameDetailPage() {
     })
   }, [gameSummaries, searchText])
 
+  /**
+   * 왼쪽 게임 목록에는 항상 [전체] 항목이 먼저 보이도록 구성합니다.
+   */
   const displayGames = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -282,6 +329,9 @@ function GameDetailPage() {
     return `전체 + ${filteredGames.length}개`
   }, [displayGames, filteredGames.length, searchText])
 
+  /**
+   * 검색 결과에서 현재 선택된 게임이 사라지면 첫 번째 검색 결과를 자동 선택합니다.
+   */
   useEffect(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -315,6 +365,10 @@ function GameDetailPage() {
     }
   }, [allGameSummary, filteredGames, searchText, selectedGameId])
 
+  /**
+   * 개별 게임 선택 시 상세/감성/토픽/가격 이력/리뷰 추이 데이터를 불러옵니다.
+   * [전체] 선택 시 개별 API 호출은 하지 않고, 전체 집계 데이터로 화면을 구성합니다.
+   */
   useEffect(() => {
     async function loadSelectedGame() {
       if (!selectedGameId) {
@@ -619,9 +673,13 @@ function GameDetailPage() {
     ? '전체 리뷰 샘플에서 함께 자주 등장한 키워드 묶음입니다.'
     : '선택한 게임의 리뷰에서 함께 자주 등장한 키워드 묶음입니다.'
 
+  /**
+   * 추이 그래프는 선택한 기간 전체의 모든 날짜를 자동 생성하는 방식이 아니라,
+   * 백엔드 API가 실제로 제공한 날짜 데이터만 표시합니다.
+   */
   const periodNote = isAllSelected
     ? '[전체] 항목은 기간별 추이를 제공하지 않습니다.'
-    : `${selectedPeriod}일 기준으로 기간별 데이터를 조회합니다.`
+    : `${selectedPeriod}일 범위 내 제공된 날짜 데이터만 표시됩니다.`
 
   return (
     <div className="game-detail-page">
@@ -879,7 +937,7 @@ function GameDetailPage() {
                   <p>
                     {isAllSelected
                       ? '[전체] 항목은 기간별 가격 이력 API를 호출하지 않습니다.'
-                      : `${selectedPeriod}일 기준 가격 이력 데이터가 없습니다.`}
+                      : `${selectedPeriod}일 범위 내 제공된 가격 변동 데이터가 없습니다.`}
                   </p>
                 </div>
               )}
@@ -927,7 +985,7 @@ function GameDetailPage() {
                   <p>
                     {isAllSelected
                       ? '[전체] 항목은 기간별 리뷰 추이를 제공하지 않습니다.'
-                      : `${selectedPeriod}일 기준 리뷰 추이 데이터가 없습니다.`}
+                      : `${selectedPeriod}일 범위 내 제공된 리뷰 추이 데이터가 없습니다.`}
                   </p>
                 </div>
               )}
@@ -1154,6 +1212,10 @@ function GameDetailPage() {
   )
 }
 
+/**
+ * 기간 선택 버튼 컴포넌트입니다.
+ * [전체] 선택 시에는 disabled 처리됩니다.
+ */
 function PeriodSelector({
   selectedPeriod,
   disabled,
@@ -1351,6 +1413,9 @@ function SentimentSummaryRow({
   )
 }
 
+/**
+ * [전체] 항목을 게임 목록에 추가하기 위한 가상 게임 데이터입니다.
+ */
 function createAllGameSummary(totalGames: number): GameSummary {
   return {
     id: ALL_GAME_ID,
@@ -1379,6 +1444,9 @@ function normalizeGameSummary(game: ApiRecord, index: number): GameSummary {
   }
 }
 
+/**
+ * [전체] 선택 시 개별 게임 상세 API 없이 목록 데이터를 집계해서 화면에 보여줍니다.
+ */
 function normalizeAllGameDetail(games: ApiRecord[]): GameDetailView {
   const stats = calculateAggregateGameStats(games)
   const topGenres = stats.topGenres.map((genre) => genre.name)
@@ -1459,6 +1527,10 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
   }
 }
 
+/**
+ * [전체] 선택 시 전체 게임의 긍정/부정 리뷰 수를 합산합니다.
+ * 중립 데이터는 Steam 원본 리뷰에 없기 때문에 0으로 둡니다.
+ */
 function normalizeAllSentiment(games: ApiRecord[]): SentimentView {
   const stats = calculateAggregateGameStats(games)
 
@@ -2054,6 +2126,10 @@ function averageNumber(values: number[]) {
   return total / values.length
 }
 
+/**
+ * 가격 그래프를 세로 막대 그래프로 표시하기 위해
+ * 가격 값을 최대 가격 대비 높이 비율로 변환합니다.
+ */
 function calculatePriceBarHeight(price: number, points: TrendPoint[]) {
   const prices = points.map((point) => point.price).filter((value) => value > 0)
 
@@ -2128,47 +2204,110 @@ const TOPIC_KO_MAP: Record<string, string> = {
   games: '게임',
   gameplay: '게임플레이',
   play: '플레이',
+  playing: '플레이',
+  played: '플레이 경험',
   player: '플레이어',
   players: '플레이어',
   fun: '재미',
+  enjoyable: '재미',
   good: '긍정 평가',
   great: '호평',
+  best: '높은 만족도',
   bad: '부정 평가',
   like: '선호도',
+  love: '애정도',
+  want: '요구사항',
   time: '플레이 시간',
+  hours: '플레이 시간',
   story: '스토리',
+  narrative: '서사',
+  character: '캐릭터',
+  characters: '캐릭터',
+  graphics: '그래픽',
+  visual: '비주얼',
+  visuals: '비주얼',
+  art: '아트',
+  animation: '애니메이션',
+  sound: '사운드',
+  music: '음악',
   combat: '전투',
+  battle: '전투',
+  boss: '보스전',
+  bosses: '보스전',
+  open: '오픈월드',
+  world: '세계관',
   price: '가격',
   value: '가성비',
+  worth: '가치',
+  dlc: 'DLC',
   bug: '버그',
   bugs: '버그',
   crash: '충돌 오류',
+  crashes: '충돌 오류',
   lag: '렉',
   optimization: '최적화',
   performance: '성능',
   server: '서버',
   online: '온라인',
   multiplayer: '멀티플레이',
+  coop: '협동',
+  'co op': '협동',
+  friends: '친구',
   difficulty: '난이도',
+  easy: '쉬움',
   hard: '어려움',
+  challenge: '도전성',
+  balance: '밸런스',
+  tutorial: '튜토리얼',
+  guide: '가이드',
+  controls: '조작감',
+  camera: '카메라',
+  ui: 'UI',
+  interface: '인터페이스',
+  system: '시스템',
+  mode: '모드',
+  quest: '퀘스트',
+  mission: '미션',
+  level: '레벨',
+  puzzle: '퍼즐',
+  replay: '반복 플레이',
   access: '접근성',
+  'early access': '얼리 액세스',
+  vehicles: '차량',
+  tanks: '전차',
 }
 
 const TOPIC_EN_MAP: Record<string, string> = {
   게임: 'game',
   게임플레이: 'gameplay',
   플레이: 'play',
+  플레이경험: 'played',
   플레이어: 'player',
   재미: 'fun',
   긍정평가: 'good',
   호평: 'great',
+  높은만족도: 'best',
   부정평가: 'bad',
   선호도: 'like',
+  애정도: 'love',
+  요구사항: 'want',
   플레이시간: 'time',
   스토리: 'story',
+  서사: 'narrative',
+  캐릭터: 'character',
+  그래픽: 'graphics',
+  비주얼: 'visual',
+  아트: 'art',
+  애니메이션: 'animation',
+  사운드: 'sound',
+  음악: 'music',
   전투: 'combat',
+  보스전: 'boss',
+  오픈월드: 'open world',
+  세계관: 'world',
   가격: 'price',
   가성비: 'value',
+  가치: 'worth',
   버그: 'bug',
   충돌오류: 'crash',
   렉: 'lag',
@@ -2177,9 +2316,30 @@ const TOPIC_EN_MAP: Record<string, string> = {
   서버: 'server',
   온라인: 'online',
   멀티플레이: 'multiplayer',
+  협동: 'co-op',
+  친구: 'friends',
   난이도: 'difficulty',
+  쉬움: 'easy',
   어려움: 'hard',
+  도전성: 'challenge',
+  밸런스: 'balance',
+  튜토리얼: 'tutorial',
+  가이드: 'guide',
+  조작감: 'controls',
+  카메라: 'camera',
+  ui: 'ui',
+  인터페이스: 'interface',
+  시스템: 'system',
+  모드: 'mode',
+  퀘스트: 'quest',
+  미션: 'mission',
+  레벨: 'level',
+  퍼즐: 'puzzle',
+  반복플레이: 'replay',
   접근성: 'access',
+  얼리액세스: 'early access',
+  차량: 'vehicles',
+  전차: 'tanks',
 }
 
 function extractParenthesesText(value: string) {

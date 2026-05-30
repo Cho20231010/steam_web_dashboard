@@ -1,0 +1,492 @@
+html.theme-dark {
+  --bg: #0b1120;
+  --panel: #111827;
+  --panel-soft: #172033;
+  --line: #2b3648;
+  --text: #f8fafc;
+  --sub: #cbd5e1;
+  --muted: #94a3b8;
+  --navy-1: #020617;
+  --navy-2: #07111f;
+  --blue: #8b9cff;
+  --blue-soft: rgba(139, 156, 255, 0.16);
+  --green: #34d399;
+  --green-soft: rgba(52, 211, 153, 0.14);
+  --gray: #64748b;
+  --red: #fb7185;
+  --red-soft: rgba(251, 113, 133, 0.14);
+  --yellow: #fbbf24;
+  --yellow-soft: rgba(251, 191, 36, 0.14);
+  --purple: #a78bfa;
+  --purple-soft: rgba(167, 139, 250, 0.16);
+  --shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+  color-scheme: dark;
+}
+
+html.theme-dark,
+html.theme-dark body,
+html.theme-dark #root,
+html.theme-dark .app,
+html.theme-dark .main {
+  background: var(--bg);
+  color: var(--text);
+}
+
+html.theme-dark body {
+  color: var(--text);
+}
+
+html.theme-dark .sidebar {
+  background: linear-gradient(180deg, #020617 0%, #061326 52%, #081a31 100%);
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+html.theme-dark .sidebar-nav button {
+  color: #dbeafe;
+}
+
+html.theme-dark .sidebar-nav button:hover,
+html.theme-dark .sidebar-nav button.active {
+  background: linear-gradient(135deg, rgba(93, 99, 241, 0.52), rgba(37, 99, 235, 0.42));
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+}
+
+/* 공통 카드/패널 배경 */
+html.theme-dark .status-card,
+html.theme-dark .home-v2-metric-card,
+html.theme-dark .home-v2-card,
+html.theme-dark .home-v2-insight-card,
+html.theme-dark .home-v2-expanded-panel,
+html.theme-dark .game-detail-header,
+html.theme-dark .game-detail-result-panel,
+html.theme-dark .game-detail-hero-card,
+html.theme-dark .game-detail-summary-card,
+html.theme-dark .game-detail-card,
+html.theme-dark .review-card,
+html.theme-dark .review-summary-card,
+html.theme-dark .trend-compare-card,
+html.theme-dark .trend-compare-filter-card,
+html.theme-dark .topic-analysis-card,
+html.theme-dark .topic-overview-card,
+html.theme-dark .topic-highlight-card,
+html.theme-dark .market-card,
+html.theme-dark .sample-notice-card,
+html.theme-dark .sample-summary-grid div,
+html.theme-dark .search-top-bar,
+html.theme-dark .search-filter-bar,
+html.theme-dark .search-result-card,
+html.theme-dark .favorite-stat-card,
+html.theme-dark .favorite-panel,
+html.theme-dark .favorite-feature-grid,
+html.theme-dark .settings-page,
+html.theme-dark .settings-card,
+html.theme-dark .settings-footer {
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* 카드 내부 보조 배경 */
+html.theme-dark .home-v2-table-head,
+html.theme-dark .home-v2-table-row,
+html.theme-dark .home-v2-expanded-game-card,
+html.theme-dark .home-v2-expanded-info-grid div,
+html.theme-dark .game-detail-search-dropdown,
+html.theme-dark .game-detail-action-card,
+html.theme-dark .game-detail-line-chart,
+html.theme-dark .game-detail-bar-chart,
+html.theme-dark .game-detail-no-trend,
+html.theme-dark .game-detail-keyword-group-item,
+html.theme-dark .info-row,
+html.theme-dark .review-insight-card,
+html.theme-dark .review-factor-row,
+html.theme-dark .trend-compare-chart-body,
+html.theme-dark .trend-compare-genre-row,
+html.theme-dark .trend-compare-price-item,
+html.theme-dark .trend-compare-stacked-item,
+html.theme-dark .topic-weight-item,
+html.theme-dark .topic-distribution-chart-row,
+html.theme-dark .representative-topic-item,
+html.theme-dark .genre-topic-item,
+html.theme-dark .topic-cluster-link-item,
+html.theme-dark .sentiment-category-bar-item,
+html.theme-dark .platform-item,
+html.theme-dark .release-year-item,
+html.theme-dark .trend-insight,
+html.theme-dark .compare-card,
+html.theme-dark .review-alert-item,
+html.theme-dark .favorite-feature-card,
+html.theme-dark .guide-box {
+  background: var(--panel-soft);
+  border-color: rgba(148, 163, 184, 0.18);
+  color: var(--text);
+}
+
+/* 제목/강조 텍스트 */
+html.theme-dark h1,
+html.theme-dark h2,
+html.theme-dark h3,
+html.theme-dark .home-v2-header h1,
+html.theme-dark .home-v2-card-header h2,
+html.theme-dark .home-v2-metric-card strong,
+html.theme-dark .home-v2-game-text strong,
+html.theme-dark .home-v2-price,
+html.theme-dark .home-v2-donut strong,
+html.theme-dark .home-v2-genre-row strong,
+html.theme-dark .home-v2-expanded-game-title h3,
+html.theme-dark .home-v2-expanded-info-grid strong,
+html.theme-dark .game-detail-panel-title strong,
+html.theme-dark .game-detail-title-row h2,
+html.theme-dark .game-detail-meta-item strong,
+html.theme-dark .game-detail-action-card strong,
+html.theme-dark .game-detail-action-card b,
+html.theme-dark .game-detail-card-head h3,
+html.theme-dark .game-detail-no-trend strong,
+html.theme-dark .game-detail-donut strong,
+html.theme-dark .game-detail-sentiment-row span,
+html.theme-dark .game-detail-sentiment-row strong,
+html.theme-dark .game-detail-keyword-group-title strong,
+html.theme-dark .info-row strong,
+html.theme-dark .sentiment-summary-total strong,
+html.theme-dark .review-card-header h2,
+html.theme-dark .review-summary-value,
+html.theme-dark .review-toolbar-current-target strong,
+html.theme-dark .review-factor-texts strong,
+html.theme-dark .trend-compare-card-header h2,
+html.theme-dark .trend-compare-genre-head strong,
+html.theme-dark .trend-compare-stacked-title,
+html.theme-dark .topic-overview-header h2,
+html.theme-dark .topic-analysis-card h2,
+html.theme-dark .topic-highlight-title,
+html.theme-dark .topic-weight-title strong,
+html.theme-dark .representative-topic-title strong,
+html.theme-dark .genre-topic-title strong,
+html.theme-dark .market-card-header h2,
+html.theme-dark .genre-legend-item strong,
+html.theme-dark .platform-item strong,
+html.theme-dark .release-year-value,
+html.theme-dark .trend-summary-chip strong,
+html.theme-dark .search-result-header strong,
+html.theme-dark .game-info strong,
+html.theme-dark .price-krw,
+html.theme-dark .price-free,
+html.theme-dark .favorite-stat-card strong,
+html.theme-dark .favorite-panel-header h2,
+html.theme-dark .favorite-game-info strong,
+html.theme-dark .recent-alert-item strong,
+html.theme-dark .favorite-feature-card strong,
+html.theme-dark .compare-card > strong,
+html.theme-dark .settings-header h1,
+html.theme-dark .settings-card h2,
+html.theme-dark .settings-field-group > span,
+html.theme-dark .settings-toggle-title strong,
+html.theme-dark .settings-status-inline strong {
+  color: var(--text);
+}
+
+/* 설명/보조 텍스트 */
+html.theme-dark p,
+html.theme-dark .home-v2-header p,
+html.theme-dark .home-v2-card-header p,
+html.theme-dark .home-v2-game-text p,
+html.theme-dark .home-v2-table-head,
+html.theme-dark .home-v2-donut span,
+html.theme-dark .home-v2-donut em,
+html.theme-dark .bubble-label-y,
+html.theme-dark .bubble-label-x,
+html.theme-dark .home-v2-empty,
+html.theme-dark .game-detail-sample-note,
+html.theme-dark .game-detail-dropdown-section-title,
+html.theme-dark .game-detail-panel-title span,
+html.theme-dark .game-detail-meta-item span,
+html.theme-dark .game-detail-action-card span,
+html.theme-dark .game-detail-no-trend p,
+html.theme-dark .game-detail-donut span,
+html.theme-dark .game-detail-sentiment-row em,
+html.theme-dark .keyword-group-head p,
+html.theme-dark .info-row span,
+html.theme-dark .sentiment-summary-total span,
+html.theme-dark .game-detail-empty,
+html.theme-dark .review-card-header p,
+html.theme-dark .review-summary-label,
+html.theme-dark .review-summary-sub,
+html.theme-dark .review-toolbar-meta,
+html.theme-dark .review-factor-texts span,
+html.theme-dark .review-empty,
+html.theme-dark .trend-compare-card-header p,
+html.theme-dark .trend-compare-bottom-note,
+html.theme-dark .trend-compare-y-axis,
+html.theme-dark .trend-compare-x-axis,
+html.theme-dark .trend-compare-price-label,
+html.theme-dark .topic-card-caption,
+html.theme-dark .topic-analysis-empty,
+html.theme-dark .topic-overview-metrics span,
+html.theme-dark .topic-distribution-chart-label,
+html.theme-dark .topic-cluster-connection-stats,
+html.theme-dark .market-card-caption,
+html.theme-dark .trend-axis-label,
+html.theme-dark .trend-x-tick,
+html.theme-dark .trend-y-tick,
+html.theme-dark .sample-notice-card p,
+html.theme-dark .sample-summary-grid span,
+html.theme-dark .search-filter-item label,
+html.theme-dark .search-table thead th,
+html.theme-dark .search-empty,
+html.theme-dark .price-usd,
+html.theme-dark .favorite-panel-header p,
+html.theme-dark .favorite-table th,
+html.theme-dark .favorite-game-info span,
+html.theme-dark .recent-alert-item p,
+html.theme-dark .recent-alert-item > span,
+html.theme-dark .favorite-feature-card p,
+html.theme-dark .compare-card dt,
+html.theme-dark .review-alert-info p,
+html.theme-dark .settings-footer p,
+html.theme-dark .settings-status-inline span {
+  color: var(--sub);
+}
+
+/* 입력/셀렉트/검색창 */
+html.theme-dark input,
+html.theme-dark select,
+html.theme-dark textarea,
+html.theme-dark .game-detail-search-box input,
+html.theme-dark .search-input,
+html.theme-dark .search-filter-item select,
+html.theme-dark .target-price-input,
+html.theme-dark .settings-field-group select,
+html.theme-dark .settings-field-group input {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.28);
+  color: var(--text);
+}
+
+html.theme-dark input::placeholder,
+html.theme-dark textarea::placeholder,
+html.theme-dark .search-input::placeholder {
+  color: var(--muted);
+}
+
+html.theme-dark select option {
+  background: #111827;
+  color: var(--text);
+}
+
+/* 일반 버튼 */
+html.theme-dark .page-nav,
+html.theme-dark .page-number,
+html.theme-dark .search-button,
+html.theme-dark .settings-outline-button,
+html.theme-dark .favorite-toggle-button,
+html.theme-dark .favorite-icon-button,
+html.theme-dark .game-detail-card-head button,
+html.theme-dark .game-detail-action-card button.secondary,
+html.theme-dark .trend-compare-tabs button,
+html.theme-dark .topic-analysis-tabs button,
+html.theme-dark .market-distribution-tabs button,
+html.theme-dark .favorite-tab-button,
+html.theme-dark .settings-tab-bar button {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: #0f172a;
+  color: var(--text);
+}
+
+html.theme-dark .search-button,
+html.theme-dark .settings-primary-button,
+html.theme-dark .page-number.active,
+html.theme-dark .favorite-toggle-button.active,
+html.theme-dark .favorite-icon-button.active,
+html.theme-dark .game-detail-card-head button.active,
+html.theme-dark .trend-compare-tabs button.active,
+html.theme-dark .topic-analysis-tabs button.active,
+html.theme-dark .market-distribution-tabs button.active,
+html.theme-dark .favorite-tab-button.active,
+html.theme-dark .settings-tab-bar button.active {
+  background: linear-gradient(135deg, #5d63f1, #2563eb);
+  border-color: #8b9cff;
+  color: #ffffff;
+}
+
+/* 테이블 */
+html.theme-dark table,
+html.theme-dark .search-table,
+html.theme-dark .favorite-table,
+html.theme-dark .home-v2-table,
+html.theme-dark .topic-sentiment-table,
+html.theme-dark .trend-compare-genre-table {
+  color: var(--text);
+}
+
+html.theme-dark th,
+html.theme-dark .search-table thead th,
+html.theme-dark .favorite-table th,
+html.theme-dark .favorite-table-wrap,
+html.theme-dark .search-table-wrap {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+html.theme-dark td,
+html.theme-dark .search-table tbody td,
+html.theme-dark .favorite-table td,
+html.theme-dark .home-v2-table-row,
+html.theme-dark .topic-sentiment-row {
+  border-color: rgba(148, 163, 184, 0.14);
+  color: var(--text);
+}
+
+/* 칩/태그 */
+html.theme-dark .game-detail-tags span,
+html.theme-dark .game-detail-topic-chip-list span,
+html.theme-dark .review-topic-chip,
+html.theme-dark .trend-summary-chip,
+html.theme-dark .sample-mode-pill,
+html.theme-dark .favorite-status-badge,
+html.theme-dark .settings-badge.success {
+  background: var(--blue-soft);
+  color: #dbeafe;
+  border-color: rgba(139, 156, 255, 0.25);
+}
+
+html.theme-dark .favorite-waiting-badge,
+html.theme-dark .sample-cursor-note {
+  background: var(--yellow-soft);
+  color: #fde68a;
+}
+
+html.theme-dark .favorite-danger-badge,
+html.theme-dark .review-error {
+  background: var(--red-soft);
+  color: #fecdd3;
+}
+
+html.theme-dark .favorite-neutral-badge,
+html.theme-dark .review-topic-empty,
+html.theme-dark .favorite-price-empty {
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+}
+
+html.theme-dark .favorite-price-label,
+html.theme-dark .price-cell,
+html.theme-dark .price-krw {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text);
+}
+
+html.theme-dark .favorite-price-free,
+html.theme-dark .positive-cell,
+html.theme-dark .positive-ratio,
+html.theme-dark .home-v2-rate-cell,
+html.theme-dark .sentiment-summary-row.positive strong {
+  color: var(--green);
+}
+
+/* 그래프/트랙 */
+html.theme-dark .home-v2-bubble-chart,
+html.theme-dark .topic-distribution-chart-track,
+html.theme-dark .topic-weight-track,
+html.theme-dark .trend-compare-price-track,
+html.theme-dark .trend-compare-stacked-track,
+html.theme-dark .sentiment-summary-track,
+html.theme-dark .release-year-bar-wrap,
+html.theme-dark .vertical-bar-track,
+html.theme-dark .trend-chart-wrapper {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
+html.theme-dark .trend-grid-line,
+html.theme-dark .trend-axis-line,
+html.theme-dark .trend-compare-grid-lines span,
+html.theme-dark .market-card--trend .trend-grid-line {
+  stroke: rgba(148, 163, 184, 0.22);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+html.theme-dark .trend-line-path {
+  stroke: #93c5fd;
+}
+
+html.theme-dark .trend-point-core,
+html.theme-dark .trend-point-dot {
+  fill: #93c5fd;
+  background: #93c5fd;
+}
+
+/* 이미지 placeholder */
+html.theme-dark .game-thumb.placeholder,
+html.theme-dark .favorite-game-image.fallback,
+html.theme-dark .game-detail-result-thumb,
+html.theme-dark .game-detail-search-thumb {
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+/* 설정 화면 전용 */
+html.theme-dark .settings-toggle {
+  background: #475569;
+}
+
+html.theme-dark .settings-toggle.active {
+  background: #5d63f1;
+}
+
+html.theme-dark .settings-outline-button.blue {
+  border-color: #8b9cff;
+  color: #dbeafe;
+}
+
+html.theme-dark .settings-badge.error {
+  background: var(--red-soft);
+  color: #fecdd3 !important;
+}
+
+html.theme-dark .settings-badge.checking {
+  background: var(--purple-soft);
+  color: #ddd6fe !important;
+}
+
+html.theme-dark .settings-badge.idle {
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1 !important;
+}
+
+/* 스크롤바 */
+html.theme-dark * {
+  scrollbar-color: #475569 #0f172a;
+}
+
+html.theme-dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html.theme-dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+html.theme-dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 999px;
+}
+
+html.theme-dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* 색상 적용된 거
+전체 배경: #0b1120
+카드 배경: #111827
+보조 카드: #172033
+선/테두리: #2b3648
+기본 글자: #f8fafc
+보조 글자: #cbd5e1
+비활성 글자: #94a3b8
+포인트 블루: #8b9cff
+긍정 그린: #34d399
+주의 레드: #fb7185
+경고 옐로우: #fbbf24
+*/

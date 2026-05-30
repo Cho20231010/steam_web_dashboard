@@ -235,7 +235,7 @@
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .game-detail-main-area {
@@ -252,11 +252,14 @@
   grid-column: 1;
   grid-row: 1;
   align-self: stretch;
-  height: 678px;
+  min-height: 0;
+  height: auto;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .game-detail-full-span {
@@ -275,6 +278,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 14px;
+  flex-shrink: 0;
 }
 
 .game-detail-panel-title strong {
@@ -290,10 +294,13 @@
 }
 
 .game-detail-result-list {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  height: calc(100% - 42px);
+  height: auto;
+  max-height: none;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -673,53 +680,7 @@
   color: #a0a8b8;
 }
 
-.game-detail-line-chart {
-  position: relative;
-  height: 154px;
-  overflow: hidden;
-  border: 1px solid #edf0f5;
-  border-radius: 16px;
-  background:
-    linear-gradient(#edf0f5 1px, transparent 1px),
-    #ffffff;
-  background-size: 100% 25%;
-}
-
-.game-detail-line-chart::before {
-  content: '';
-  position: absolute;
-  inset: 45% 8% auto 8%;
-  height: 2px;
-  background: #3157ff;
-  transform: rotate(-4deg);
-  transform-origin: left center;
-}
-
-.game-detail-line-chart > span {
-  position: absolute;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #3157ff;
-  transform: translate(-50%, 50%);
-}
-
-.game-detail-chart-labels {
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.game-detail-chart-labels em {
-  color: #617089;
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 800;
-}
-
+.game-detail-price-bar-chart,
 .game-detail-bar-chart {
   height: 154px;
   display: grid;
@@ -735,6 +696,7 @@
   background-size: 100% 25%;
 }
 
+.game-detail-price-bar-chart div,
 .game-detail-bar-chart div {
   height: 100%;
   min-width: 0;
@@ -745,6 +707,7 @@
   gap: 8px;
 }
 
+.game-detail-price-bar-chart span,
 .game-detail-bar-chart span {
   width: 100%;
   max-width: 32px;
@@ -753,6 +716,7 @@
   background: linear-gradient(180deg, #3157ff, #8da4ff);
 }
 
+.game-detail-price-bar-chart em,
 .game-detail-bar-chart em {
   overflow: hidden;
   width: 100%;
@@ -1411,14 +1375,19 @@
   .game-detail-layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 14px;
+    align-items: stretch;
   }
 
   .game-detail-result-panel {
-    height: 650px;
+    height: auto;
+    align-self: stretch;
   }
 
   .game-detail-result-list {
-    height: calc(100% - 42px);
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    max-height: none;
   }
 
   .game-detail-hero-card {
@@ -1493,6 +1462,7 @@
     height: auto;
     max-height: none;
     overflow: visible;
+    display: block;
   }
 
   .game-detail-result-list {

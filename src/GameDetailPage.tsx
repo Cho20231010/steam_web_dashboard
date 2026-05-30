@@ -842,23 +842,18 @@ function GameDetailPage() {
               </div>
 
               {trendPoints.length > 0 ? (
-                <div className="game-detail-line-chart">
-                  {trendPoints.map((point, index) => (
-                    <span
-                      key={`${point.label}-${index}`}
-                      style={{
-                        left: `${(index / Math.max(trendPoints.length - 1, 1)) * 100}%`,
-                        bottom: `${calculatePricePointPosition(point.price, trendPoints)}%`,
-                      }}
-                      title={`${point.label} / ${formatSteamPrice(point.price)}`}
-                    />
+                <div className="game-detail-price-bar-chart">
+                  {trendPoints.map((point) => (
+                    <div key={point.label}>
+                      <span
+                        style={{
+                          height: `${calculatePriceBarHeight(point.price, trendPoints)}%`,
+                        }}
+                        title={`${point.label} / ${formatSteamPrice(point.price)}`}
+                      />
+                      <em>{point.label}</em>
+                    </div>
                   ))}
-
-                  <div className="game-detail-chart-labels">
-                    {getChartLabelPoints(trendPoints).map((point) => (
-                      <em key={point.label}>{point.label}</em>
-                    ))}
-                  </div>
                 </div>
               ) : (
                 <div className="game-detail-no-trend">
@@ -2041,36 +2036,20 @@ function averageNumber(values: number[]) {
   return total / values.length
 }
 
-function calculatePricePointPosition(price: number, points: TrendPoint[]) {
+function calculatePriceBarHeight(price: number, points: TrendPoint[]) {
   const prices = points.map((point) => point.price).filter((value) => value > 0)
 
   if (prices.length === 0 || price <= 0) {
     return 12
   }
 
-  const minPrice = Math.min(...prices)
   const maxPrice = Math.max(...prices)
 
-  if (minPrice === maxPrice) {
-    return 50
+  if (maxPrice <= 0) {
+    return 12
   }
 
-  const ratio = (price - minPrice) / (maxPrice - minPrice)
-
-  return Math.max(8, Math.min(90, ratio * 82 + 8))
-}
-
-function getChartLabelPoints(points: TrendPoint[]) {
-  if (points.length <= 6) {
-    return points
-  }
-
-  const first = points[0]
-  const last = points[points.length - 1]
-  const middleIndex = Math.floor(points.length / 2)
-  const middle = points[middleIndex]
-
-  return [first, middle, last]
+  return Math.max(12, Math.min(92, (price / maxPrice) * 92))
 }
 
 function formatTrendLabel(value: string) {

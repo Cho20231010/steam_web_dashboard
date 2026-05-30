@@ -133,6 +133,7 @@ function GameDetailPage() {
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
 
   const isAllSelected = selectedGameId === ALL_GAME_ID
 
@@ -296,7 +297,11 @@ function GameDetailPage() {
     )
 
     if (!selectedGameIsVisible) {
-      setSelectedGameId(String(filteredGames[0].gameId))
+      const nextGameId = String(filteredGames[0].gameId)
+
+      if (nextGameId !== selectedGameId) {
+        setSelectedGameId(nextGameId)
+      }
     }
   }, [allGameSummary, filteredGames, searchText, selectedGameId])
 
@@ -748,49 +753,59 @@ function GameDetailPage() {
             </div>
           </section>
 
-          <section className="game-detail-summary-grid">
-            <SummaryCard
-              title="긍정 비율"
-              value={`${sentiment.positive.toFixed(1)}%`}
-              description={summaryScopeLabel}
-              type="positive"
-            />
+          <div className={`game-detail-summary-wrap ${isSummaryExpanded ? 'expanded' : ''}`}>
+            <section className="game-detail-summary-grid">
+              <SummaryCard
+                title="긍정 비율"
+                value={`${sentiment.positive.toFixed(1)}%`}
+                description={summaryScopeLabel}
+                type="positive"
+              />
 
-            <SummaryCard
-              title="총 Steam 리뷰 수"
-              value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
-              description="긍정/부정 리뷰 집계"
-              type="blue"
-            />
+              <SummaryCard
+                title="총 Steam 리뷰 수"
+                value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
+                description="긍정/부정 리뷰 집계"
+                type="blue"
+              />
 
-            <SummaryCard
-              title="분석 샘플 리뷰 수"
-              value={analysisSampleSize > 0 ? formatNumber(analysisSampleSize) : '제공 없음'}
-              description="감성·토픽 분석 기준"
-              type="blue"
-            />
+              <SummaryCard
+                title="분석 샘플 리뷰 수"
+                value={analysisSampleSize > 0 ? formatNumber(analysisSampleSize) : '제공 없음'}
+                description="감성·토픽 분석 기준"
+                type="blue"
+              />
 
-            <SummaryCard
-              title="평균 플레이타임"
-              value={`${formatNumber(selectedGame.averagePlaytime)}분`}
-              description={isAllSelected ? '전체 평균 기준' : '제공 데이터 기준'}
-              type="neutral"
-            />
+              <SummaryCard
+                title="평균 플레이타임"
+                value={`${formatNumber(selectedGame.averagePlaytime)}분`}
+                description={isAllSelected ? '전체 평균 기준' : '제공 데이터 기준'}
+                type="neutral"
+              />
 
-            <SummaryCard
-              title="보유자 추정 수"
-              value={selectedGame.owners}
-              description={isAllSelected ? 'SteamSpy 범위값 기준' : 'SteamSpy 기준'}
-              type="blue"
-            />
+              <SummaryCard
+                title="보유자 추정 수"
+                value={selectedGame.owners}
+                description={isAllSelected ? 'SteamSpy 범위값 기준' : 'SteamSpy 기준'}
+                type="blue"
+              />
 
-            <SummaryCard
-              title={isAllSelected ? '평균 가격' : '현재 가격'}
-              value={selectedGame.priceLabel}
-              description={selectedGame.priceKrwLabel}
-              type="neutral"
-            />
-          </section>
+              <SummaryCard
+                title={isAllSelected ? '평균 가격' : '현재 가격'}
+                value={selectedGame.priceLabel}
+                description={selectedGame.priceKrwLabel}
+                type="neutral"
+              />
+            </section>
+
+            <button
+              className="game-detail-summary-more-button"
+              onClick={() => setIsSummaryExpanded((prev) => !prev)}
+              type="button"
+            >
+              {isSummaryExpanded ? '접기' : '더보기'}
+            </button>
+          </div>
 
           <section className="game-detail-chart-grid">
             <article className="game-detail-card">
@@ -1263,19 +1278,15 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
 
 function normalizeAllSentiment(games: ApiRecord[]): SentimentView {
   const stats = calculateAggregateGameStats(games)
-  const totalCount = stats.totalReviews
-  const positiveCount = stats.positiveReviews
-  const negativeCount = stats.negativeReviews
-  const neutralCount = 0
 
   return {
     positive: stats.positiveRate,
     neutral: 0,
     negative: stats.negativeRate,
-    positiveCount,
-    neutralCount,
-    negativeCount,
-    totalCount,
+    positiveCount: stats.positiveReviews,
+    neutralCount: 0,
+    negativeCount: stats.negativeReviews,
+    totalCount: stats.totalReviews,
   }
 }
 
@@ -1897,14 +1908,10 @@ function calculateAggregateGameStats(games: ApiRecord[]): AggregateGameStats {
     .sort((a, b) => b.count - a.count)
 
   const positiveRate =
-    totalReviews > 0
-      ? (positiveReviews / totalReviews) * 100
-      : averageNumber(positiveRateValues)
+    totalReviews > 0 ? (positiveReviews / totalReviews) * 100 : averageNumber(positiveRateValues)
 
   const negativeRate =
-    totalReviews > 0
-      ? (negativeReviews / totalReviews) * 100
-      : averageNumber(negativeRateValues)
+    totalReviews > 0 ? (negativeReviews / totalReviews) * 100 : averageNumber(negativeRateValues)
 
   return {
     totalGames: games.length,

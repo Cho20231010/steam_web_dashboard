@@ -32,15 +32,12 @@ type GenreView = {
   ratio: number
 }
 
-type BubbleView = {
+type PriceSentimentBand = {
   id: string
-  name: string
-  price: number
-  reviewCount: number
+  label: string
   positiveRate: number
-  x: number
-  y: number
-  size: number
+  negativeRate: number
+  reviewCount: number
 }
 
 type InsightView = {
@@ -48,6 +45,48 @@ type InsightView = {
   description: string
   icon: string
 }
+
+type PriceBandConfig = {
+  id: string
+  label: string
+  min: number
+  max: number
+  isFree?: boolean
+}
+
+const PRICE_BANDS: PriceBandConfig[] = [
+  {
+    id: 'free',
+    label: '무료',
+    min: 0,
+    max: 0,
+    isFree: true,
+  },
+  {
+    id: 'under10',
+    label: '$0~10',
+    min: 0,
+    max: 10,
+  },
+  {
+    id: 'under30',
+    label: '$10~30',
+    min: 10,
+    max: 30,
+  },
+  {
+    id: 'under60',
+    label: '$30~60',
+    min: 30,
+    max: 60,
+  },
+  {
+    id: 'over60',
+    label: '$60 이상',
+    min: 60,
+    max: Number.POSITIVE_INFINITY,
+  },
+]
 
 function HomePage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
@@ -57,7 +96,6 @@ function HomePage() {
   const [correlations, setCorrelations] = useState<CorrelationResult[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
-  const [isTopGamesExpanded, setIsTopGamesExpanded] = useState(false)
 
   useEffect(() => {
     async function loadHomeData() {
@@ -113,66 +151,39 @@ function HomePage() {
     return normalizeTopGames(rankingGames).slice(0, 10)
   }, [rankingGames])
 
-  const expandedTopGameColumns = useMemo(() => {
-    return [topGames.slice(0, 5), topGames.slice(5, 10)]
-  }, [topGames])
-
   const genres = useMemo(() => {
     return normalizeGenres(genreStats, rankingGames).slice(0, 8)
   }, [genreStats, rankingGames])
 
-  const bubbles = useMemo(() => {
-    return normalizeBubbles(priceReview, rankingGames).slice(0, 26)
+  const priceSentimentBands = useMemo(() => {
+    return normalizePriceSentimentBands(priceReview, rankingGames)
   }, [priceReview, rankingGames])
 
   const totalGames =
-    readNumber(summary, ['total_games', 'totalGames', 'game_count']) ||
-    rankingGames.length
+    readNumber(summary, ['total_games', 'totalGames', 'game_count']) || rankingGames.length
 
-  const steamTotalReviews = rankingGames.reduce((sum, game) => {
-    return sum + getReliableReviewCount(game)
-  }, 0)
-
-  const analysisSampleCount =
-    readNumber(summary, [
-      'analysis_sample_count',
-      'sample_size',
-      'sentiment_sample_size',
-      'review_sample_count',
-      'total_reviews',
-      'totalReviews',
-      'review_count',
-    ]) || 0
+  const totalReviews =
+    readNumber(summary, ['total_reviews', 'totalReviews', 'review_count']) ||
+    rankingGames.reduce((sum, game) => sum + getReliableReviewCount(game), 0)
 
   const averagePositiveRate =
     normalizeRatio(
-      readNumber(summary, [
-        'average_positive_rate',
-        'positive_rate',
-        'positiveRate',
-      ]),
+      readNumber(summary, ['average_positive_rate', 'positive_rate', 'positiveRate']),
     ) || calculateAveragePositiveRate(rankingGames)
 
   const averagePrice =
-    normalizePrice(
-      readNumber(summary, ['average_price', 'average_price_usd']),
-    ) || calculateAveragePrice(rankingGames)
+    normalizePrice(readNumber(summary, ['average_price', 'average_price_usd'])) ||
+    calculateAveragePrice(rankingGames)
 
   const insights = useMemo(() => {
     return createInsights({
-      steamTotalReviews,
-      analysisSampleCount,
+      totalReviews,
+      averagePositiveRate,
       averagePrice,
       genres,
       correlations,
     })
-  }, [
-    steamTotalReviews,
-    analysisSampleCount,
-    averagePrice,
-    genres,
-    correlations,
-  ])
+  }, [totalReviews, averagePositiveRate, averagePrice, genres, correlations])
 
   if (loading) {
     return (
@@ -196,24 +207,17 @@ function HomePage() {
     <div className="home-page-v2">
       <section className="home-v2-summary-grid">
         <MetricCard
-          title="게임 수"
+          title="전체 분석 게임 수"
           value={formatNumber(totalGames)}
           description="전체 게임 데이터 기준"
           icon="🎮"
         />
 
         <MetricCard
-          title="총 Steam 리뷰 수"
-          value={formatNumber(steamTotalReviews)}
-          description="긍정 리뷰 + 부정 리뷰 합산"
+          title="전체 리뷰 수"
+          value={formatNumber(totalReviews)}
+          description="긍정/부정 리뷰 합산"
           icon="💬"
-        />
-
-        <MetricCard
-          title="분석 샘플 리뷰 수"
-          value={analysisSampleCount > 0 ? formatNumber(analysisSampleCount) : '-'}
-          description="감성·토픽 분석 기준"
-          icon="🧪"
         />
 
         <MetricCard
@@ -239,9 +243,7 @@ function HomePage() {
               <p>리뷰 수와 긍정 비율을 기준으로 상위 게임을 확인합니다.</p>
             </div>
 
-            <button type="button" onClick={() => setIsTopGamesExpanded(true)}>
-              더보기 →
-            </button>
+            <button type="button">더보기 →</button>
           </div>
 
           <div className="home-v2-table">
@@ -301,10 +303,7 @@ function HomePage() {
           </div>
 
           <div className="home-v2-genre-layout">
-            <div
-              className="home-v2-donut"
-              style={{ background: createGenreGradient(genres) }}
-            >
+            <div className="home-v2-donut" style={{ background: createGenreGradient(genres) }}>
               <div>
                 <span>전체</span>
                 <strong>{formatNumber(totalGames)}</strong>
@@ -328,44 +327,54 @@ function HomePage() {
           </div>
         </article>
 
-        <article className="home-v2-card bubble-card">
+        <article className="home-v2-card price-sentiment-card">
           <div className="home-v2-card-header">
             <div>
-              <h2>가격 vs 인기</h2>
-              <p>가격과 리뷰 수, 긍정 비율의 관계를 비교합니다.</p>
+              <h2>가격대별 반응 비교</h2>
+              <p>가격 구간별 긍정·부정 리뷰 비율을 비교합니다.</p>
             </div>
-
-            <select aria-label="버블 크기 기준">
-              <option>버블 크기: 리뷰 수</option>
-              <option>버블 크기: 긍정 비율</option>
-            </select>
           </div>
 
-          <div className="home-v2-bubble-chart">
-            <span className="bubble-label-y">긍정 비율</span>
-            <span className="bubble-label-x">가격(USD)</span>
+          <div className="home-v2-price-sentiment-chart">
+            {priceSentimentBands.length > 0 ? (
+              priceSentimentBands.map((band) => (
+                <div className="home-v2-price-sentiment-row" key={band.id}>
+                  <div className="home-v2-price-sentiment-head">
+                    <strong>{band.label}</strong>
 
-            {bubbles.length > 0 ? (
-              bubbles.map((bubble) => (
-                <span
-                  className="home-v2-bubble"
-                  key={bubble.id}
-                  title={`${bubble.name} / ${formatPriceLabel(
-                    bubble.price,
-                    bubble.price <= 0,
-                  )} / ${bubble.positiveRate.toFixed(1)}%`}
-                  style={{
-                    left: `${bubble.x}%`,
-                    bottom: `${bubble.y}%`,
-                    width: `${bubble.size}px`,
-                    height: `${bubble.size}px`,
-                  }}
-                />
+                    <div>
+                      <span className="positive">긍정 {band.positiveRate.toFixed(1)}%</span>
+                      <span className="negative">부정 {band.negativeRate.toFixed(1)}%</span>
+                    </div>
+                  </div>
+
+                  <div
+                    className="home-v2-price-sentiment-track"
+                    title={`${band.label} / 긍정 ${band.positiveRate.toFixed(
+                      1,
+                    )}% / 부정 ${band.negativeRate.toFixed(1)}% / 리뷰 ${formatNumber(
+                      band.reviewCount,
+                    )}건`}
+                  >
+                    <span
+                      className="positive"
+                      style={{
+                        width: `${Math.max(0, Math.min(100, band.positiveRate))}%`,
+                      }}
+                    />
+                    <span
+                      className="negative"
+                      style={{
+                        width: `${Math.max(0, Math.min(100, band.negativeRate))}%`,
+                      }}
+                    />
+                  </div>
+
+                  <p>리뷰 {formatNumber(band.reviewCount)}건 기준</p>
+                </div>
               ))
             ) : (
-              <p className="home-v2-empty chart-empty">
-                가격-리뷰 데이터가 없습니다.
-              </p>
+              <p className="home-v2-empty">가격대별 감성 데이터가 없습니다.</p>
             )}
           </div>
         </article>
@@ -391,91 +400,6 @@ function HomePage() {
           ))}
         </div>
       </section>
-
-      {isTopGamesExpanded && (
-        <section
-          className="home-v2-expanded-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="인기 게임 TOP 10 확장 보기"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setIsTopGamesExpanded(false)
-            }
-          }}
-        >
-          <div className="home-v2-expanded-panel">
-            <div className="home-v2-expanded-header">
-              <div>
-                <h2>인기 게임 TOP 10 상세 보기</h2>
-                <p>
-                  왼쪽은 1~5위, 오른쪽은 6~10위 순서로 주요 정보를 확인합니다.
-                </p>
-              </div>
-
-              <button
-                className="home-v2-expanded-close"
-                type="button"
-                onClick={() => setIsTopGamesExpanded(false)}
-                aria-label="닫기"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="home-v2-expanded-list">
-              {expandedTopGameColumns.map((columnGames, columnIndex) => (
-                <div
-                  className="home-v2-expanded-column"
-                  key={`top-games-column-${columnIndex}`}
-                >
-                  {columnGames.map((game) => (
-                    <article className="home-v2-expanded-game-card" key={game.id}>
-                      <div className="home-v2-expanded-game-image">
-                        {game.image ? (
-                          <img src={game.image} alt={`${game.name} 이미지`} />
-                        ) : (
-                          <span>{game.name.slice(0, 2)}</span>
-                        )}
-                      </div>
-
-                      <div className="home-v2-expanded-game-content">
-                        <div className="home-v2-expanded-game-title">
-                          <span>#{game.rank}</span>
-                          <h3>{game.name}</h3>
-                        </div>
-
-                        <p className="home-v2-expanded-genre">{game.genre}</p>
-
-                        <div className="home-v2-expanded-info-grid">
-                          <div>
-                            <span>가격</span>
-                            <strong>{game.price}</strong>
-                          </div>
-
-                          <div>
-                            <span>리뷰 수</span>
-                            <strong>{formatNumber(game.reviewCount)}</strong>
-                          </div>
-
-                          <div>
-                            <span>긍정 비율</span>
-                            <strong>{game.positiveRate.toFixed(1)}%</strong>
-                          </div>
-                        </div>
-
-                        <div className="home-v2-expanded-rate-bar">
-                          <span style={{ width: `${Math.min(game.positiveRate, 100)}%` }} />
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
     </div>
   )
 }
@@ -573,64 +497,155 @@ function normalizeGenres(genreStats: GenreStat[], games: Game[]): GenreView[] {
     .sort((a, b) => b.ratio - a.ratio)
 }
 
-function normalizeBubbles(
+function normalizePriceSentimentBands(
   priceReview: PriceReviewPoint[],
   games: Game[],
-): BubbleView[] {
+): PriceSentimentBand[] {
+  const bandMap = new Map<
+    string,
+    {
+      config: PriceBandConfig
+      positiveCount: number
+      negativeCount: number
+      reviewCount: number
+    }
+  >()
+
+  PRICE_BANDS.forEach((config) => {
+    bandMap.set(config.id, {
+      config,
+      positiveCount: 0,
+      negativeCount: 0,
+      reviewCount: 0,
+    })
+  })
+
   const source =
     priceReview.length > 0
       ? priceReview.map((item, index) => {
+          const price = normalizePrice(readField(item, ['price', 'price_usd', 'average_price']))
+          const reviewCount = toNumber(
+            readField(item, ['review_count', 'total_reviews', 'reviews', 'count']),
+          )
+          const positiveCount = toNumber(
+            readField(item, ['positive_reviews', 'positive_count', 'positiveReviews']),
+          )
+          const negativeCount = toNumber(
+            readField(item, ['negative_reviews', 'negative_count', 'negativeReviews']),
+          )
           const positiveRate =
-            normalizeRatio(readField(item, ['positive_ratio'])) ||
+            normalizeRatio(
+              readField(item, ['positive_ratio', 'positive_rate', 'positiveRate']),
+            ) ||
             calculatePositiveRateFromCounts(
-              readField(item, ['positive_reviews']),
-              readField(item, ['negative_reviews']),
+              positiveCount,
+              negativeCount,
             )
+          const isFree =
+            getBoolean(item, ['is_free', 'free', 'isFree']) ||
+            price <= 0 ||
+            String(readField(item, ['price_band', 'priceBand', 'label']) ?? '')
+              .toLowerCase()
+              .includes('free') ||
+            String(readField(item, ['price_band', 'priceBand', 'label']) ?? '').includes('무료')
 
           return {
-            id: String(
-              readField(item, ['game_id', 'id']) ??
-                readField(item, ['name', 'game_name']) ??
-                index,
-            ),
-            name: String(readField(item, ['name', 'game_name']) ?? '게임'),
-            price: normalizePrice(readField(item, ['price', 'price_usd'])),
-            reviewCount:
-              calculateReviewCountFromRecord(item) ||
-              toNumber(readField(item, ['review_count', 'total_reviews'])),
+            id: String(readField(item, ['game_id', 'id']) ?? index),
+            price,
+            isFree,
+            reviewCount,
+            positiveCount,
+            negativeCount,
             positiveRate,
           }
         })
-      : games.map((game) => ({
-          id: String(getGameId(game)),
-          name: getGameName(game),
-          price: getPrice(game),
-          reviewCount: getReliableReviewCount(game),
-          positiveRate: getPositiveRate(game),
-        }))
+      : games.map((game) => {
+          const price = getPrice(game)
+          const reviewCount = getReliableReviewCount(game)
+          const positiveRate = getPositiveRate(game)
+          const positiveCount = toNumber(readField(game, ['positive_reviews', 'positiveReviews']))
+          const negativeCount = toNumber(readField(game, ['negative_reviews', 'negativeReviews']))
+          const isFree = getBoolean(game, ['is_free', 'free', 'isFree']) || price <= 0
 
-  const filtered = source.filter((item) => item.reviewCount > 0)
-  const maxPrice = Math.max(...filtered.map((item) => item.price), 1)
-  const maxReview = Math.max(...filtered.map((item) => item.reviewCount), 1)
+          return {
+            id: String(getGameId(game)),
+            price,
+            isFree,
+            reviewCount,
+            positiveCount,
+            negativeCount,
+            positiveRate,
+          }
+        })
 
-  return filtered.map((item, index) => ({
-    ...item,
-    id: item.id || String(index),
-    x: Math.min(92, Math.max(8, (item.price / maxPrice) * 88)),
-    y: Math.min(90, Math.max(8, item.positiveRate * 0.86)),
-    size: Math.min(34, Math.max(10, 10 + (item.reviewCount / maxReview) * 24)),
-  }))
+  source.forEach((item) => {
+    if (item.reviewCount <= 0) {
+      return
+    }
+
+    const band = findPriceBand(item.price, item.isFree)
+    const savedBand = bandMap.get(band.id)
+
+    if (!savedBand) {
+      return
+    }
+
+    const hasReviewCounts = item.positiveCount + item.negativeCount > 0
+    const positiveCount = hasReviewCounts
+      ? item.positiveCount
+      : Math.round(item.reviewCount * (item.positiveRate / 100))
+    const negativeCount = hasReviewCounts
+      ? item.negativeCount
+      : Math.max(0, item.reviewCount - positiveCount)
+
+    savedBand.positiveCount += positiveCount
+    savedBand.negativeCount += negativeCount
+    savedBand.reviewCount += positiveCount + negativeCount || item.reviewCount
+  })
+
+  return Array.from(bandMap.values())
+    .filter((band) => band.reviewCount > 0)
+    .map((band) => {
+      const positiveRate =
+        band.reviewCount > 0 ? (band.positiveCount / band.reviewCount) * 100 : 0
+      const negativeRate =
+        band.reviewCount > 0 ? (band.negativeCount / band.reviewCount) * 100 : 0
+
+      return {
+        id: band.config.id,
+        label: band.config.label,
+        positiveRate,
+        negativeRate,
+        reviewCount: band.reviewCount,
+      }
+    })
+}
+
+function findPriceBand(price: number, isFree: boolean): PriceBandConfig {
+  if (isFree || price <= 0) {
+    return PRICE_BANDS[0]
+  }
+
+  return (
+    PRICE_BANDS.find((band) => {
+      if (band.isFree) {
+        return false
+      }
+
+      return price > band.min && price <= band.max
+    }) ?? PRICE_BANDS[PRICE_BANDS.length - 1]
+  )
 }
 
 function createInsights({
-  steamTotalReviews,
-  analysisSampleCount,
+  totalReviews,
+  averagePositiveRate,
   averagePrice,
   genres,
   correlations,
 }: {
-  steamTotalReviews: number
-  analysisSampleCount: number
+  totalReviews: number
+  averagePositiveRate: number
   averagePrice: number
   genres: GenreView[]
   correlations: CorrelationResult[]
@@ -641,21 +656,18 @@ function createInsights({
 
   return [
     {
-      title: 'Steam 리뷰 규모',
-      description: `전체 게임의 긍정·부정 리뷰 합산은 약 ${formatNumber(
-        steamTotalReviews,
-      )}건으로, 시장 반응 규모를 파악할 수 있습니다.`,
-      icon: '💬',
+      title: '리뷰 규모 확인',
+      description: `현재 분석 리뷰 수는 약 ${formatNumber(
+        totalReviews,
+      )}건으로, 시장 반응을 비교하기에 충분한 규모입니다.`,
+      icon: '📈',
     },
     {
-      title: '분석 샘플 규모',
-      description:
-        analysisSampleCount > 0
-          ? `감성·토픽 분석에는 약 ${formatNumber(
-              analysisSampleCount,
-            )}건의 리뷰 샘플이 활용되었습니다.`
-          : '분석 샘플 수가 별도로 제공되지 않아 Steam 리뷰 수와 분리해 해석해야 합니다.',
-      icon: '🧪',
+      title: '긍정 비율 흐름',
+      description: `평균 긍정 비율은 ${averagePositiveRate.toFixed(
+        1,
+      )}%로, 전반적인 사용자 만족도를 핵심 지표로 활용할 수 있습니다.`,
+      icon: '👍',
     },
     {
       title: `${topGenre} 강세`,
@@ -665,13 +677,13 @@ function createInsights({
       icon: '🎮',
     },
     {
-      title: '가격 대비 인기도',
+      title: '가격대별 반응',
       description: correlation
-        ? `${correlation.item1}와 ${correlation.item2}의 관계를 통해 가격과 사용자 반응의 연결성을 해석할 수 있습니다.`
+        ? `${correlation.item1}와 ${correlation.item2}의 관계를 참고해 가격대별 사용자 반응을 비교할 수 있습니다.`
         : `평균 가격은 ${formatPriceLabel(
             averagePrice,
             averagePrice <= 0,
-          )}이며, 가격대별 리뷰 반응을 비교할 수 있습니다.`,
+          )}이며, 가격 구간별 긍정·부정 비율을 비교할 수 있습니다.`,
       icon: '🏷️',
     },
   ]
@@ -757,10 +769,7 @@ function calculateAveragePrice(games: Game[]) {
   return total / pricedGames.length
 }
 
-function calculatePositiveRateFromCounts(
-  positiveValue: unknown,
-  negativeValue: unknown,
-) {
+function calculatePositiveRateFromCounts(positiveValue: unknown, negativeValue: unknown) {
   const positive = toNumber(positiveValue)
   const negative = toNumber(negativeValue)
   const total = positive + negative
@@ -770,13 +779,6 @@ function calculatePositiveRateFromCounts(
   }
 
   return (positive / total) * 100
-}
-
-function calculateReviewCountFromRecord(value: unknown) {
-  return (
-    toNumber(readField(value, ['positive_reviews'])) +
-    toNumber(readField(value, ['negative_reviews']))
-  )
 }
 
 function getGameId(game: Game) {
@@ -819,16 +821,16 @@ function getGameImage(game: Game) {
 }
 
 function getReliableReviewCount(game: Game) {
-  const positive = toNumber(readField(game, ['positive_reviews', 'positiveReviews']))
-  const negative = toNumber(readField(game, ['negative_reviews', 'negativeReviews']))
+  const positive = toNumber(readField(game, ['positive_reviews']))
+  const negative = toNumber(readField(game, ['negative_reviews']))
   const fallback = toNumber(readField(game, ['total_reviews', 'review_count']))
 
   return positive + negative || fallback
 }
 
 function getPositiveRate(game: Game) {
-  const positive = toNumber(readField(game, ['positive_reviews', 'positiveReviews']))
-  const negative = toNumber(readField(game, ['negative_reviews', 'negativeReviews']))
+  const positive = toNumber(readField(game, ['positive_reviews']))
+  const negative = toNumber(readField(game, ['negative_reviews']))
   const total = positive + negative
 
   if (total > 0) {
@@ -894,9 +896,7 @@ function toNumber(value: unknown) {
   }
 
   if (typeof value === 'string') {
-    const parsed = Number(
-      value.replaceAll(',', '').replace('%', '').replace('$', '').trim(),
-    )
+    const parsed = Number(value.replaceAll(',', '').replace('%', '').replace('$', '').trim())
 
     return Number.isFinite(parsed) ? parsed : 0
   }

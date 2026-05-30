@@ -145,7 +145,7 @@ function GameDetailPage() {
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const [isSentimentExpanded, setIsSentimentExpanded] = useState(false)
+  const [isSentimentModalOpen, setIsSentimentModalOpen] = useState(false)
 
   const isAllSelected = selectedGameId === ALL_GAME_ID
 
@@ -920,20 +920,16 @@ function GameDetailPage() {
               )}
             </article>
 
-            <article
-              className={`game-detail-card sentiment-card ${
-                isSentimentExpanded ? 'expanded' : ''
-              }`}
-            >
+            <article className="game-detail-card sentiment-card">
               <div className="game-detail-card-head">
                 <h3>리뷰 감성 분석</h3>
 
                 <button
                   className="game-detail-sentiment-more-button"
-                  onClick={() => setIsSentimentExpanded((prev) => !prev)}
+                  onClick={() => setIsSentimentModalOpen(true)}
                   type="button"
                 >
-                  {isSentimentExpanded ? '접기' : '더보기'}
+                  더보기
                 </button>
               </div>
 
@@ -1039,6 +1035,108 @@ function GameDetailPage() {
           </section>
         </div>
       </section>
+
+      {isSentimentModalOpen && (
+        <div
+          className="sentiment-modal-backdrop"
+          onClick={() => setIsSentimentModalOpen(false)}
+          role="presentation"
+        >
+          <section
+            className="sentiment-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="리뷰 감성 분석 상세 보기"
+          >
+            <div className="sentiment-modal-header">
+              <div>
+                <h2>리뷰 감성 분석 상세 보기</h2>
+                <p>
+                  {isAllSelected
+                    ? '전체 게임의 Steam 리뷰 감성 분포를 크게 확인합니다.'
+                    : `${selectedGame.name}의 리뷰 감성 분포를 크게 확인합니다.`}
+                </p>
+              </div>
+
+              <button
+                className="sentiment-modal-close"
+                onClick={() => setIsSentimentModalOpen(false)}
+                type="button"
+                aria-label="리뷰 감성 분석 상세 보기 닫기"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="sentiment-modal-body">
+              <div
+                className="sentiment-modal-donut"
+                style={{
+                  background: `conic-gradient(
+                    #42b96e 0% ${sentiment.positive}%,
+                    #c8ccd5 ${sentiment.positive}% ${sentiment.positive + sentiment.neutral}%,
+                    #ef5b5b ${sentiment.positive + sentiment.neutral}% 100%
+                  )`,
+                }}
+              >
+                <div>
+                  <span>총 리뷰</span>
+                  <strong>
+                    {formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="sentiment-modal-list">
+                <div className="sentiment-modal-row positive">
+                  <span>
+                    <i />
+                    긍정
+                  </span>
+                  <strong>{sentiment.positive.toFixed(1)}%</strong>
+                  <em>{formatNumber(sentiment.positiveCount)}</em>
+                </div>
+
+                <div className="sentiment-modal-row neutral">
+                  <span>
+                    <i />
+                    중립
+                  </span>
+                  <strong>{sentiment.neutral.toFixed(1)}%</strong>
+                  <em>{formatNumber(sentiment.neutralCount)}</em>
+                </div>
+
+                <div className="sentiment-modal-row negative">
+                  <span>
+                    <i />
+                    부정
+                  </span>
+                  <strong>{sentiment.negative.toFixed(1)}%</strong>
+                  <em>{formatNumber(sentiment.negativeCount)}</em>
+                </div>
+              </div>
+            </div>
+
+            <div className="sentiment-modal-summary">
+              <div>
+                <span>긍정 리뷰 수</span>
+                <strong>{formatNumber(sentiment.positiveCount)}</strong>
+              </div>
+
+              <div>
+                <span>중립 리뷰 수</span>
+                <strong>{formatNumber(sentiment.neutralCount)}</strong>
+              </div>
+
+              <div>
+                <span>부정 리뷰 수</span>
+                <strong>{formatNumber(sentiment.negativeCount)}</strong>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

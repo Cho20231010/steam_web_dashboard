@@ -782,10 +782,6 @@
   grid-column: auto;
 }
 
-.sentiment-card.expanded {
-  grid-column: 1 / -1;
-}
-
 .game-detail-sentiment-more-button {
   height: 30px;
   border: 1px solid #dfe4ee;
@@ -810,12 +806,6 @@
   min-height: 220px;
 }
 
-.sentiment-card.expanded .game-detail-sentiment-content {
-  justify-content: center;
-  gap: 42px;
-  min-height: 300px;
-}
-
 .game-detail-donut {
   width: 110px;
   height: 110px;
@@ -823,11 +813,6 @@
   place-items: center;
   flex-shrink: 0;
   border-radius: 50%;
-}
-
-.sentiment-card.expanded .game-detail-donut {
-  width: 180px;
-  height: 180px;
 }
 
 .game-detail-donut div {
@@ -840,29 +825,16 @@
   box-shadow: inset 0 0 0 1px #edf0f5;
 }
 
-.sentiment-card.expanded .game-detail-donut div {
-  width: 104px;
-  height: 104px;
-}
-
 .game-detail-donut span {
   color: #617089;
   font-size: 11px;
   font-weight: 800;
 }
 
-.sentiment-card.expanded .game-detail-donut span {
-  font-size: 13px;
-}
-
 .game-detail-donut strong {
   color: #071426;
   font-size: 14px;
   font-weight: 950;
-}
-
-.sentiment-card.expanded .game-detail-donut strong {
-  font-size: 22px;
 }
 
 .game-detail-sentiment-list {
@@ -873,21 +845,11 @@
   gap: 12px;
 }
 
-.sentiment-card.expanded .game-detail-sentiment-list {
-  max-width: 420px;
-  gap: 18px;
-}
-
 .game-detail-sentiment-row {
   display: grid;
   grid-template-columns: 10px 38px 48px minmax(0, 1fr);
   align-items: center;
   gap: 7px;
-}
-
-.sentiment-card.expanded .game-detail-sentiment-row {
-  grid-template-columns: 12px 48px 64px minmax(90px, 1fr);
-  gap: 10px;
 }
 
 .game-detail-sentiment-row i {
@@ -915,11 +877,6 @@
   font-weight: 900;
 }
 
-.sentiment-card.expanded .game-detail-sentiment-row span,
-.sentiment-card.expanded .game-detail-sentiment-row strong {
-  font-size: 15px;
-}
-
 .game-detail-sentiment-row em {
   overflow: hidden;
   color: #617089;
@@ -929,10 +886,6 @@
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.sentiment-card.expanded .game-detail-sentiment-row em {
-  font-size: 13px;
 }
 
 .game-detail-keyword-group-section {
@@ -1239,6 +1192,203 @@
   font-weight: 950;
 }
 
+.sentiment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(5px);
+}
+
+.sentiment-modal {
+  width: min(860px, 94vw);
+  max-height: 88vh;
+  overflow: hidden;
+  border: 1px solid #e6eaf2;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.32);
+}
+
+.sentiment-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 28px 32px 22px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.sentiment-modal-header h2 {
+  margin: 0;
+  color: #071426;
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.sentiment-modal-header p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.sentiment-modal-close {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f5fb;
+  color: #071426;
+  font-size: 30px;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sentiment-modal-close:hover {
+  background: #e9edff;
+  color: #3157ff;
+}
+
+.sentiment-modal-body {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 42px;
+  align-items: center;
+  padding: 42px 56px 34px;
+}
+
+.sentiment-modal-donut {
+  width: 260px;
+  height: 260px;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  border-radius: 50%;
+}
+
+.sentiment-modal-donut div {
+  width: 145px;
+  height: 145px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #edf0f5;
+}
+
+.sentiment-modal-donut span {
+  color: #64748b;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.sentiment-modal-donut strong {
+  color: #071426;
+  font-size: 26px;
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+.sentiment-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sentiment-modal-row {
+  display: grid;
+  grid-template-columns: 120px 90px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: #f8f9fc;
+}
+
+.sentiment-modal-row span {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #071426;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.sentiment-modal-row span i {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.sentiment-modal-row.positive span i {
+  background: #42b96e;
+}
+
+.sentiment-modal-row.neutral span i {
+  background: #c8ccd5;
+}
+
+.sentiment-modal-row.negative span i {
+  background: #ef5b5b;
+}
+
+.sentiment-modal-row strong {
+  color: #071426;
+  font-size: 22px;
+  font-weight: 950;
+  text-align: right;
+}
+
+.sentiment-modal-row em {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 900;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sentiment-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 56px 42px;
+}
+
+.sentiment-modal-summary div {
+  padding: 18px 16px;
+  border-radius: 18px;
+  background: #f6f8fd;
+  text-align: center;
+}
+
+.sentiment-modal-summary span {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.sentiment-modal-summary strong {
+  display: block;
+  margin-top: 9px;
+  color: #071426;
+  font-size: 19px;
+  font-weight: 950;
+}
+
 @media (max-width: 1180px) {
   .game-detail-page {
     max-width: 100%;
@@ -1288,11 +1438,6 @@
     align-items: flex-start;
   }
 
-  .sentiment-card.expanded .game-detail-sentiment-content {
-    flex-direction: row;
-    align-items: center;
-  }
-
   .quick-summary-card li {
     font-size: 12px;
     line-height: 1.42;
@@ -1327,15 +1472,6 @@
     width: 100%;
     max-width: 100%;
     margin-right: 0;
-  }
-
-  .sentiment-card.expanded {
-    grid-column: auto;
-  }
-
-  .sentiment-card.expanded .game-detail-sentiment-content {
-    min-height: 260px;
-    gap: 20px;
   }
 
   .game-detail-result-panel {
@@ -1418,25 +1554,59 @@
     white-space: normal;
   }
 
-  .sentiment-card.expanded .game-detail-sentiment-content {
-    align-items: center;
-  }
-
-  .sentiment-card.expanded .game-detail-donut {
-    width: 140px;
-    height: 140px;
-  }
-
-  .sentiment-card.expanded .game-detail-donut div {
-    width: 84px;
-    height: 84px;
-  }
-
   .keyword-group-head {
     flex-direction: column;
   }
 
   .keyword-group-head > span {
     width: fit-content;
+  }
+
+  .sentiment-modal-backdrop {
+    padding: 12px;
+  }
+
+  .sentiment-modal-header {
+    padding: 24px 22px 18px;
+  }
+
+  .sentiment-modal-header h2 {
+    font-size: 23px;
+  }
+
+  .sentiment-modal-body {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 32px 24px 26px;
+  }
+
+  .sentiment-modal-donut {
+    width: 210px;
+    height: 210px;
+  }
+
+  .sentiment-modal-donut div {
+    width: 120px;
+    height: 120px;
+  }
+
+  .sentiment-modal-donut strong {
+    font-size: 22px;
+  }
+
+  .sentiment-modal-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .sentiment-modal-row strong,
+  .sentiment-modal-row em {
+    text-align: left;
+  }
+
+  .sentiment-modal-summary {
+    grid-template-columns: 1fr;
+    padding: 0 24px 30px;
   }
 }

@@ -9,15 +9,15 @@ import {
 } from './utils/favoriteGames'
 import {
   getGameDetail,
-  getGameHistory,
   getGameList,
   getGameReviewInsights,
-  getGameReviewTrend,
   getGameSentiment,
   getGameTopics,
   isRecord,
   type ApiRecord,
 } from './api/gameDetailApi'
+
+type PeriodOption = 7 | 30 | 90
 
 type GameSummary = {
   id: string
@@ -129,6 +129,7 @@ const FAVORITE_GAMES_UPDATED_EVENT = 'favorite-games-updated'
 function GameDetailPage() {
   const [games, setGames] = useState<ApiRecord[]>([])
   const [selectedGameId, setSelectedGameId] = useState<string>(ALL_GAME_ID)
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>(30)
   const [searchText, setSearchText] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [favoriteGames, setFavoriteGames] = useState<FavoriteGame[]>([])
@@ -144,7 +145,7 @@ function GameDetailPage() {
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
+  const [isSentimentExpanded, setIsSentimentExpanded] = useState(false)
 
   const isAllSelected = selectedGameId === ALL_GAME_ID
 
@@ -187,10 +188,7 @@ function GameDetailPage() {
   useEffect(() => {
     async function loadOverallTopics() {
       try {
-        const baseUrl =
-          import.meta.env.VITE_API_BASE_URL ??
-          'https://steam-market-dashboard-production.up.railway.app'
-
+        const baseUrl = getApiBaseUrl()
         const response = await fetch(`${baseUrl}/analysis/topics`)
 
         if (!response.ok) {
@@ -354,8 +352,8 @@ function GameDetailPage() {
           getGameDetail(selectedGameId),
           getGameSentiment(selectedGameId),
           getGameTopics(selectedGameId),
-          getGameHistory(selectedGameId),
-          getGameReviewTrend(selectedGameId),
+          getGameHistoryByPeriod(selectedGameId, selectedPeriod),
+          getGameReviewTrendByPeriod(selectedGameId, selectedPeriod),
           getGameReviewInsights(selectedGameId),
         ])
 
@@ -397,7 +395,7 @@ function GameDetailPage() {
     }
 
     loadSelectedGame()
-  }, [games, selectedGameId])
+  }, [games, selectedGameId, selectedPeriod])
 
   const selectedGame = useMemo(() => {
     if (selectedGameId === ALL_GAME_ID) {
@@ -492,6 +490,14 @@ function GameDetailPage() {
     setSearchText('')
   }
 
+  function handlePeriodChange(period: PeriodOption) {
+    if (isAllSelected) {
+      return
+    }
+
+    setSelectedPeriod(period)
+  }
+
   function handleGenreSuggestionClick(value: string) {
     setSearchText(value)
 
@@ -570,6 +576,10 @@ function GameDetailPage() {
   const keywordGroupDescription = isAllSelected
     ? '전체 리뷰 샘플에서 함께 자주 등장한 키워드 묶음입니다.'
     : '선택한 게임의 리뷰에서 함께 자주 등장한 키워드 묶음입니다.'
+
+  const periodNote = isAllSelected
+    ? '[전체] 항목은 기간별 추이를 제공하지 않습니다.'
+    : `${selectedPeriod}일 기준으로 기간별 데이터를 조회합니다.`
 
   return (
     <div className="game-detail-page">
@@ -764,11 +774,7 @@ function GameDetailPage() {
             </div>
           </section>
 
-          <div
-            className={`game-detail-summary-wrap ${isSummaryExpanded ? 'expanded' : ''} ${
-              isAllSelected ? 'is-all' : 'is-single'
-            }`}
-          >
+          <div className={`game-detail-summary-wrap ${isAllSelected ? 'is-all' : 'is-single'}`}>
             <section className="game-detail-summary-grid">
               <SummaryCard
                 title="긍정 비율"
@@ -814,27 +820,19 @@ function GameDetailPage() {
                 type="neutral"
               />
             </section>
-
-            <button
-              className="game-detail-summary-more-button"
-              onClick={() => setIsSummaryExpanded((prev) => !prev)}
-              type="button"
-            >
-              {isSummaryExpanded ? '접기' : '더보기'}
-            </button>
           </div>
 
           <section className="game-detail-chart-grid">
             <article className="game-detail-card">
               <div className="game-detail-card-head">
                 <h3>가격 변동 추이</h3>
-                <div>
-                  <button type="button">7일</button>
-                  <button className="active" type="button">
-                    30일
-                  </button>
-                  <button type="button">90일</button>
-                </div>
+
+                <PeriodSelector
+                  disabled={isAllSelected}
+                  note={periodNote}
+                  selectedPeriod={selectedPeriod}
+                  onChange={handlePeriodChange}
+                />
               </div>
 
               {trendPoints.length > 0 ? (
@@ -844,14 +842,14 @@ function GameDetailPage() {
                       key={`${point.label}-${index}`}
                       style={{
                         left: `${(index / Math.max(trendPoints.length - 1, 1)) * 100}%`,
-                        bottom: `${Math.max(8, Math.min(90, point.price * 1.3))}%`,
+                        bottom: `${calculatePricePointPosition(point.price, trendPoints)}%`,
                       }}
                       title={`${point.label} / ${formatSteamPrice(point.price)}`}
                     />
                   ))}
 
                   <div className="game-detail-chart-labels">
-                    {trendPoints.map((point) => (
+                    {getChartLabelPoints(trendPoints).map((point) => (
                       <em key={point.label}>{point.label}</em>
                     ))}
                   </div>
@@ -861,8 +859,8 @@ function GameDetailPage() {
                   <strong>가격 변동 데이터 없음</strong>
                   <p>
                     {isAllSelected
-                      ? '[전체] 항목은 특정 게임의 기간별 가격 이력 API를 호출하지 않습니다.'
-                      : '현재 API에서 이 게임의 가격 이력 데이터를 제공하지 않아 추이 그래프를 표시하지 않습니다.'}
+                      ? '[전체] 항목은 기간별 가격 이력 API를 호출하지 않습니다.'
+                      : `${selectedPeriod}일 기준 가격 이력 데이터가 없습니다.`}
                   </p>
                 </div>
               )}
@@ -871,13 +869,13 @@ function GameDetailPage() {
             <article className="game-detail-card">
               <div className="game-detail-card-head">
                 <h3>리뷰 수 & 긍정 비율 추이</h3>
-                <div>
-                  <button type="button">7일</button>
-                  <button className="active" type="button">
-                    30일
-                  </button>
-                  <button type="button">90일</button>
-                </div>
+
+                <PeriodSelector
+                  disabled={isAllSelected}
+                  note={periodNote}
+                  selectedPeriod={selectedPeriod}
+                  onChange={handlePeriodChange}
+                />
               </div>
 
               {trendPoints.length > 0 ? (
@@ -888,6 +886,9 @@ function GameDetailPage() {
                         style={{
                           height: `${Math.max(12, Math.min(92, point.positiveRate))}%`,
                         }}
+                        title={`${point.label} / 긍정 비율 ${point.positiveRate.toFixed(
+                          1,
+                        )}% / 리뷰 ${formatNumber(point.reviewCount)}`}
                       />
                       <em>{point.label}</em>
                     </div>
@@ -898,16 +899,28 @@ function GameDetailPage() {
                   <strong>리뷰 추이 데이터 없음</strong>
                   <p>
                     {isAllSelected
-                      ? '[전체] 항목은 현재 불러온 게임 목록의 합산 지표를 보여주며, 기간별 추이는 표시하지 않습니다.'
-                      : '현재 API에서 이 게임의 기간별 리뷰 수 또는 긍정 비율 변화를 제공하지 않습니다.'}
+                      ? '[전체] 항목은 기간별 리뷰 추이를 제공하지 않습니다.'
+                      : `${selectedPeriod}일 기준 리뷰 추이 데이터가 없습니다.`}
                   </p>
                 </div>
               )}
             </article>
 
-            <article className="game-detail-card sentiment-card">
+            <article
+              className={`game-detail-card sentiment-card ${
+                isSentimentExpanded ? 'expanded' : ''
+              }`}
+            >
               <div className="game-detail-card-head">
                 <h3>리뷰 감성 분석</h3>
+
+                <button
+                  className="game-detail-sentiment-more-button"
+                  onClick={() => setIsSentimentExpanded((prev) => !prev)}
+                  type="button"
+                >
+                  {isSentimentExpanded ? '접기' : '더보기'}
+                </button>
               </div>
 
               <div className="game-detail-sentiment-content">
@@ -1012,6 +1025,42 @@ function GameDetailPage() {
           </section>
         </div>
       </section>
+    </div>
+  )
+}
+
+function PeriodSelector({
+  selectedPeriod,
+  disabled,
+  note,
+  onChange,
+}: {
+  selectedPeriod: PeriodOption
+  disabled: boolean
+  note: string
+  onChange: (period: PeriodOption) => void
+}) {
+  const periods: PeriodOption[] = [7, 30, 90]
+
+  return (
+    <div className="game-detail-chart-action-wrap">
+      <div className="game-detail-chart-actions">
+        {periods.map((period) => (
+          <button
+            className={selectedPeriod === period ? 'active' : ''}
+            disabled={disabled}
+            key={period}
+            onClick={() => onChange(period)}
+            type="button"
+          >
+            {period}일
+          </button>
+        ))}
+      </div>
+
+      <span className={disabled ? 'game-detail-fixed-note disabled' : 'game-detail-fixed-note'}>
+        {note}
+      </span>
     </div>
   )
 }
@@ -1510,12 +1559,14 @@ function normalizeTrendPoints(
     return []
   }
 
-  return source.slice(-6).map((item, index) => {
-    const label = String(item.date ?? item.month ?? item.period ?? item.label ?? index + 1)
+  return source.map((item, index) => {
+    const label = String(
+      item.period ?? item.date ?? item.month ?? item.created_at ?? item.label ?? index + 1,
+    )
 
     return {
-      label: label.length > 7 ? label.slice(5, 10) : label,
-      price: normalizePrice(item.price ?? item.price_usd ?? item.current_price),
+      label: formatTrendLabel(label),
+      price: normalizePrice(item.final_price ?? item.price ?? item.price_usd ?? item.current_price),
       positiveRate: normalizeRatio(item.positive_ratio ?? item.positive_rate),
       reviewCount: toNumber(item.review_count ?? item.total_reviews ?? item.reviews),
     }
@@ -1591,6 +1642,85 @@ function createQuickSummaryItems(
     `보유자 추정 수는 ${selectedGame.owners}입니다.`,
     compactSentence(reviewInsight.negativeSummary),
   ]
+}
+
+async function getGameHistoryByPeriod(gameId: string, period: PeriodOption) {
+  const { startDate, endDate } = getPeriodDateRange(period)
+  const baseUrl = getApiBaseUrl()
+  const url = `${baseUrl}/games/${gameId}/history?interval=day&start_date=${startDate}&end_date=${endDate}`
+
+  return fetchApiRecordArray(url)
+}
+
+async function getGameReviewTrendByPeriod(gameId: string, period: PeriodOption) {
+  const { startDate, endDate } = getPeriodDateRange(period)
+  const baseUrl = getApiBaseUrl()
+  const url = `${baseUrl}/games/${gameId}/review-trend?interval=day&start_date=${startDate}&end_date=${endDate}`
+
+  return fetchApiRecordArray(url)
+}
+
+async function fetchApiRecordArray(url: string): Promise<ApiRecord[]> {
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    throw new Error(`API 요청 실패: ${url}`)
+  }
+
+  const data = await response.json()
+
+  if (Array.isArray(data)) {
+    return data.filter(isRecord)
+  }
+
+  if (isRecord(data)) {
+    const candidates = [
+      data.items,
+      data.results,
+      data.data,
+      data.history,
+      data.trends,
+      data.review_trend,
+      data.reviewTrend,
+    ]
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        return candidate.filter(isRecord)
+      }
+    }
+
+    return [data]
+  }
+
+  return []
+}
+
+function getPeriodDateRange(period: PeriodOption) {
+  const end = new Date()
+  const start = new Date()
+
+  start.setDate(end.getDate() - period)
+
+  return {
+    startDate: formatDateForQuery(start),
+    endDate: formatDateForQuery(end),
+  }
+}
+
+function formatDateForQuery(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function getApiBaseUrl() {
+  return (
+    import.meta.env.VITE_API_BASE_URL ??
+    'https://steam-market-dashboard-production.up.railway.app'
+  )
 }
 
 function compactSentence(text: string) {
@@ -1805,6 +1935,46 @@ function averageNumber(values: number[]) {
   const total = values.reduce((sum, value) => sum + value, 0)
 
   return total / values.length
+}
+
+function calculatePricePointPosition(price: number, points: TrendPoint[]) {
+  const prices = points.map((point) => point.price).filter((value) => value > 0)
+
+  if (prices.length === 0 || price <= 0) {
+    return 12
+  }
+
+  const minPrice = Math.min(...prices)
+  const maxPrice = Math.max(...prices)
+
+  if (minPrice === maxPrice) {
+    return 50
+  }
+
+  const ratio = (price - minPrice) / (maxPrice - minPrice)
+
+  return Math.max(8, Math.min(90, ratio * 82 + 8))
+}
+
+function getChartLabelPoints(points: TrendPoint[]) {
+  if (points.length <= 6) {
+    return points
+  }
+
+  const first = points[0]
+  const last = points[points.length - 1]
+  const middleIndex = Math.floor(points.length / 2)
+  const middle = points[middleIndex]
+
+  return [first, middle, last]
+}
+
+function formatTrendLabel(value: string) {
+  if (value.length >= 10 && value.includes('-')) {
+    return value.slice(5, 10)
+  }
+
+  return value.length > 7 ? value.slice(0, 7) : value
 }
 
 function formatTopicLabel(value: string) {

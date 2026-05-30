@@ -1393,8 +1393,8 @@
 
   .game-detail-result-panel {
   height: 740px;
-  max-height: 760px;
-  min-height: 760px;
+  max-height: 740px;
+  min-height: 740px;
   align-self: start;
   }
 

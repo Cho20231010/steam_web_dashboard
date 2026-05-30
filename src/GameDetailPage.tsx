@@ -17,7 +17,7 @@ import {
   type ApiRecord,
 } from './api/gameDetailApi'
 
-type PeriodOption = 7 | 30 | 90
+type PeriodOption = 30 | 90
 
 type GameSummary = {
   id: string
@@ -635,9 +635,7 @@ function GameDetailPage() {
               ) : (
                 <>
                   <div className="game-detail-dropdown-section">
-                    <div className="game-detail-dropdown-section-title">
-                      검색 가능한 장르
-                    </div>
+                    <div className="game-detail-dropdown-section-title">검색 가능한 장르</div>
 
                     <div className="game-detail-dropdown-chip-list">
                       {searchSuggestions.genres.map((genre) => (
@@ -1054,7 +1052,7 @@ function PeriodSelector({
   disabled: boolean
   onChange: (period: PeriodOption) => void
 }) {
-  const periods: PeriodOption[] = [7, 30, 90]
+  const periods: PeriodOption[] = [30, 90]
 
   return (
     <div className="game-detail-chart-actions">

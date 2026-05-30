@@ -238,14 +238,14 @@
 
 /* 
   게임 목록과 오른쪽 상세 분석을 상단 2열로 배치합니다.
-  align-items: stretch를 사용해서 왼쪽 게임 목록 패널 높이가 오른쪽 상세 영역 높이에 맞춰집니다.
+  게임 목록은 오른쪽 영역과 비슷한 길이로 고정하고, 내부 목록만 스크롤되게 합니다.
 */
 .game-detail-top-layout {
   width: 100%;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 
 /* 오른쪽 상세 분석 영역입니다. */
@@ -259,13 +259,13 @@
 
 /* 
   왼쪽 게임 목록 패널입니다.
-  height를 고정하지 않고, 상단 grid의 stretch 높이를 따라가게 합니다.
-  내부 목록은 .game-detail-result-list에서만 스크롤됩니다.
+  오른쪽 대표 정보 + 요약 카드 + 그래프 카드 영역과 길이를 맞추기 위해 높이를 고정합니다.
 */
 .game-detail-result-panel {
-  align-self: stretch;
-  min-height: 0;
-  height: auto;
+  align-self: start;
+  height: 860px;
+  max-height: 860px;
+  min-height: 860px;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;
@@ -299,6 +299,8 @@
 .game-detail-result-list {
   flex: 1;
   min-height: 0;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -308,6 +310,11 @@
 
 .game-detail-result-list::-webkit-scrollbar {
   width: 6px;
+}
+
+.game-detail-result-list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: transparent;
 }
 
 .game-detail-result-list::-webkit-scrollbar-thumb {
@@ -1380,12 +1387,22 @@
   .game-detail-top-layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 14px;
-    align-items: stretch;
+    align-items: start;
   }
 
   .game-detail-result-panel {
-    align-self: stretch;
-    height: auto;
+    height: 820px;
+    max-height: 820px;
+    min-height: 820px;
+    align-self: start;
+  }
+
+  .game-detail-result-list {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow-y: auto;
   }
 
   .game-detail-hero-card {
@@ -1449,6 +1466,7 @@
   .game-detail-result-panel {
     order: 2;
     height: auto;
+    min-height: 0;
     max-height: none;
     overflow: visible;
     display: block;

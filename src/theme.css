@@ -403,7 +403,9 @@ html.theme-dark [class*='bubble-label'] {
   font-weight: 900;
 }
 
-/* 게임 상세 분석 - 다크 모드 빈 공간 보정 */
+/* 게임 상세 분석 - 다크 모드 색상만 보정 */
+/* 중요: 여기서는 .game-detail-result-list의 max-height를 지정하지 않음 */
+
 html.theme-dark .game-detail-layout {
   align-items: flex-start;
 }
@@ -428,7 +430,6 @@ html.theme-dark .game-detail-summary-grid {
 }
 
 html.theme-dark .game-detail-summary-card {
-  min-height: 148px;
   height: auto;
 }
 
@@ -436,13 +437,7 @@ html.theme-dark .game-detail-chart-grid {
   margin-top: 0;
 }
 
-/* 게임 상세 분석 - 검색 결과 게임 목록 */
-html.theme-dark .game-detail-result-list {
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
-  padding-right: 6px;
-}
-
+/* 게임 상세 분석 - 검색 결과 게임 목록 색상 */
 html.theme-dark .game-detail-result-list button,
 html.theme-dark .game-detail-search-dropdown button {
   background: transparent;

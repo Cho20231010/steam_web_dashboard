@@ -252,6 +252,8 @@
   grid-column: 1;
   grid-row: 1;
   align-self: start;
+  max-height: 640px;
+  overflow: hidden;
   padding: 14px;
   border-radius: 20px;
 }
@@ -290,7 +292,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 724px;
+  max-height: 560px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -1410,6 +1412,14 @@
     gap: 14px;
   }
 
+  .game-detail-result-panel {
+    max-height: 600px;
+  }
+
+  .game-detail-result-list {
+    max-height: 520px;
+  }
+
   .game-detail-hero-card {
     grid-template-columns: 230px minmax(0, 1fr);
   }
@@ -1479,6 +1489,8 @@
 
   .game-detail-result-panel {
     order: 2;
+    max-height: none;
+    overflow: visible;
   }
 
   .game-detail-result-list {

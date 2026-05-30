@@ -1392,12 +1392,12 @@
   }
 
   .game-detail-result-panel {
-  height: 760px;
+  height: 740px;
   max-height: 760px;
   min-height: 760px;
   align-self: start;
   }
-  
+
   .game-detail-result-list {
     flex: 1;
     min-height: 0;

@@ -3,16 +3,20 @@ html.theme-dark {
   --panel: #111827;
   --panel-soft: #172033;
   --line: #2b3648;
+
+  /* 다크 모드 글자 색상 */
   --text: #f8fafc;
-  --sub: #cbd5e1;
-  --muted: #94a3b8;
+  --sub: #e2e8f0;
+  --muted: #cbd5e1;
+  --soft-muted: #d1d5db;
+
   --navy-1: #020617;
   --navy-2: #07111f;
   --blue: #8b9cff;
   --blue-soft: rgba(139, 156, 255, 0.16);
   --green: #34d399;
   --green-soft: rgba(52, 211, 153, 0.14);
-  --gray: #64748b;
+  --gray: #cbd5e1;
   --red: #fb7185;
   --red-soft: rgba(251, 113, 133, 0.14);
   --yellow: #fbbf24;
@@ -38,11 +42,11 @@ html.theme-dark body {
 
 html.theme-dark .sidebar {
   background: linear-gradient(180deg, #020617 0%, #061326 52%, #081a31 100%);
-  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 html.theme-dark .sidebar-nav button {
-  color: #dbeafe;
+  color: #e2e8f0;
 }
 
 html.theme-dark .sidebar-nav button:hover,
@@ -120,7 +124,7 @@ html.theme-dark .review-alert-item,
 html.theme-dark .favorite-feature-card,
 html.theme-dark .guide-box {
   background: var(--panel-soft);
-  border-color: rgba(148, 163, 184, 0.18);
+  border-color: rgba(203, 213, 225, 0.22);
   color: var(--text);
 }
 
@@ -128,6 +132,7 @@ html.theme-dark .guide-box {
 html.theme-dark h1,
 html.theme-dark h2,
 html.theme-dark h3,
+html.theme-dark strong,
 html.theme-dark .home-v2-header h1,
 html.theme-dark .home-v2-card-header h2,
 html.theme-dark .home-v2-metric-card strong,
@@ -186,8 +191,12 @@ html.theme-dark .settings-status-inline strong {
   color: var(--text);
 }
 
-/* 설명/보조 텍스트 */
+/* 설명/보조 텍스트 - 밝은 회색 */
 html.theme-dark p,
+html.theme-dark span,
+html.theme-dark em,
+html.theme-dark label,
+html.theme-dark small,
 html.theme-dark .home-v2-header p,
 html.theme-dark .home-v2-card-header p,
 html.theme-dark .home-v2-game-text p,
@@ -241,11 +250,28 @@ html.theme-dark .favorite-game-info span,
 html.theme-dark .recent-alert-item p,
 html.theme-dark .recent-alert-item > span,
 html.theme-dark .favorite-feature-card p,
+html.theme-dark .favorite-feature-card span,
 html.theme-dark .compare-card dt,
 html.theme-dark .review-alert-info p,
 html.theme-dark .settings-footer p,
 html.theme-dark .settings-status-inline span {
   color: var(--sub);
+}
+
+/* 더 연한 보조 회색이 필요한 정보 */
+html.theme-dark .text-muted,
+html.theme-dark .muted,
+html.theme-dark .sub-text,
+html.theme-dark .caption,
+html.theme-dark .description,
+html.theme-dark .game-detail-result-text em,
+html.theme-dark .game-detail-search-dropdown em,
+html.theme-dark .game-detail-tags span,
+html.theme-dark .review-topic-empty,
+html.theme-dark .favorite-price-empty,
+html.theme-dark .search-table thead th,
+html.theme-dark .favorite-table th {
+  color: var(--muted);
 }
 
 /* 입력/셀렉트/검색창 */
@@ -259,7 +285,7 @@ html.theme-dark .target-price-input,
 html.theme-dark .settings-field-group select,
 html.theme-dark .settings-field-group input {
   background: #0f172a;
-  border-color: rgba(148, 163, 184, 0.28);
+  border-color: rgba(203, 213, 225, 0.28);
   color: var(--text);
 }
 
@@ -288,9 +314,9 @@ html.theme-dark .topic-analysis-tabs button,
 html.theme-dark .market-distribution-tabs button,
 html.theme-dark .favorite-tab-button,
 html.theme-dark .settings-tab-bar button {
-  border-color: rgba(148, 163, 184, 0.28);
+  border-color: rgba(203, 213, 225, 0.28);
   background: #0f172a;
-  color: var(--text);
+  color: #e5e7eb;
 }
 
 html.theme-dark .search-button,
@@ -325,7 +351,7 @@ html.theme-dark .favorite-table th,
 html.theme-dark .favorite-table-wrap,
 html.theme-dark .search-table-wrap {
   background: #0f172a;
-  border-color: rgba(148, 163, 184, 0.18);
+  border-color: rgba(203, 213, 225, 0.2);
 }
 
 html.theme-dark td,
@@ -333,7 +359,7 @@ html.theme-dark .search-table tbody td,
 html.theme-dark .favorite-table td,
 html.theme-dark .home-v2-table-row,
 html.theme-dark .topic-sentiment-row {
-  border-color: rgba(148, 163, 184, 0.14);
+  border-color: rgba(203, 213, 225, 0.16);
   color: var(--text);
 }
 
@@ -365,14 +391,14 @@ html.theme-dark .review-error {
 html.theme-dark .favorite-neutral-badge,
 html.theme-dark .review-topic-empty,
 html.theme-dark .favorite-price-empty {
-  background: rgba(148, 163, 184, 0.14);
-  color: #cbd5e1;
+  background: rgba(203, 213, 225, 0.16);
+  color: #e2e8f0;
 }
 
 html.theme-dark .favorite-price-label,
 html.theme-dark .price-cell,
 html.theme-dark .price-krw {
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(203, 213, 225, 0.12);
   color: var(--text);
 }
 
@@ -394,16 +420,16 @@ html.theme-dark .sentiment-summary-track,
 html.theme-dark .release-year-bar-wrap,
 html.theme-dark .vertical-bar-track,
 html.theme-dark .trend-chart-wrapper {
-  background: rgba(148, 163, 184, 0.12);
-  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(203, 213, 225, 0.12);
+  border-color: rgba(203, 213, 225, 0.18);
 }
 
 html.theme-dark .trend-grid-line,
 html.theme-dark .trend-axis-line,
 html.theme-dark .trend-compare-grid-lines span,
 html.theme-dark .market-card--trend .trend-grid-line {
-  stroke: rgba(148, 163, 184, 0.22);
-  border-color: rgba(148, 163, 184, 0.2);
+  stroke: rgba(203, 213, 225, 0.24);
+  border-color: rgba(203, 213, 225, 0.22);
 }
 
 html.theme-dark .trend-line-path {
@@ -422,12 +448,12 @@ html.theme-dark .favorite-game-image.fallback,
 html.theme-dark .game-detail-result-thumb,
 html.theme-dark .game-detail-search-thumb {
   background: #1e293b;
-  color: #cbd5e1;
+  color: #e2e8f0;
 }
 
 /* 설정 화면 전용 */
 html.theme-dark .settings-toggle {
-  background: #475569;
+  background: #64748b;
 }
 
 html.theme-dark .settings-toggle.active {
@@ -450,13 +476,35 @@ html.theme-dark .settings-badge.checking {
 }
 
 html.theme-dark .settings-badge.idle {
-  background: rgba(148, 163, 184, 0.14);
-  color: #cbd5e1 !important;
+  background: rgba(203, 213, 225, 0.16);
+  color: #e2e8f0 !important;
+}
+
+/* 기존 CSS에서 직접 지정된 어두운 회색 보정 */
+html.theme-dark [style*='color: #667085'],
+html.theme-dark [style*='color:#667085'],
+html.theme-dark [style*='color: #64748b'],
+html.theme-dark [style*='color:#64748b'],
+html.theme-dark [style*='color: #475569'],
+html.theme-dark [style*='color:#475569'],
+html.theme-dark [style*='color: #94a3b8'],
+html.theme-dark [style*='color:#94a3b8'] {
+  color: var(--sub) !important;
+}
+
+/* 다크 모드에서 일반 회색 클래스 전체 보정 */
+html.theme-dark .gray,
+html.theme-dark .grey,
+html.theme-dark .secondary-text,
+html.theme-dark .helper-text,
+html.theme-dark .meta-text,
+html.theme-dark .sub-label {
+  color: var(--sub) !important;
 }
 
 /* 스크롤바 */
 html.theme-dark * {
-  scrollbar-color: #475569 #0f172a;
+  scrollbar-color: #64748b #0f172a;
 }
 
 html.theme-dark ::-webkit-scrollbar {
@@ -469,12 +517,12 @@ html.theme-dark ::-webkit-scrollbar-track {
 }
 
 html.theme-dark ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #64748b;
   border-radius: 999px;
 }
 
 html.theme-dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #94a3b8;
 }
 
 /* 색상 적용된 거
@@ -489,4 +537,10 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 긍정 그린: #34d399
 주의 레드: #fb7185
 경고 옐로우: #fbbf24
+
+기존 보조 회색: #cbd5e1
+수정 보조 회색: #e2e8f0
+
+기존 흐린 회색: #94a3b8
+수정 흐린 회색: #cbd5e1
 */

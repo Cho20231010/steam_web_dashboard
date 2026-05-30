@@ -853,8 +853,11 @@
   white-space: nowrap;
 }
 
+/* 여기부터 오른쪽 확장 적용 */
 .game-detail-keyword-group-section {
-  width: 100%;
+  width: calc(100% + 48px);
+  max-width: calc(100% + 48px);
+  margin-right: -48px;
 }
 
 .keyword-group-card {
@@ -962,12 +965,14 @@
 }
 
 .game-detail-bottom-grid-fixed {
-  width: 100%;
+  width: calc(100% + 48px);
+  max-width: calc(100% + 48px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
   margin-top: 0;
+  margin-right: -48px;
 }
 
 .game-detail-bottom-grid-fixed > .game-detail-card {
@@ -1229,6 +1234,13 @@
   .game-detail-bottom-grid-fixed {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  .game-detail-keyword-group-section,
+  .game-detail-bottom-grid-fixed {
+    width: 100%;
+    max-width: 100%;
+    margin-right: 0;
   }
 
   .game-detail-result-panel {

@@ -129,10 +129,6 @@ function SettingsPage() {
 
   return (
     <section className="settings-page">
-      <header className="settings-header">
-        <h1>9. 설정</h1>
-      </header>
-
       <nav className="settings-tab-bar" aria-label="설정 탭">
         {SETTINGS_TABS.map((tab) => (
           <button

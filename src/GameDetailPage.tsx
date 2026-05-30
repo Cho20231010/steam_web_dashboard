@@ -977,63 +977,63 @@ function GameDetailPage() {
               </div>
             </article>
           </section>
-
-          <section className="game-detail-keyword-group-section">
-            <article className="game-detail-card keyword-group-card">
-              <div className="game-detail-card-head keyword-group-head">
-                <div>
-                  <h3>{keywordGroupTitle}</h3>
-                  <p>{keywordGroupDescription}</p>
-                </div>
-
-                <span>{topics.length}개 그룹</span>
-              </div>
-
-              {topics.length > 0 ? (
-                <div className="game-detail-keyword-group-list">
-                  {topics.map((topic) => (
-                    <div className="game-detail-keyword-group-item" key={topic.id}>
-                      <div className="game-detail-keyword-group-title">
-                        <strong>{topic.groupName}</strong>
-                        <em>{topic.mentionRate.toFixed(1)}%</em>
-                      </div>
-
-                      <div className="game-detail-topic-chip-list">
-                        {topic.keywords.map((keyword) => (
-                          <span key={`${topic.id}-${keyword}`}>{keyword}</span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="game-detail-empty">
-                  {isAllSelected
-                    ? '전체 키워드 그룹 데이터가 없습니다.'
-                    : '이 게임의 키워드 그룹 데이터가 없습니다.'}
-                </p>
-              )}
-            </article>
-          </section>
-
-          <section className="game-detail-bottom-grid-fixed">
-            <article className="game-detail-card quick-summary-card">
-              <div className="game-detail-card-head">
-                <h3>빠른 요약</h3>
-              </div>
-
-              <ul>
-                {quickSummaryItems.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </article>
-
-            <TopicSummaryCard topicSummary={topicSummary} />
-
-            <SentimentSummaryCard sentiment={sentiment} />
-          </section>
         </div>
+
+        <section className="game-detail-keyword-group-section game-detail-full-span">
+          <article className="game-detail-card keyword-group-card">
+            <div className="game-detail-card-head keyword-group-head">
+              <div>
+                <h3>{keywordGroupTitle}</h3>
+                <p>{keywordGroupDescription}</p>
+              </div>
+
+              <span>{topics.length}개 그룹</span>
+            </div>
+
+            {topics.length > 0 ? (
+              <div className="game-detail-keyword-group-list">
+                {topics.map((topic) => (
+                  <div className="game-detail-keyword-group-item" key={topic.id}>
+                    <div className="game-detail-keyword-group-title">
+                      <strong>{topic.groupName}</strong>
+                      <em>{topic.mentionRate.toFixed(1)}%</em>
+                    </div>
+
+                    <div className="game-detail-topic-chip-list">
+                      {topic.keywords.map((keyword) => (
+                        <span key={`${topic.id}-${keyword}`}>{keyword}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="game-detail-empty">
+                {isAllSelected
+                  ? '전체 키워드 그룹 데이터가 없습니다.'
+                  : '이 게임의 키워드 그룹 데이터가 없습니다.'}
+              </p>
+            )}
+          </article>
+        </section>
+
+        <section className="game-detail-bottom-grid-fixed game-detail-full-span">
+          <article className="game-detail-card quick-summary-card">
+            <div className="game-detail-card-head">
+              <h3>빠른 요약</h3>
+            </div>
+
+            <ul>
+              {quickSummaryItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+
+          <TopicSummaryCard topicSummary={topicSummary} />
+
+          <SentimentSummaryCard sentiment={sentiment} />
+        </section>
       </section>
 
       {isSentimentModalOpen && (

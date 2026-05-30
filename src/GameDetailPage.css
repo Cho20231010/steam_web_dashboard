@@ -230,7 +230,6 @@
   font-weight: 800;
 }
 
-/* 핵심: 왼쪽 게임 목록 + 오른쪽 메인 영역 */
 .game-detail-layout {
   width: 100%;
   display: grid;
@@ -257,11 +256,13 @@
   border-radius: 20px;
 }
 
+.game-detail-full-span {
+  grid-column: 1 / -1;
+}
+
 .game-detail-hero-card,
 .game-detail-summary-wrap,
-.game-detail-chart-grid,
-.game-detail-keyword-group-section,
-.game-detail-bottom-grid-fixed {
+.game-detail-chart-grid {
   grid-column: auto;
   grid-row: auto;
 }
@@ -891,8 +892,8 @@
   white-space: nowrap;
 }
 
-/* 핵심 수정: 억지 확장 제거 */
 .game-detail-keyword-group-section {
+  grid-column: 1 / -1;
   width: 100%;
   max-width: 100%;
   margin-right: 0;
@@ -1002,8 +1003,8 @@
   overflow-wrap: break-word;
 }
 
-/* 핵심 수정: 하단 카드 3개가 메인 폭을 꽉 채우도록 */
 .game-detail-bottom-grid-fixed {
+  grid-column: 1 / -1;
   width: 100%;
   max-width: 100%;
   display: grid;
@@ -1197,7 +1198,6 @@
   font-weight: 950;
 }
 
-/* 리뷰 감성 분석 모달 */
 .sentiment-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1456,11 +1456,10 @@
     flex-direction: column;
   }
 
-  .game-detail-main-area {
+  .game-detail-main-area,
+  .game-detail-keyword-group-section,
+  .game-detail-bottom-grid-fixed {
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
   }
 
   .game-detail-result-panel,
@@ -1471,13 +1470,6 @@
   .game-detail-bottom-grid-fixed {
     grid-column: auto;
     grid-row: auto;
-  }
-
-  .game-detail-keyword-group-section,
-  .game-detail-bottom-grid-fixed {
-    width: 100%;
-    max-width: 100%;
-    margin-right: 0;
   }
 
   .game-detail-result-panel {

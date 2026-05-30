@@ -259,13 +259,14 @@
 
 /* 
   왼쪽 게임 목록 패널입니다.
-  오른쪽 대표 정보 + 요약 카드 + 그래프 카드 영역과 길이를 맞추기 위해 높이를 고정합니다.
+  너무 길거나 짧지 않도록 중간 높이로 고정하고,
+  내부 게임 목록만 스크롤되도록 합니다.
 */
 .game-detail-result-panel {
   align-self: start;
-  height: 860px;
-  max-height: 860px;
-  min-height: 860px;
+  height: 780px;
+  max-height: 780px;
+  min-height: 780px;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;
@@ -1391,12 +1392,12 @@
   }
 
   .game-detail-result-panel {
-    height: 820px;
-    max-height: 820px;
-    min-height: 820px;
-    align-self: start;
+  height: 760px;
+  max-height: 760px;
+  min-height: 760px;
+  align-self: start;
   }
-
+  
   .game-detail-result-list {
     flex: 1;
     min-height: 0;

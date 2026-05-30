@@ -236,16 +236,13 @@
   font-weight: 800;
 }
 
-/* 
-  게임 목록과 오른쪽 상세 분석을 상단 2열로 배치합니다.
-  align-items: stretch로 왼쪽 게임 목록 패널이 오른쪽 상세 영역 높이에 맞춰집니다.
-*/
+/* 게임 목록과 오른쪽 상세 분석을 상단 2열로 배치합니다. */
 .game-detail-top-layout {
   width: 100%;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 
 /* 오른쪽 상세 분석 영역입니다. */
@@ -259,13 +256,12 @@
 
 /* 
   왼쪽 게임 목록 패널입니다.
-  고정 height를 제거하고, grid stretch에 따라 오른쪽 상세 영역 높이에 맞춥니다.
+  실제 height는 GameDetailPage.tsx에서 오른쪽 상세 영역 높이를 측정해서 inline style로 넣습니다.
 */
 .game-detail-result-panel {
-  align-self: stretch;
-  height: auto;
-  max-height: none;
+  align-self: start;
   min-height: 0;
+  max-height: none;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;
@@ -299,8 +295,8 @@
 .game-detail-result-list {
   flex: 1;
   min-height: 0;
-  height: auto;
-  max-height: none;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -878,7 +874,7 @@
   white-space: nowrap;
 }
 
-/* 키워드 그룹 영역입니다. 상단 grid 밖에 있으므로 전체 폭을 차지합니다. */
+/* 키워드 그룹 영역입니다. */
 .game-detail-keyword-group-section {
   width: 100%;
   max-width: 100%;
@@ -1378,7 +1374,7 @@
   font-weight: 950;
 }
 
-/* 1180px 이하 화면 대응입니다. 높이는 고정하지 않고 stretch를 유지합니다. */
+/* 1180px 이하 화면 대응입니다. */
 @media (max-width: 1180px) {
   .game-detail-page {
     max-width: 100%;
@@ -1387,21 +1383,21 @@
   .game-detail-top-layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 14px;
-    align-items: stretch;
+    align-items: start;
   }
 
   .game-detail-result-panel {
-    align-self: stretch;
-    height: auto;
-    max-height: none;
+    align-self: start;
     min-height: 0;
+    max-height: none;
+    overflow: hidden;
   }
 
   .game-detail-result-list {
     flex: 1;
     min-height: 0;
-    height: auto;
-    max-height: none;
+    height: 100%;
+    max-height: 100%;
     overflow-y: auto;
   }
 
@@ -1480,8 +1476,7 @@
 
   .game-detail-result-panel {
     order: 2;
-    align-self: auto;
-    height: auto;
+    height: auto !important;
     min-height: 0;
     max-height: none;
     overflow: visible;

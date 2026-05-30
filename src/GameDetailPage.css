@@ -238,7 +238,7 @@
 
 /* 
   게임 목록과 오른쪽 상세 분석을 상단 2열로 배치합니다.
-  게임 목록은 오른쪽 영역과 비슷한 길이로 고정하고, 내부 목록만 스크롤되게 합니다.
+  200% 디스플레이 배율에서도 목록 길이가 갑자기 줄어들지 않도록 고정 높이를 유지합니다.
 */
 .game-detail-top-layout {
   width: 100%;
@@ -259,14 +259,13 @@
 
 /* 
   왼쪽 게임 목록 패널입니다.
-  너무 길거나 짧지 않도록 중간 높이로 고정하고,
-  내부 게임 목록만 스크롤되도록 합니다.
+  중간 길이인 780px로 고정하고, 내부 게임 목록만 스크롤되도록 합니다.
 */
 .game-detail-result-panel {
   align-self: start;
-  height: 728px;
-  max-height: 728px;
-  min-height: 728px;
+  height: 780px;
+  max-height: 780px;
+  min-height: 780px;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;
@@ -1379,7 +1378,10 @@
   font-weight: 950;
 }
 
-/* 1180px 이하 화면 대응입니다. */
+/* 
+  1180px 이하에서도 게임 목록 높이를 줄이지 않습니다.
+  200% 배율 환경에서 이 구간이 쉽게 적용되기 때문입니다.
+*/
 @media (max-width: 1180px) {
   .game-detail-page {
     max-width: 100%;
@@ -1392,10 +1394,10 @@
   }
 
   .game-detail-result-panel {
-  height: 728px;
-  max-height: 728px;
-  min-height: 728px;
-  align-self: start;
+    height: 780px;
+    max-height: 780px;
+    min-height: 780px;
+    align-self: start;
   }
 
   .game-detail-result-list {
@@ -1451,8 +1453,26 @@
   }
 }
 
-/* 태블릿/모바일에서는 게임 목록을 세로 배치합니다. */
-@media (max-width: 900px) {
+/* 
+  모바일 대응입니다.
+  기존 900px 기준은 200% 배율 환경에서 너무 빨리 적용되므로 760px 이하로 낮췄습니다.
+*/
+@media (max-width: 760px) {
+  .game-detail-header {
+    justify-content: stretch;
+    min-height: auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .game-detail-sample-note {
+    white-space: normal;
+  }
+
+  .game-detail-search-box {
+    width: 100%;
+  }
+
   .game-detail-top-layout {
     display: flex;
     flex-direction: column;
@@ -1477,45 +1497,6 @@
     height: auto;
     max-height: 390px;
     overflow-y: auto;
-  }
-
-  .game-detail-summary-wrap.is-all .game-detail-summary-grid,
-  .game-detail-summary-wrap.is-single .game-detail-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .game-detail-meta-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .game-detail-chart-grid,
-  .game-detail-bottom-grid-fixed {
-    grid-template-columns: 1fr;
-  }
-
-  .game-detail-bottom-grid-fixed > .game-detail-card {
-    min-height: auto;
-  }
-
-  .game-detail-keyword-group-item {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
-
-  .game-detail-keyword-group-title {
-    justify-content: space-between;
-  }
-}
-
-/* 작은 모바일 화면 대응입니다. */
-@media (max-width: 760px) {
-  .game-detail-header {
-    justify-content: stretch;
-    min-height: auto;
-  }
-
-  .game-detail-search-box {
-    width: 100%;
   }
 
   .game-detail-hero-card {
@@ -1550,6 +1531,24 @@
 
   .game-detail-summary-card span {
     white-space: normal;
+  }
+
+  .game-detail-chart-grid,
+  .game-detail-bottom-grid-fixed {
+    grid-template-columns: 1fr;
+  }
+
+  .game-detail-bottom-grid-fixed > .game-detail-card {
+    min-height: auto;
+  }
+
+  .game-detail-keyword-group-item {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .game-detail-keyword-group-title {
+    justify-content: space-between;
   }
 
   .keyword-group-head {

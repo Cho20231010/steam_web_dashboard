@@ -17,15 +17,8 @@ import {
   type ApiRecord,
 } from './api/gameDetailApi'
 
-/**
- * 게임 상세 분석 화면에서 사용할 기간 옵션입니다.
- * 7일 데이터는 제공되지 않는 것으로 판단해서 30일, 90일만 사용합니다.
- */
 type PeriodOption = 30 | 90
 
-/**
- * 왼쪽 게임 목록과 검색 결과에서 사용하는 간단한 게임 정보 타입입니다.
- */
 type GameSummary = {
   id: string
   gameId: string | number
@@ -36,9 +29,6 @@ type GameSummary = {
   image?: string
 }
 
-/**
- * 오른쪽 게임 상세 카드와 요약 카드에서 사용하는 정규화된 게임 상세 타입입니다.
- */
 type GameDetailView = {
   id: string
   gameId: string | number
@@ -64,9 +54,6 @@ type GameDetailView = {
   image?: string
 }
 
-/**
- * 리뷰 감성 분석 카드와 모달에서 사용하는 데이터 타입입니다.
- */
 type SentimentView = {
   positive: number
   neutral: number
@@ -77,9 +64,6 @@ type SentimentView = {
   totalCount: number
 }
 
-/**
- * 키워드 그룹 영역에서 사용하는 토픽 데이터 타입입니다.
- */
 type TopicView = {
   id: string
   groupName: string
@@ -89,9 +73,6 @@ type TopicView = {
   sentimentLabel: string
 }
 
-/**
- * 하단 토픽 분석 요약 카드에서 사용하는 타입입니다.
- */
 type TopicSummaryView = {
   topicCount: number
   strongestTopicRate: number
@@ -99,9 +80,6 @@ type TopicSummaryView = {
   mainKeywords: string
 }
 
-/**
- * 가격 변동 추이, 리뷰 수 & 긍정 비율 추이 그래프에 쓰이는 데이터 타입입니다.
- */
 type TrendPoint = {
   label: string
   price: number
@@ -109,17 +87,11 @@ type TrendPoint = {
   reviewCount: number
 }
 
-/**
- * 리뷰 인사이트 API 응답을 화면에 맞게 정리한 타입입니다.
- */
 type ReviewInsight = {
   positiveSummary: string
   negativeSummary: string
 }
 
-/**
- * [전체] 선택 시 여러 게임 데이터를 합산/평균 처리하기 위한 타입입니다.
- */
 type AggregateGameStats = {
   totalGames: number
   positiveReviews: number
@@ -175,18 +147,11 @@ function GameDetailPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isSentimentModalOpen, setIsSentimentModalOpen] = useState(false)
 
-  /**
-   * 오른쪽 상세 분석 영역의 실제 높이를 측정해서
-   * 왼쪽 게임 목록 패널 높이에 적용하기 위한 ref/state입니다.
-   */
   const mainAreaRef = useRef<HTMLDivElement | null>(null)
   const [resultPanelHeight, setResultPanelHeight] = useState<number | null>(null)
 
   const isAllSelected = selectedGameId === ALL_GAME_ID
 
-  /**
-   * 관심 게임 목록을 localStorage와 동기화합니다.
-   */
   useEffect(() => {
     function syncFavoriteGames() {
       setFavoriteGames(readFavoriteGames())
@@ -203,9 +168,6 @@ function GameDetailPage() {
     }
   }, [])
 
-  /**
-   * 최초 화면 진입 시 게임 목록을 불러오고 기본 선택값을 [전체]로 설정합니다.
-   */
   useEffect(() => {
     async function loadGames() {
       try {
@@ -226,9 +188,6 @@ function GameDetailPage() {
     loadGames()
   }, [])
 
-  /**
-   * [전체] 토픽 분석에 필요한 전체 토픽 데이터를 불러옵니다.
-   */
   useEffect(() => {
     async function loadOverallTopics() {
       try {
@@ -258,10 +217,6 @@ function GameDetailPage() {
     return games.map((game, index) => normalizeGameSummary(game, index))
   }, [games])
 
-  /**
-   * 검색창 포커스 시 보여줄 장르 추천 목록입니다.
-   * 추천 게임명 목록은 표시하지 않고 장르만 보여줍니다.
-   */
   const searchSuggestions = useMemo(() => {
     const genreSet = new Set<string>()
 
@@ -278,9 +233,6 @@ function GameDetailPage() {
     }
   }, [gameSummaries])
 
-  /**
-   * 검색어에 따라 왼쪽 게임 목록을 필터링합니다.
-   */
   const filteredGames = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -298,9 +250,6 @@ function GameDetailPage() {
     })
   }, [gameSummaries, searchText])
 
-  /**
-   * 왼쪽 게임 목록에는 항상 [전체] 항목이 먼저 보이도록 구성합니다.
-   */
   const displayGames = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -329,9 +278,6 @@ function GameDetailPage() {
     return `전체 + ${filteredGames.length}개`
   }, [displayGames, filteredGames.length, searchText])
 
-  /**
-   * 검색 결과에서 현재 선택된 게임이 사라지면 첫 번째 검색 결과를 자동 선택합니다.
-   */
   useEffect(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -365,10 +311,6 @@ function GameDetailPage() {
     }
   }, [allGameSummary, filteredGames, searchText, selectedGameId])
 
-  /**
-   * 개별 게임 선택 시 상세/감성/토픽/가격 이력/리뷰 추이 데이터를 불러옵니다.
-   * [전체] 선택 시 개별 API 호출은 하지 않고, 전체 집계 데이터로 화면을 구성합니다.
-   */
   useEffect(() => {
     async function loadSelectedGame() {
       if (!selectedGameId) {
@@ -507,13 +449,29 @@ function GameDetailPage() {
     return normalizeTopicSummary(topics)
   }, [topics])
 
-  const trendPoints = useMemo(() => {
+  /**
+   * 가격 변동 추이는 가격 이력 API(historyData)만 사용합니다.
+   * 리뷰 추이 데이터와 섞지 않습니다.
+   */
+  const priceTrendPoints = useMemo(() => {
     if (selectedGameId === ALL_GAME_ID) {
       return []
     }
 
-    return normalizeTrendPoints(historyData, reviewTrendData)
-  }, [historyData, reviewTrendData, selectedGameId])
+    return normalizePriceTrendPoints(historyData)
+  }, [historyData, selectedGameId])
+
+  /**
+   * 리뷰 수 & 긍정 비율 추이는 리뷰 추이 API(reviewTrendData)만 사용합니다.
+   * 가격 이력 데이터와 섞지 않습니다.
+   */
+  const reviewTrendPoints = useMemo(() => {
+    if (selectedGameId === ALL_GAME_ID) {
+      return []
+    }
+
+    return normalizeReviewTrendPoints(reviewTrendData)
+  }, [reviewTrendData, selectedGameId])
 
   const reviewInsight = useMemo(() => {
     return normalizeReviewInsight(reviewInsightData)
@@ -529,11 +487,6 @@ function GameDetailPage() {
     )
   }, [analysisSampleSize, selectedGame, sentiment, topics, reviewInsight])
 
-  /**
-   * 오른쪽 상세 영역 높이를 측정해서 왼쪽 게임 목록 패널 높이로 적용합니다.
-   * 이렇게 해야 게임 목록 패널 높이는 오른쪽과 맞고,
-   * 목록 내용은 패널 내부에서만 스크롤됩니다.
-   */
   useEffect(() => {
     const mainAreaElement = mainAreaRef.current
 
@@ -565,7 +518,8 @@ function GameDetailPage() {
     selectedPeriod,
     games.length,
     topics.length,
-    trendPoints.length,
+    priceTrendPoints.length,
+    reviewTrendPoints.length,
     sentiment.totalCount,
     detailLoading,
   ])
@@ -673,13 +627,13 @@ function GameDetailPage() {
     ? '전체 리뷰 샘플에서 함께 자주 등장한 키워드 묶음입니다.'
     : '선택한 게임의 리뷰에서 함께 자주 등장한 키워드 묶음입니다.'
 
-  /**
-   * 추이 그래프는 선택한 기간 전체의 모든 날짜를 자동 생성하는 방식이 아니라,
-   * 백엔드 API가 실제로 제공한 날짜 데이터만 표시합니다.
-   */
-  const periodNote = isAllSelected
-    ? '[전체] 항목은 기간별 추이를 제공하지 않습니다.'
-    : `${selectedPeriod}일 범위 내 제공된 날짜 데이터만 표시됩니다.`
+  const pricePeriodNote = isAllSelected
+    ? '[전체] 항목은 기간별 가격 추이를 제공하지 않습니다.'
+    : `${selectedPeriod}일 범위 내 제공된 가격 날짜 데이터만 표시됩니다.`
+
+  const reviewPeriodNote = isAllSelected
+    ? '[전체] 항목은 기간별 리뷰 추이를 제공하지 않습니다.'
+    : `${selectedPeriod}일 범위 내 제공된 리뷰 날짜 데이터만 표시됩니다.`
 
   return (
     <div className="game-detail-page">
@@ -906,7 +860,7 @@ function GameDetailPage() {
                       isAllSelected ? 'game-detail-fixed-note disabled' : 'game-detail-fixed-note'
                     }
                   >
-                    {periodNote}
+                    {pricePeriodNote}
                   </span>
                 </div>
 
@@ -917,13 +871,13 @@ function GameDetailPage() {
                 />
               </div>
 
-              {trendPoints.length > 0 ? (
+              {priceTrendPoints.length > 0 ? (
                 <div className="game-detail-price-bar-chart">
-                  {trendPoints.map((point) => (
+                  {priceTrendPoints.map((point) => (
                     <div key={point.label}>
                       <span
                         style={{
-                          height: `${calculatePriceBarHeight(point.price, trendPoints)}%`,
+                          height: `${calculatePriceBarHeight(point.price, priceTrendPoints)}%`,
                         }}
                         title={`${point.label} / ${formatSteamPrice(point.price)}`}
                       />
@@ -952,7 +906,7 @@ function GameDetailPage() {
                       isAllSelected ? 'game-detail-fixed-note disabled' : 'game-detail-fixed-note'
                     }
                   >
-                    {periodNote}
+                    {reviewPeriodNote}
                   </span>
                 </div>
 
@@ -963,9 +917,9 @@ function GameDetailPage() {
                 />
               </div>
 
-              {trendPoints.length > 0 ? (
+              {reviewTrendPoints.length > 0 ? (
                 <div className="game-detail-bar-chart">
-                  {trendPoints.map((point) => (
+                  {reviewTrendPoints.map((point) => (
                     <div key={point.label}>
                       <span
                         style={{
@@ -1212,10 +1166,6 @@ function GameDetailPage() {
   )
 }
 
-/**
- * 기간 선택 버튼 컴포넌트입니다.
- * [전체] 선택 시에는 disabled 처리됩니다.
- */
 function PeriodSelector({
   selectedPeriod,
   disabled,
@@ -1413,9 +1363,6 @@ function SentimentSummaryRow({
   )
 }
 
-/**
- * [전체] 항목을 게임 목록에 추가하기 위한 가상 게임 데이터입니다.
- */
 function createAllGameSummary(totalGames: number): GameSummary {
   return {
     id: ALL_GAME_ID,
@@ -1444,9 +1391,6 @@ function normalizeGameSummary(game: ApiRecord, index: number): GameSummary {
   }
 }
 
-/**
- * [전체] 선택 시 개별 게임 상세 API 없이 목록 데이터를 집계해서 화면에 보여줍니다.
- */
 function normalizeAllGameDetail(games: ApiRecord[]): GameDetailView {
   const stats = calculateAggregateGameStats(games)
   const topGenres = stats.topGenres.map((genre) => genre.name)
@@ -1527,10 +1471,6 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
   }
 }
 
-/**
- * [전체] 선택 시 전체 게임의 긍정/부정 리뷰 수를 합산합니다.
- * 중립 데이터는 Steam 원본 리뷰에 없기 때문에 0으로 둡니다.
- */
 function normalizeAllSentiment(games: ApiRecord[]): SentimentView {
   const stats = calculateAggregateGameStats(games)
 
@@ -1738,17 +1678,8 @@ function getAnalysisSampleSize(topicData: ApiRecord[], sentimentData?: ApiRecord
   return Math.max(topicSampleSize, sentimentSampleSize)
 }
 
-function normalizeTrendPoints(
-  historyData: ApiRecord[],
-  reviewTrendData: ApiRecord[],
-): TrendPoint[] {
-  const source = reviewTrendData.length > 0 ? reviewTrendData : historyData
-
-  if (source.length === 0) {
-    return []
-  }
-
-  return source.map((item, index) => {
+function normalizePriceTrendPoints(historyData: ApiRecord[]): TrendPoint[] {
+  return historyData.map((item, index) => {
     const label = String(
       item.period ?? item.date ?? item.month ?? item.created_at ?? item.label ?? index + 1,
     )
@@ -1756,8 +1687,35 @@ function normalizeTrendPoints(
     return {
       label: formatTrendLabel(label),
       price: normalizePrice(item.final_price ?? item.price ?? item.price_usd ?? item.current_price),
-      positiveRate: normalizeRatio(item.positive_ratio ?? item.positive_rate),
-      reviewCount: toNumber(item.review_count ?? item.total_reviews ?? item.reviews),
+      positiveRate: 0,
+      reviewCount: 0,
+    }
+  })
+}
+
+function normalizeReviewTrendPoints(reviewTrendData: ApiRecord[]): TrendPoint[] {
+  return reviewTrendData.map((item, index) => {
+    const label = String(
+      item.period ?? item.date ?? item.month ?? item.created_at ?? item.label ?? index + 1,
+    )
+
+    return {
+      label: formatTrendLabel(label),
+      price: 0,
+      positiveRate: normalizeRatio(
+        item.positive_ratio ??
+          item.positive_rate ??
+          item.positiveRate ??
+          item.positive_percent ??
+          item.positivePercent,
+      ),
+      reviewCount: toNumber(
+        item.review_count ??
+          item.reviewCount ??
+          item.total_reviews ??
+          item.totalReviews ??
+          item.reviews,
+      ),
     }
   })
 }
@@ -2126,10 +2084,6 @@ function averageNumber(values: number[]) {
   return total / values.length
 }
 
-/**
- * 가격 그래프를 세로 막대 그래프로 표시하기 위해
- * 가격 값을 최대 가격 대비 높이 비율로 변환합니다.
- */
 function calculatePriceBarHeight(price: number, points: TrendPoint[]) {
   const prices = points.map((point) => point.price).filter((value) => value > 0)
 

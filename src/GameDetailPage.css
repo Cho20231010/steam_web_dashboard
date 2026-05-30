@@ -505,8 +505,15 @@
 
 .game-detail-summary-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
+}
+
+.game-detail-summary-wrap.is-all .game-detail-summary-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.game-detail-summary-wrap.is-single .game-detail-summary-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .game-detail-summary-card {
@@ -1164,7 +1171,8 @@
     grid-column: 1 / -1;
   }
 
-  .game-detail-summary-grid {
+  .game-detail-summary-wrap.is-all .game-detail-summary-grid,
+  .game-detail-summary-wrap.is-single .game-detail-summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -1231,7 +1239,8 @@
     max-height: 390px;
   }
 
-  .game-detail-summary-grid {
+  .game-detail-summary-wrap.is-all .game-detail-summary-grid,
+  .game-detail-summary-wrap.is-single .game-detail-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1276,8 +1285,12 @@
     grid-template-columns: 1fr;
   }
 
-  .game-detail-meta-grid,
-  .game-detail-summary-grid {
+  .game-detail-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-detail-summary-wrap.is-all .game-detail-summary-grid,
+  .game-detail-summary-wrap.is-single .game-detail-summary-grid {
     grid-template-columns: 1fr;
   }
 

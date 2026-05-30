@@ -764,7 +764,11 @@ function GameDetailPage() {
             </div>
           </section>
 
-          <div className={`game-detail-summary-wrap ${isSummaryExpanded ? 'expanded' : ''}`}>
+          <div
+            className={`game-detail-summary-wrap ${isSummaryExpanded ? 'expanded' : ''} ${
+              isAllSelected ? 'is-all' : 'is-single'
+            }`}
+          >
             <section className="game-detail-summary-grid">
               <SummaryCard
                 title="긍정 비율"
@@ -773,12 +777,14 @@ function GameDetailPage() {
                 type="positive"
               />
 
-              <SummaryCard
-                title="총 Steam 리뷰 수"
-                value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
-                description="긍정/부정 리뷰 집계"
-                type="blue"
-              />
+              {isAllSelected && (
+                <SummaryCard
+                  title="총 Steam 리뷰 수"
+                  value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
+                  description="전체 게임의 긍정/부정 리뷰 합산"
+                  type="blue"
+                />
+              )}
 
               <SummaryCard
                 title="분석 샘플 리뷰 수"
@@ -1494,6 +1500,313 @@ function getAnalysisSampleSize(topicData: ApiRecord[], sentimentData?: ApiRecord
   return Math.max(topicSampleSize, sentimentSampleSize)
 }
 
+function normalizeTrendPoints(
+  historyData: ApiRecord[],
+  reviewTrendData: ApiRecord[],
+): TrendPoint[] {
+  const source = reviewTrendData.length > 0 ? reviewTrendData : historyData
+
+  if (source.length === 0) {
+    return []
+  }
+
+  return source.slice(-6).map((item, index) => {
+    const label = String(item.date ?? item.month ?? item.period ?? item.label ?? index + 1)
+
+    return {
+      label: label.length > 7 ? label.slice(5, 10) : label,
+      price: normalizePrice(item.price ?? item.price_usd ?? item.current_price),
+      positiveRate: normalizeRatio(item.positive_ratio ?? item.positive_rate),
+      reviewCount: toNumber(item.review_count ?? item.total_reviews ?? item.reviews),
+    }
+  })
+}
+
+function normalizeReviewInsight(reviewInsightData: unknown): ReviewInsight {
+  const record = isRecord(reviewInsightData) ? reviewInsightData : {}
+
+  const positiveSummary = String(
+    record.positive_summary ??
+      record.positiveSummary ??
+      record.positive_review ??
+      '긍정 리뷰에서는 게임성, 몰입감, 전투 경험에 대한 만족이 나타납니다.',
+  )
+
+  const negativeSummary = String(
+    record.negative_summary ??
+      record.negativeSummary ??
+      record.negative_review ??
+      '부정 리뷰에서는 난이도, 최적화, 가격 관련 불만이 나타날 수 있습니다.',
+  )
+
+  return {
+    positiveSummary,
+    negativeSummary,
+  }
+}
+
+function createQuickSummaryItems(
+  selectedGame: GameDetailView | null,
+  sentiment: SentimentView,
+  topics: TopicView[],
+  reviewInsight: ReviewInsight,
+  analysisSampleSize: number,
+) {
+  if (!selectedGame) {
+    return ['선택된 게임 데이터가 없습니다.']
+  }
+
+  if (selectedGame.gameId === ALL_GAME_ID) {
+    const mainTopic = topics[0]
+    const mainKeywords = mainTopic?.keywords.slice(0, 3).join(', ') ?? '대표 키워드 없음'
+
+    return [
+      `현재 불러온 전체 게임 수는 ${selectedGame.genre}입니다.`,
+      `총 Steam 리뷰 수는 ${formatNumber(sentiment.totalCount || selectedGame.totalReviews)}개입니다.`,
+      `분석 샘플 리뷰 수는 ${
+        analysisSampleSize > 0 ? formatNumber(analysisSampleSize) : '제공 없음'
+      }입니다.`,
+      `대표 키워드 그룹은 ${mainKeywords} 중심으로 나타납니다.`,
+      `전체 평균 가격은 ${selectedGame.priceLabel} 기준입니다.`,
+    ]
+  }
+
+  const mainGroup = topics[0]
+  const mainKeywords = mainGroup?.keywords.slice(0, 3).join(', ') ?? '키워드 그룹 없음'
+  const satisfaction =
+    sentiment.positive >= 85
+      ? '매우 긍정적인 평가 흐름입니다.'
+      : sentiment.positive >= 70
+        ? '전반적으로 긍정적인 평가입니다.'
+        : sentiment.positive >= 50
+          ? '긍정과 부정 반응이 함께 나타납니다.'
+          : '개선 이슈가 비교적 크게 나타납니다.'
+
+  return [
+    `긍정 비율은 ${sentiment.positive.toFixed(1)}%로 ${satisfaction}`,
+    `분석 샘플 리뷰 수는 ${
+      analysisSampleSize > 0 ? formatNumber(analysisSampleSize) : '제공 없음'
+    }입니다.`,
+    `가장 큰 키워드 그룹은 ${mainKeywords} 중심으로 나타납니다.`,
+    `보유자 추정 수는 ${selectedGame.owners}입니다.`,
+    compactSentence(reviewInsight.negativeSummary),
+  ]
+}
+
+function compactSentence(text: string) {
+  const cleaned = text.replace(/\s+/g, ' ').trim()
+
+  if (cleaned.length <= 42) {
+    return cleaned
+  }
+
+  return `${cleaned.slice(0, 42)}...`
+}
+
+function calculateAggregateGameStats(games: ApiRecord[]): AggregateGameStats {
+  let positiveReviews = 0
+  let negativeReviews = 0
+  let totalReviews = 0
+  let playtimeSum = 0
+  let playtimeCount = 0
+  let priceSum = 0
+  let pricedGameCount = 0
+  let freeGameCount = 0
+
+  const genreCountMap = new Map<string, number>()
+  const positiveRateValues: number[] = []
+  const negativeRateValues: number[] = []
+
+  games.forEach((game) => {
+    const positive = toNumber(game.positive_reviews ?? game.positiveReviews)
+    const negative = toNumber(game.negative_reviews ?? game.negativeReviews)
+    const calculatedReviews = positive + negative
+    const apiTotalReviews = toNumber(
+      game.total_reviews ?? game.totalReviews ?? game.review_count ?? game.reviews,
+    )
+    const gameTotalReviews = calculatedReviews > 0 ? calculatedReviews : apiTotalReviews
+
+    positiveReviews += positive
+    negativeReviews += negative
+    totalReviews += gameTotalReviews
+
+    const positiveRate = getPositiveRate(game)
+    const negativeRate = getNegativeRate(game)
+
+    if (positiveRate > 0) {
+      positiveRateValues.push(positiveRate)
+    }
+
+    if (negativeRate > 0) {
+      negativeRateValues.push(negativeRate)
+    }
+
+    const playtime = toNumber(game.average_playtime ?? game.avg_playtime)
+
+    if (playtime > 0) {
+      playtimeSum += playtime
+      playtimeCount += 1
+    }
+
+    const price = normalizePrice(
+      game.price ?? game.final_price ?? game.initial_price ?? game.price_usd ?? game.current_price,
+    )
+
+    if (price > 0) {
+      priceSum += price
+      pricedGameCount += 1
+    } else {
+      freeGameCount += 1
+    }
+
+    const genres = formatGenreList(getMergedGenreSource(game))
+
+    genres.forEach((genre) => {
+      if (!genre || genre === '장르 없음') {
+        return
+      }
+
+      genreCountMap.set(genre, (genreCountMap.get(genre) ?? 0) + 1)
+    })
+  })
+
+  const topGenres = Array.from(genreCountMap.entries())
+    .map(([name, count]) => ({
+      name,
+      count,
+      ratio: games.length > 0 ? (count / games.length) * 100 : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  const positiveRate =
+    totalReviews > 0 ? (positiveReviews / totalReviews) * 100 : averageNumber(positiveRateValues)
+
+  const negativeRate =
+    totalReviews > 0 ? (negativeReviews / totalReviews) * 100 : averageNumber(negativeRateValues)
+
+  return {
+    totalGames: games.length,
+    positiveReviews,
+    negativeReviews,
+    totalReviews,
+    positiveRate,
+    negativeRate,
+    averagePlaytime: playtimeCount > 0 ? playtimeSum / playtimeCount : 0,
+    averagePrice: pricedGameCount > 0 ? priceSum / pricedGameCount : 0,
+    pricedGameCount,
+    freeGameCount,
+    topGenres,
+    topGenreLabel: topGenres.length > 0 ? topGenres[0].name : '전체 데이터',
+  }
+}
+
+function calculateTotalOwnersRange(games: ApiRecord[]): TotalOwnersRange {
+  let minTotal = 0
+  let maxTotal = 0
+  let validCount = 0
+
+  games.forEach((game) => {
+    const owners = getOwners(game)
+    const range = parseOwnersRange(owners)
+
+    if (!range) {
+      return
+    }
+
+    minTotal += range.min
+    maxTotal += range.max
+    validCount += 1
+  })
+
+  return {
+    min: minTotal,
+    max: maxTotal,
+    validCount,
+  }
+}
+
+function parseOwnersRange(value: unknown): OwnersRange | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return {
+      min: value,
+      max: value,
+    }
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const cleaned = value
+    .replaceAll(',', '')
+    .replace(/owners/gi, '')
+    .replace(/estimated/gi, '')
+    .trim()
+
+  if (!cleaned || cleaned === '정보 없음') {
+    return null
+  }
+
+  const numbers = cleaned
+    .split(/\.\.|~|-/)
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isFinite(item) && item > 0)
+
+  if (numbers.length >= 2) {
+    return {
+      min: Math.min(numbers[0], numbers[1]),
+      max: Math.max(numbers[0], numbers[1]),
+    }
+  }
+
+  if (numbers.length === 1) {
+    return {
+      min: numbers[0],
+      max: numbers[0],
+    }
+  }
+
+  return null
+}
+
+function formatOwnersRange(range: TotalOwnersRange) {
+  if (range.validCount <= 0 || range.max <= 0) {
+    return '정보 없음'
+  }
+
+  if (range.min === range.max) {
+    return formatCompactKoreanNumber(range.min)
+  }
+
+  return `${formatCompactKoreanNumber(range.min)} ~ ${formatCompactKoreanNumber(range.max)}`
+}
+
+function formatCompactKoreanNumber(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0'
+  }
+
+  if (value >= 100000000) {
+    return `${(value / 100000000).toFixed(1).replace('.0', '')}억`
+  }
+
+  if (value >= 10000) {
+    return `${(value / 10000).toFixed(1).replace('.0', '')}만`
+  }
+
+  return formatNumber(value)
+}
+
+function averageNumber(values: number[]) {
+  if (values.length === 0) {
+    return 0
+  }
+
+  const total = values.reduce((sum, value) => sum + value, 0)
+
+  return total / values.length
+}
+
 function formatTopicLabel(value: string) {
   const original = value.trim()
 
@@ -1736,315 +2049,6 @@ function getEnglishTopicNameFromOriginal(value: string) {
   }
 
   return ''
-}
-
-function normalizeTrendPoints(
-  historyData: ApiRecord[],
-  reviewTrendData: ApiRecord[],
-): TrendPoint[] {
-  const source = reviewTrendData.length > 0 ? reviewTrendData : historyData
-
-  if (source.length === 0) {
-    return []
-  }
-
-  return source.slice(-6).map((item, index) => {
-    const label = String(item.date ?? item.month ?? item.period ?? item.label ?? index + 1)
-
-    return {
-      label: label.length > 7 ? label.slice(5, 10) : label,
-      price: normalizePrice(item.price ?? item.price_usd ?? item.current_price),
-      positiveRate: normalizeRatio(item.positive_ratio ?? item.positive_rate),
-      reviewCount: toNumber(item.review_count ?? item.total_reviews ?? item.reviews),
-    }
-  })
-}
-
-function normalizeReviewInsight(reviewInsightData: unknown): ReviewInsight {
-  const record = isRecord(reviewInsightData) ? reviewInsightData : {}
-
-  const positiveSummary = String(
-    record.positive_summary ??
-      record.positiveSummary ??
-      record.positive_review ??
-      '긍정 리뷰에서는 게임성, 몰입감, 전투 경험에 대한 만족이 나타납니다.',
-  )
-
-  const negativeSummary = String(
-    record.negative_summary ??
-      record.negativeSummary ??
-      record.negative_review ??
-      '부정 리뷰에서는 난이도, 최적화, 가격 관련 불만이 나타날 수 있습니다.',
-  )
-
-  return {
-    positiveSummary,
-    negativeSummary,
-  }
-}
-
-function createQuickSummaryItems(
-  selectedGame: GameDetailView | null,
-  sentiment: SentimentView,
-  topics: TopicView[],
-  reviewInsight: ReviewInsight,
-  analysisSampleSize: number,
-) {
-  if (!selectedGame) {
-    return ['선택된 게임 데이터가 없습니다.']
-  }
-
-  if (selectedGame.gameId === ALL_GAME_ID) {
-    const mainTopic = topics[0]
-    const mainKeywords = mainTopic?.keywords.slice(0, 3).join(', ') ?? '대표 키워드 없음'
-
-    return [
-      `현재 불러온 전체 게임 수는 ${selectedGame.genre}입니다.`,
-      `총 Steam 리뷰 수는 ${formatNumber(sentiment.totalCount || selectedGame.totalReviews)}개입니다.`,
-      `분석 샘플 리뷰 수는 ${
-        analysisSampleSize > 0 ? formatNumber(analysisSampleSize) : '제공 없음'
-      }입니다.`,
-      `대표 키워드 그룹은 ${mainKeywords} 중심으로 나타납니다.`,
-      `전체 평균 가격은 ${selectedGame.priceLabel} 기준입니다.`,
-    ]
-  }
-
-  const mainGroup = topics[0]
-  const mainKeywords = mainGroup?.keywords.slice(0, 3).join(', ') ?? '키워드 그룹 없음'
-  const satisfaction =
-    sentiment.positive >= 85
-      ? '매우 긍정적인 평가 흐름입니다.'
-      : sentiment.positive >= 70
-        ? '전반적으로 긍정적인 평가입니다.'
-        : sentiment.positive >= 50
-          ? '긍정과 부정 반응이 함께 나타납니다.'
-          : '개선 이슈가 비교적 크게 나타납니다.'
-
-  return [
-    `긍정 비율은 ${sentiment.positive.toFixed(1)}%로 ${satisfaction}`,
-    `총 Steam 리뷰 수는 ${formatNumber(
-      sentiment.totalCount || selectedGame.totalReviews,
-    )}개입니다.`,
-    `분석 샘플 리뷰 수는 ${
-      analysisSampleSize > 0 ? formatNumber(analysisSampleSize) : '제공 없음'
-    }입니다.`,
-    `가장 큰 키워드 그룹은 ${mainKeywords} 중심으로 나타납니다.`,
-    compactSentence(reviewInsight.negativeSummary),
-  ]
-}
-
-function compactSentence(text: string) {
-  const cleaned = text.replace(/\s+/g, ' ').trim()
-
-  if (cleaned.length <= 42) {
-    return cleaned
-  }
-
-  return `${cleaned.slice(0, 42)}...`
-}
-
-function calculateAggregateGameStats(games: ApiRecord[]): AggregateGameStats {
-  let positiveReviews = 0
-  let negativeReviews = 0
-  let totalReviews = 0
-  let playtimeSum = 0
-  let playtimeCount = 0
-  let priceSum = 0
-  let pricedGameCount = 0
-  let freeGameCount = 0
-
-  const genreCountMap = new Map<string, number>()
-  const positiveRateValues: number[] = []
-  const negativeRateValues: number[] = []
-
-  games.forEach((game) => {
-    const positive = toNumber(game.positive_reviews ?? game.positiveReviews)
-    const negative = toNumber(game.negative_reviews ?? game.negativeReviews)
-    const calculatedReviews = positive + negative
-    const apiTotalReviews = toNumber(
-      game.total_reviews ?? game.totalReviews ?? game.review_count ?? game.reviews,
-    )
-    const gameTotalReviews = calculatedReviews > 0 ? calculatedReviews : apiTotalReviews
-
-    positiveReviews += positive
-    negativeReviews += negative
-    totalReviews += gameTotalReviews
-
-    const positiveRate = getPositiveRate(game)
-    const negativeRate = getNegativeRate(game)
-
-    if (positiveRate > 0) {
-      positiveRateValues.push(positiveRate)
-    }
-
-    if (negativeRate > 0) {
-      negativeRateValues.push(negativeRate)
-    }
-
-    const playtime = toNumber(game.average_playtime ?? game.avg_playtime)
-
-    if (playtime > 0) {
-      playtimeSum += playtime
-      playtimeCount += 1
-    }
-
-    const price = normalizePrice(
-      game.price ?? game.final_price ?? game.initial_price ?? game.price_usd ?? game.current_price,
-    )
-
-    if (price > 0) {
-      priceSum += price
-      pricedGameCount += 1
-    } else {
-      freeGameCount += 1
-    }
-
-    const genres = formatGenreList(getMergedGenreSource(game))
-
-    genres.forEach((genre) => {
-      if (!genre || genre === '장르 없음') {
-        return
-      }
-
-      genreCountMap.set(genre, (genreCountMap.get(genre) ?? 0) + 1)
-    })
-  })
-
-  const topGenres = Array.from(genreCountMap.entries())
-    .map(([name, count]) => ({
-      name,
-      count,
-      ratio: games.length > 0 ? (count / games.length) * 100 : 0,
-    }))
-    .sort((a, b) => b.count - a.count)
-
-  const positiveRate =
-    totalReviews > 0 ? (positiveReviews / totalReviews) * 100 : averageNumber(positiveRateValues)
-
-  const negativeRate =
-    totalReviews > 0 ? (negativeReviews / totalReviews) * 100 : averageNumber(negativeRateValues)
-
-  return {
-    totalGames: games.length,
-    positiveReviews,
-    negativeReviews,
-    totalReviews,
-    positiveRate,
-    negativeRate,
-    averagePlaytime: playtimeCount > 0 ? playtimeSum / playtimeCount : 0,
-    averagePrice: pricedGameCount > 0 ? priceSum / pricedGameCount : 0,
-    pricedGameCount,
-    freeGameCount,
-    topGenres,
-    topGenreLabel: topGenres.length > 0 ? topGenres[0].name : '전체 데이터',
-  }
-}
-
-function calculateTotalOwnersRange(games: ApiRecord[]): TotalOwnersRange {
-  let minTotal = 0
-  let maxTotal = 0
-  let validCount = 0
-
-  games.forEach((game) => {
-    const owners = getOwners(game)
-    const range = parseOwnersRange(owners)
-
-    if (!range) {
-      return
-    }
-
-    minTotal += range.min
-    maxTotal += range.max
-    validCount += 1
-  })
-
-  return {
-    min: minTotal,
-    max: maxTotal,
-    validCount,
-  }
-}
-
-function parseOwnersRange(value: unknown): OwnersRange | null {
-  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
-    return {
-      min: value,
-      max: value,
-    }
-  }
-
-  if (typeof value !== 'string') {
-    return null
-  }
-
-  const cleaned = value
-    .replaceAll(',', '')
-    .replace(/owners/gi, '')
-    .replace(/estimated/gi, '')
-    .trim()
-
-  if (!cleaned || cleaned === '정보 없음') {
-    return null
-  }
-
-  const numbers = cleaned
-    .split(/\.\.|~|-/)
-    .map((item) => Number(item.trim()))
-    .filter((item) => Number.isFinite(item) && item > 0)
-
-  if (numbers.length >= 2) {
-    return {
-      min: Math.min(numbers[0], numbers[1]),
-      max: Math.max(numbers[0], numbers[1]),
-    }
-  }
-
-  if (numbers.length === 1) {
-    return {
-      min: numbers[0],
-      max: numbers[0],
-    }
-  }
-
-  return null
-}
-
-function formatOwnersRange(range: TotalOwnersRange) {
-  if (range.validCount <= 0 || range.max <= 0) {
-    return '정보 없음'
-  }
-
-  if (range.min === range.max) {
-    return formatCompactKoreanNumber(range.min)
-  }
-
-  return `${formatCompactKoreanNumber(range.min)} ~ ${formatCompactKoreanNumber(range.max)}`
-}
-
-function formatCompactKoreanNumber(value: number) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return '0'
-  }
-
-  if (value >= 100000000) {
-    return `${(value / 100000000).toFixed(1).replace('.0', '')}억`
-  }
-
-  if (value >= 10000) {
-    return `${(value / 10000).toFixed(1).replace('.0', '')}만`
-  }
-
-  return formatNumber(value)
-}
-
-function averageNumber(values: number[]) {
-  if (values.length === 0) {
-    return 0
-  }
-
-  const total = values.reduce((sum, value) => sum + value, 0)
-
-  return total / values.length
 }
 
 function getGameId(game: ApiRecord) {

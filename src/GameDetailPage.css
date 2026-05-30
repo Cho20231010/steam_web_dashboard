@@ -1,3 +1,4 @@
+/* 전체 게임 상세 페이지 컨테이너입니다. */
 .game-detail-page {
   width: 100%;
   max-width: 1240px;
@@ -9,6 +10,7 @@
   overflow-x: hidden;
 }
 
+/* 로딩, 오류, 데이터 없음 상태 카드입니다. */
 .status-card {
   padding: 24px;
   border: 1px solid #e6eaf2;
@@ -34,6 +36,7 @@
   color: #d95050;
 }
 
+/* 공통 카드 스타일입니다. */
 .game-detail-header,
 .game-detail-result-panel,
 .game-detail-hero-card,
@@ -44,6 +47,7 @@
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
+/* 상단 검색 영역입니다. */
 .game-detail-header {
   display: flex;
   justify-content: flex-end;
@@ -88,6 +92,7 @@
   box-shadow: 0 0 0 3px rgba(93, 99, 241, 0.12);
 }
 
+/* 검색창 아래 드롭다운입니다. */
 .game-detail-search-dropdown {
   position: absolute;
   top: 56px;
@@ -163,6 +168,7 @@
   gap: 8px;
 }
 
+/* 게임 썸네일 공통 스타일입니다. */
 .game-detail-search-thumb,
 .game-detail-result-thumb {
   overflow: hidden;
@@ -230,7 +236,12 @@
   font-weight: 800;
 }
 
-.game-detail-layout {
+/* 
+  핵심 수정 부분입니다.
+  게임 목록과 오른쪽 상세 분석을 상단에서만 2열로 배치합니다.
+  키워드 그룹과 하단 요약은 이 grid 밖에 있기 때문에 게임 목록 높이에 영향받지 않습니다.
+*/
+.game-detail-top-layout {
   width: 100%;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
@@ -238,9 +249,8 @@
   align-items: start;
 }
 
+/* 오른쪽 상세 분석 영역입니다. */
 .game-detail-main-area {
-  grid-column: 2;
-  grid-row: 1;
   min-width: 0;
   width: 100%;
   display: flex;
@@ -248,9 +258,11 @@
   gap: 12px;
 }
 
+/* 
+  왼쪽 게임 목록 패널입니다.
+  오른쪽 영역과 높이를 강제로 맞추지 않고 독립적인 높이와 내부 스크롤을 가집니다.
+*/
 .game-detail-result-panel {
-  grid-column: 1;
-  grid-row: 1;
   align-self: start;
   height: 640px;
   min-height: 0;
@@ -262,17 +274,7 @@
   flex-direction: column;
 }
 
-.game-detail-full-span {
-  grid-column: 1 / -1;
-}
-
-.game-detail-hero-card,
-.game-detail-summary-wrap,
-.game-detail-chart-grid {
-  grid-column: auto;
-  grid-row: auto;
-}
-
+/* 게임 목록 제목 영역입니다. 스크롤되지 않도록 flex-shrink를 막습니다. */
 .game-detail-panel-title {
   display: flex;
   justify-content: space-between;
@@ -293,6 +295,7 @@
   font-weight: 850;
 }
 
+/* 게임 목록 내부 스크롤 영역입니다. */
 .game-detail-result-list {
   flex: 1;
   min-height: 0;
@@ -333,6 +336,7 @@
   background: #f5f7ff;
 }
 
+/* 게임 대표 정보 카드입니다. */
 .game-detail-hero-card {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr) 210px;
@@ -444,6 +448,7 @@
   color: #1f9d60;
 }
 
+/* 오른쪽 가격/관심 게임 카드입니다. */
 .game-detail-action-card {
   display: flex;
   flex-direction: column;
@@ -507,6 +512,7 @@
   cursor: default;
 }
 
+/* 요약 카드 영역입니다. */
 .game-detail-summary-wrap {
   display: flex;
   flex-direction: column;
@@ -583,6 +589,7 @@
   color: #3157ff;
 }
 
+/* 그래프 카드 3개 영역입니다. */
 .game-detail-chart-grid {
   width: 100%;
   display: grid;
@@ -678,6 +685,7 @@
   color: #a0a8b8;
 }
 
+/* 가격 변동 추이와 리뷰 추이 세로 막대 그래프입니다. */
 .game-detail-price-bar-chart,
 .game-detail-bar-chart {
   height: 154px;
@@ -752,6 +760,7 @@
   line-height: 1.55;
 }
 
+/* 리뷰 감성 분석 카드입니다. */
 .sentiment-card {
   grid-column: auto;
 }
@@ -862,11 +871,10 @@
   white-space: nowrap;
 }
 
+/* 키워드 그룹 영역입니다. 상단 grid 밖에 있으므로 전체 폭을 차지합니다. */
 .game-detail-keyword-group-section {
-  grid-column: 1 / -1;
   width: 100%;
   max-width: 100%;
-  margin-right: 0;
 }
 
 .keyword-group-card {
@@ -973,8 +981,8 @@
   overflow-wrap: break-word;
 }
 
+/* 하단 요약 카드 3개 영역입니다. */
 .game-detail-bottom-grid-fixed {
-  grid-column: 1 / -1;
   width: 100%;
   max-width: 100%;
   display: grid;
@@ -982,7 +990,6 @@
   gap: 16px;
   align-items: stretch;
   margin-top: 0;
-  margin-right: 0;
 }
 
 .game-detail-bottom-grid-fixed > .game-detail-card {
@@ -993,8 +1000,6 @@
   flex-direction: column;
   box-sizing: border-box;
   margin: 0;
-  grid-column: auto;
-  grid-row: auto;
   align-self: stretch;
   justify-self: stretch;
 }
@@ -1168,6 +1173,7 @@
   font-weight: 950;
 }
 
+/* 리뷰 감성 분석 상세 보기 모달입니다. */
 .sentiment-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1365,26 +1371,19 @@
   font-weight: 950;
 }
 
+/* 1180px 이하 화면 대응입니다. */
 @media (max-width: 1180px) {
   .game-detail-page {
     max-width: 100%;
   }
 
-  .game-detail-layout {
+  .game-detail-top-layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 14px;
-    align-items: start;
   }
 
   .game-detail-result-panel {
     height: 610px;
-    align-self: start;
-  }
-
-  .game-detail-result-list {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
   }
 
   .game-detail-hero-card {
@@ -1432,8 +1431,9 @@
   }
 }
 
+/* 태블릿/모바일에서는 게임 목록을 세로 배치합니다. */
 @media (max-width: 900px) {
-  .game-detail-layout {
+  .game-detail-top-layout {
     display: flex;
     flex-direction: column;
   }
@@ -1442,16 +1442,6 @@
   .game-detail-keyword-group-section,
   .game-detail-bottom-grid-fixed {
     width: 100%;
-  }
-
-  .game-detail-result-panel,
-  .game-detail-hero-card,
-  .game-detail-summary-wrap,
-  .game-detail-chart-grid,
-  .game-detail-keyword-group-section,
-  .game-detail-bottom-grid-fixed {
-    grid-column: auto;
-    grid-row: auto;
   }
 
   .game-detail-result-panel {
@@ -1496,6 +1486,7 @@
   }
 }
 
+/* 작은 모바일 화면 대응입니다. */
 @media (max-width: 760px) {
   .game-detail-header {
     justify-content: stretch;

@@ -111,6 +111,17 @@ type AggregateGameStats = {
   topGenreLabel: string
 }
 
+type OwnersRange = {
+  min: number
+  max: number
+}
+
+type TotalOwnersRange = {
+  min: number
+  max: number
+  validCount: number
+}
+
 const USD_TO_KRW = 1350
 const ALL_GAME_ID = '__ALL__'
 const FAVORITE_GAMES_UPDATED_EVENT = 'favorite-games-updated'
@@ -786,7 +797,7 @@ function GameDetailPage() {
               <SummaryCard
                 title="보유자 추정 수"
                 value={selectedGame.owners}
-                description={isAllSelected ? 'SteamSpy 범위값 기준' : 'SteamSpy 기준'}
+                description={isAllSelected ? 'SteamSpy 범위 합산 기준' : 'SteamSpy 기준'}
                 type="blue"
               />
 
@@ -1215,7 +1226,7 @@ function normalizeAllGameDetail(games: ApiRecord[]): GameDetailView {
       stats.averagePrice > 0 ? `(${formatEstimatedKrw(stats.averagePrice)})` : '(가격 정보 없음)',
     priceSubLabelLine1: '현재 불러온 전체 목록 기준,',
     priceSubLabelLine2: '평균 가격 추정 값',
-    owners: '게임별 범위값 제공',
+    owners: formatOwnersRange(calculateTotalOwnersRange(games)),
     positiveReviews: stats.positiveReviews,
     negativeReviews: stats.negativeReviews,
     totalReviews: stats.totalReviews,
@@ -1929,6 +1940,103 @@ function calculateAggregateGameStats(games: ApiRecord[]): AggregateGameStats {
   }
 }
 
+function calculateTotalOwnersRange(games: ApiRecord[]): TotalOwnersRange {
+  let minTotal = 0
+  let maxTotal = 0
+  let validCount = 0
+
+  games.forEach((game) => {
+    const owners = getOwners(game)
+    const range = parseOwnersRange(owners)
+
+    if (!range) {
+      return
+    }
+
+    minTotal += range.min
+    maxTotal += range.max
+    validCount += 1
+  })
+
+  return {
+    min: minTotal,
+    max: maxTotal,
+    validCount,
+  }
+}
+
+function parseOwnersRange(value: unknown): OwnersRange | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return {
+      min: value,
+      max: value,
+    }
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const cleaned = value
+    .replaceAll(',', '')
+    .replace(/owners/gi, '')
+    .replace(/estimated/gi, '')
+    .trim()
+
+  if (!cleaned || cleaned === '정보 없음') {
+    return null
+  }
+
+  const numbers = cleaned
+    .split(/\.\.|~|-/)
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isFinite(item) && item > 0)
+
+  if (numbers.length >= 2) {
+    return {
+      min: Math.min(numbers[0], numbers[1]),
+      max: Math.max(numbers[0], numbers[1]),
+    }
+  }
+
+  if (numbers.length === 1) {
+    return {
+      min: numbers[0],
+      max: numbers[0],
+    }
+  }
+
+  return null
+}
+
+function formatOwnersRange(range: TotalOwnersRange) {
+  if (range.validCount <= 0 || range.max <= 0) {
+    return '정보 없음'
+  }
+
+  if (range.min === range.max) {
+    return formatCompactKoreanNumber(range.min)
+  }
+
+  return `${formatCompactKoreanNumber(range.min)} ~ ${formatCompactKoreanNumber(range.max)}`
+}
+
+function formatCompactKoreanNumber(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0'
+  }
+
+  if (value >= 100000000) {
+    return `${(value / 100000000).toFixed(1).replace('.0', '')}억`
+  }
+
+  if (value >= 10000) {
+    return `${(value / 10000).toFixed(1).replace('.0', '')}만`
+  }
+
+  return formatNumber(value)
+}
+
 function averageNumber(values: number[]) {
   if (values.length === 0) {
     return 0
@@ -2001,7 +2109,7 @@ function getOwners(game: ApiRecord) {
 
 function formatOwners(value: unknown) {
   if (typeof value === 'string' && value.trim()) {
-    return value
+    return value.replace(/\s*\.\.\s*/g, ' ~ ').trim()
   }
 
   const number = toNumber(value)

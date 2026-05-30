@@ -264,9 +264,9 @@
 */
 .game-detail-result-panel {
   align-self: start;
-  height: 760px;
-  max-height: 760px;
-  min-height: 760px;
+  height: 740px;
+  max-height: 740px;
+  min-height: 740px;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;

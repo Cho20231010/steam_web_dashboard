@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import './TrendComparePage.css'
 import { getAnalysisTrends, getGenreTrends, getPriceTrends } from './api'
 
-type CompareStandard = 'reviews' | 'positiveRate'
 type CompareMode = 'all' | 'genre' | 'price'
 
 type MonthlyTrend = {
@@ -84,7 +83,6 @@ const INITIAL_TREND_DATA: TrendCompareData = {
 }
 
 function TrendComparePage() {
-  const [compareStandard, setCompareStandard] = useState<CompareStandard>('reviews')
   const [compareMode, setCompareMode] = useState<CompareMode>('all')
   const [trendData, setTrendData] = useState<TrendCompareData>(INITIAL_TREND_DATA)
   const [isLoading, setIsLoading] = useState(false)
@@ -164,18 +162,6 @@ function TrendComparePage() {
   return (
     <section className="trend-compare-page" aria-label="트렌드 비교 화면">
       <div className="trend-compare-filter-card">
-        <div className="trend-compare-filter-item">
-          <label htmlFor="trend-compare-standard">비교 기준</label>
-          <select
-            id="trend-compare-standard"
-            value={compareStandard}
-            onChange={(event) => setCompareStandard(event.target.value as CompareStandard)}
-          >
-            <option value="reviews">리뷰 수</option>
-            <option value="positiveRate">긍정 비율</option>
-          </select>
-        </div>
-
         <div className="trend-compare-filter-item">
           <label htmlFor="trend-current-period">현재 기간</label>
           <select id="trend-current-period" value="current" disabled>

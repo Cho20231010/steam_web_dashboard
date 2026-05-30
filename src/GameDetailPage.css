@@ -235,7 +235,7 @@
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .game-detail-main-area {
@@ -251,9 +251,9 @@
 .game-detail-result-panel {
   grid-column: 1;
   grid-row: 1;
-  align-self: stretch;
+  align-self: start;
+  height: 640px;
   min-height: 0;
-  height: auto;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;
@@ -299,8 +299,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  height: auto;
-  max-height: none;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -1375,19 +1373,18 @@
   .game-detail-layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 14px;
-    align-items: stretch;
+    align-items: start;
   }
 
   .game-detail-result-panel {
-    height: auto;
-    align-self: stretch;
+    height: 610px;
+    align-self: start;
   }
 
   .game-detail-result-list {
     flex: 1;
     min-height: 0;
-    height: auto;
-    max-height: none;
+    overflow-y: auto;
   }
 
   .game-detail-hero-card {
@@ -1468,6 +1465,7 @@
   .game-detail-result-list {
     height: auto;
     max-height: 390px;
+    overflow-y: auto;
   }
 
   .game-detail-summary-wrap.is-all .game-detail-summary-grid,

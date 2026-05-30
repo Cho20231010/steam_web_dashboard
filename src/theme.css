@@ -762,23 +762,3 @@ html.theme-dark ::-webkit-scrollbar-thumb {
 html.theme-dark ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
-
-/* 색상 적용된 거
-전체 배경: #0b1120
-카드 배경: #111827
-보조 카드: #172033
-선/테두리: #2b3648
-기본 글자: #f8fafc
-보조 글자: #cbd5e1
-비활성 글자: #94a3b8
-포인트 블루: #8b9cff
-긍정 그린: #34d399
-주의 레드: #fb7185
-경고 옐로우: #fbbf24
-
-기존 보조 회색: #cbd5e1
-수정 보조 회색: #e2e8f0
-
-기존 흐린 회색: #94a3b8
-수정 흐린 회색: #cbd5e1
-*/

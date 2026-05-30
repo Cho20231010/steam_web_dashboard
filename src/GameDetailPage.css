@@ -237,16 +237,15 @@
 }
 
 /* 
-  핵심 수정 부분입니다.
-  게임 목록과 오른쪽 상세 분석을 상단에서만 2열로 배치합니다.
-  키워드 그룹과 하단 요약은 이 grid 밖에 있기 때문에 게임 목록 높이에 영향받지 않습니다.
+  게임 목록과 오른쪽 상세 분석을 상단 2열로 배치합니다.
+  align-items: stretch를 사용해서 왼쪽 게임 목록 패널 높이가 오른쪽 상세 영역 높이에 맞춰집니다.
 */
 .game-detail-top-layout {
   width: 100%;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 /* 오른쪽 상세 분석 영역입니다. */
@@ -260,12 +259,13 @@
 
 /* 
   왼쪽 게임 목록 패널입니다.
-  오른쪽 영역과 높이를 강제로 맞추지 않고 독립적인 높이와 내부 스크롤을 가집니다.
+  height를 고정하지 않고, 상단 grid의 stretch 높이를 따라가게 합니다.
+  내부 목록은 .game-detail-result-list에서만 스크롤됩니다.
 */
 .game-detail-result-panel {
-  align-self: start;
-  height: 640px;
+  align-self: stretch;
   min-height: 0;
+  height: auto;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;
@@ -274,7 +274,7 @@
   flex-direction: column;
 }
 
-/* 게임 목록 제목 영역입니다. 스크롤되지 않도록 flex-shrink를 막습니다. */
+/* 게임 목록 제목 영역입니다. 제목은 스크롤되지 않게 고정됩니다. */
 .game-detail-panel-title {
   display: flex;
   justify-content: space-between;
@@ -1380,10 +1380,12 @@
   .game-detail-top-layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 14px;
+    align-items: stretch;
   }
 
   .game-detail-result-panel {
-    height: 610px;
+    align-self: stretch;
+    height: auto;
   }
 
   .game-detail-hero-card {

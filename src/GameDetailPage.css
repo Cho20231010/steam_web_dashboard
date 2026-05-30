@@ -245,7 +245,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .game-detail-result-panel {
@@ -502,14 +502,14 @@
 .game-detail-summary-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   min-width: 0;
   width: 100%;
 }
 
 .game-detail-summary-grid {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   align-items: stretch;
 }
 
@@ -523,18 +523,18 @@
 
 .game-detail-summary-card {
   min-width: 0;
-  min-height: 154px;
-  padding: 22px 16px 20px;
+  min-height: 128px;
+  padding: 18px 14px 16px;
   border-radius: 18px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .game-detail-summary-card span {
   display: block;
   color: #617089;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.35;
   word-break: keep-all;
@@ -543,22 +543,22 @@
 
 .game-detail-summary-card strong {
   display: block;
-  margin-top: 12px;
+  margin-top: 9px;
   color: #071426;
-  font-size: clamp(18px, 1.45vw, 24px);
+  font-size: clamp(16px, 1.25vw, 21px);
   font-weight: 950;
-  line-height: 1.24;
+  line-height: 1.22;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
 
 .game-detail-summary-card p {
   display: -webkit-box;
-  margin: 10px 0 0;
-  min-height: 34px;
+  margin: 8px 0 0;
+  min-height: 32px;
   font-size: 12px;
   font-weight: 850;
-  line-height: 1.42;
+  line-height: 1.35;
   word-break: keep-all;
   overflow: hidden;
   -webkit-line-clamp: 2;
@@ -579,7 +579,7 @@
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
   align-items: stretch;
 }
 
@@ -1424,12 +1424,12 @@
   }
 
   .game-detail-summary-card {
-    min-height: 134px;
+    min-height: 124px;
     padding: 16px 14px;
   }
 
   .game-detail-summary-card strong {
-    font-size: 18px;
+    font-size: 17px;
   }
 
   .game-detail-chart-grid {

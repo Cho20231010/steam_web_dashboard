@@ -5,12 +5,10 @@ import {
   getDashboardSummary,
   getGameRankings,
   getGenreStats,
-  getPriceReview,
   type CorrelationResult,
   type DashboardSummary,
   type Game,
   type GenreStat,
-  type PriceReviewPoint,
 } from './api'
 import { formatGenreLabel, formatGenreList } from './utils/genre'
 import { formatPriceLabel } from './utils/price'
@@ -54,6 +52,16 @@ type PriceBandConfig = {
   isFree?: boolean
 }
 
+type SentimentCountResult = {
+  positiveCount: number
+  negativeCount: number
+  totalCount: number
+}
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  'https://steam-market-dashboard-production.up.railway.app'
+
 const PRICE_BANDS: PriceBandConfig[] = [
   {
     id: 'free',
@@ -91,8 +99,8 @@ const PRICE_BANDS: PriceBandConfig[] = [
 function HomePage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [rankingGames, setRankingGames] = useState<Game[]>([])
+  const [allGames, setAllGames] = useState<Game[]>([])
   const [genreStats, setGenreStats] = useState<GenreStat[]>([])
-  const [priceReview, setPriceReview] = useState<PriceReviewPoint[]>([])
   const [correlations, setCorrelations] = useState<CorrelationResult[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -103,19 +111,14 @@ function HomePage() {
         setLoading(true)
         setErrorMessage('')
 
-        const [
-          summaryResult,
-          rankingResult,
-          genreStatsResult,
-          priceReviewResult,
-          correlationResult,
-        ] = await Promise.allSettled([
-          getDashboardSummary(),
-          getGameRankings(),
-          getGenreStats(),
-          getPriceReview(),
-          getCorrelationAnalysis(),
-        ])
+        const [summaryResult, rankingResult, allGamesResult, genreStatsResult, correlationResult] =
+          await Promise.allSettled([
+            getDashboardSummary(),
+            getGameRankings(),
+            getAllGamesForHome(),
+            getGenreStats(),
+            getCorrelationAnalysis(),
+          ])
 
         if (summaryResult.status === 'fulfilled') {
           setSummary(summaryResult.value)
@@ -125,16 +128,26 @@ function HomePage() {
           setRankingGames(rankingResult.value)
         }
 
+        if (allGamesResult.status === 'fulfilled') {
+          setAllGames(allGamesResult.value)
+        }
+
         if (genreStatsResult.status === 'fulfilled') {
           setGenreStats(genreStatsResult.value)
         }
 
-        if (priceReviewResult.status === 'fulfilled') {
-          setPriceReview(priceReviewResult.value)
-        }
-
         if (correlationResult.status === 'fulfilled') {
           setCorrelations(correlationResult.value)
+        }
+
+        if (
+          summaryResult.status === 'rejected' &&
+          rankingResult.status === 'rejected' &&
+          allGamesResult.status === 'rejected' &&
+          genreStatsResult.status === 'rejected' &&
+          correlationResult.status === 'rejected'
+        ) {
+          setErrorMessage('홈 화면 데이터를 불러오지 못했습니다.')
         }
       } catch (error) {
         console.error(error)
@@ -147,33 +160,37 @@ function HomePage() {
     loadHomeData()
   }, [])
 
+  const homeGameSource = useMemo(() => {
+    return allGames.length > 0 ? allGames : rankingGames
+  }, [allGames, rankingGames])
+
   const topGames = useMemo(() => {
     return normalizeTopGames(rankingGames).slice(0, 10)
   }, [rankingGames])
 
   const genres = useMemo(() => {
-    return normalizeGenres(genreStats, rankingGames).slice(0, 8)
-  }, [genreStats, rankingGames])
+    return normalizeGenres(genreStats, homeGameSource).slice(0, 8)
+  }, [genreStats, homeGameSource])
 
   const priceSentimentBands = useMemo(() => {
-    return normalizePriceSentimentBands(priceReview, rankingGames)
-  }, [priceReview, rankingGames])
+    return normalizePriceSentimentBands(homeGameSource)
+  }, [homeGameSource])
 
   const totalGames =
-    readNumber(summary, ['total_games', 'totalGames', 'game_count']) || rankingGames.length
+    readNumber(summary, ['total_games', 'totalGames', 'game_count']) || homeGameSource.length
 
   const totalReviews =
     readNumber(summary, ['total_reviews', 'totalReviews', 'review_count']) ||
-    rankingGames.reduce((sum, game) => sum + getReliableReviewCount(game), 0)
+    homeGameSource.reduce((sum, game) => sum + getReliableReviewCount(game), 0)
 
   const averagePositiveRate =
     normalizeRatio(
-      readNumber(summary, ['average_positive_rate', 'positive_rate', 'positiveRate']),
-    ) || calculateAveragePositiveRate(rankingGames)
+      readField(summary, ['average_positive_rate', 'positive_rate', 'positiveRate']),
+    ) || calculateAveragePositiveRate(homeGameSource)
 
   const averagePrice =
-    normalizePrice(readNumber(summary, ['average_price', 'average_price_usd'])) ||
-    calculateAveragePrice(rankingGames)
+    normalizePrice(readField(summary, ['average_price', 'average_price_usd'])) ||
+    calculateAveragePrice(homeGameSource)
 
   const insights = useMemo(() => {
     return createInsights({
@@ -428,6 +445,33 @@ function MetricCard({
   )
 }
 
+async function getAllGamesForHome(): Promise<Game[]> {
+  const response = await fetch(`${API_BASE_URL}/games`)
+
+  if (!response.ok) {
+    throw new Error(`/games API error: ${response.status}`)
+  }
+
+  const data = await response.json()
+
+  if (Array.isArray(data)) {
+    return data as Game[]
+  }
+
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>
+    const candidates = [record.items, record.results, record.data, record.games]
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        return candidate as Game[]
+      }
+    }
+  }
+
+  return []
+}
+
 function normalizeTopGames(games: Game[]): HomeTopGame[] {
   return [...games]
     .filter((game) => getReliableReviewCount(game) > 0)
@@ -497,10 +541,7 @@ function normalizeGenres(genreStats: GenreStat[], games: Game[]): GenreView[] {
     .sort((a, b) => b.ratio - a.ratio)
 }
 
-function normalizePriceSentimentBands(
-  priceReview: PriceReviewPoint[],
-  games: Game[],
-): PriceSentimentBand[] {
+function normalizePriceSentimentBands(games: Game[]): PriceSentimentBand[] {
   const bandMap = new Map<
     string,
     {
@@ -520,87 +561,25 @@ function normalizePriceSentimentBands(
     })
   })
 
-  const source =
-    priceReview.length > 0
-      ? priceReview.map((item, index) => {
-          const price = normalizePrice(readField(item, ['price', 'price_usd', 'average_price']))
-          const reviewCount = toNumber(
-            readField(item, ['review_count', 'total_reviews', 'reviews', 'count']),
-          )
-          const positiveCount = toNumber(
-            readField(item, ['positive_reviews', 'positive_count', 'positiveReviews']),
-          )
-          const negativeCount = toNumber(
-            readField(item, ['negative_reviews', 'negative_count', 'negativeReviews']),
-          )
-          const positiveRate =
-            normalizeRatio(
-              readField(item, ['positive_ratio', 'positive_rate', 'positiveRate']),
-            ) ||
-            calculatePositiveRateFromCounts(
-              positiveCount,
-              negativeCount,
-            )
-          const isFree =
-            getBoolean(item, ['is_free', 'free', 'isFree']) ||
-            price <= 0 ||
-            String(readField(item, ['price_band', 'priceBand', 'label']) ?? '')
-              .toLowerCase()
-              .includes('free') ||
-            String(readField(item, ['price_band', 'priceBand', 'label']) ?? '').includes('무료')
-
-          return {
-            id: String(readField(item, ['game_id', 'id']) ?? index),
-            price,
-            isFree,
-            reviewCount,
-            positiveCount,
-            negativeCount,
-            positiveRate,
-          }
-        })
-      : games.map((game) => {
-          const price = getPrice(game)
-          const reviewCount = getReliableReviewCount(game)
-          const positiveRate = getPositiveRate(game)
-          const positiveCount = toNumber(readField(game, ['positive_reviews', 'positiveReviews']))
-          const negativeCount = toNumber(readField(game, ['negative_reviews', 'negativeReviews']))
-          const isFree = getBoolean(game, ['is_free', 'free', 'isFree']) || price <= 0
-
-          return {
-            id: String(getGameId(game)),
-            price,
-            isFree,
-            reviewCount,
-            positiveCount,
-            negativeCount,
-            positiveRate,
-          }
-        })
-
-  source.forEach((item) => {
-    if (item.reviewCount <= 0) {
-      return
-    }
-
-    const band = findPriceBand(item.price, item.isFree)
+  games.forEach((game) => {
+    const price = getPrice(game)
+    const isFree = getBoolean(game, ['is_free', 'free', 'isFree']) || price <= 0
+    const band = findPriceBand(price, isFree)
     const savedBand = bandMap.get(band.id)
 
     if (!savedBand) {
       return
     }
 
-    const hasReviewCounts = item.positiveCount + item.negativeCount > 0
-    const positiveCount = hasReviewCounts
-      ? item.positiveCount
-      : Math.round(item.reviewCount * (item.positiveRate / 100))
-    const negativeCount = hasReviewCounts
-      ? item.negativeCount
-      : Math.max(0, item.reviewCount - positiveCount)
+    const sentimentCounts = getSentimentCounts(game)
 
-    savedBand.positiveCount += positiveCount
-    savedBand.negativeCount += negativeCount
-    savedBand.reviewCount += positiveCount + negativeCount || item.reviewCount
+    if (sentimentCounts.totalCount <= 0) {
+      return
+    }
+
+    savedBand.positiveCount += sentimentCounts.positiveCount
+    savedBand.negativeCount += sentimentCounts.negativeCount
+    savedBand.reviewCount += sentimentCounts.totalCount
   })
 
   return Array.from(bandMap.values())
@@ -619,6 +598,74 @@ function normalizePriceSentimentBands(
         reviewCount: band.reviewCount,
       }
     })
+}
+
+function getSentimentCounts(game: Game): SentimentCountResult {
+  const positiveReviews = toNumber(readField(game, ['positive_reviews', 'positiveReviews']))
+  const negativeReviews = toNumber(readField(game, ['negative_reviews', 'negativeReviews']))
+  const totalReviews = toNumber(
+    readField(game, ['total_reviews', 'totalReviews', 'review_count', 'reviewCount', 'reviews']),
+  )
+  const positiveRatio = normalizeRatio(
+    readField(game, ['positive_ratio', 'positiveRate', 'positive_rate', 'positive_percent']),
+  )
+
+  if (positiveReviews > 0 && negativeReviews > 0) {
+    return {
+      positiveCount: positiveReviews,
+      negativeCount: negativeReviews,
+      totalCount: positiveReviews + negativeReviews,
+    }
+  }
+
+  if (positiveReviews > 0 && totalReviews > positiveReviews) {
+    return {
+      positiveCount: positiveReviews,
+      negativeCount: Math.max(0, totalReviews - positiveReviews),
+      totalCount: totalReviews,
+    }
+  }
+
+  if (negativeReviews > 0 && totalReviews > negativeReviews) {
+    return {
+      positiveCount: Math.max(0, totalReviews - negativeReviews),
+      negativeCount: negativeReviews,
+      totalCount: totalReviews,
+    }
+  }
+
+  if (totalReviews > 0 && positiveRatio > 0) {
+    const positiveCount = Math.round(totalReviews * (positiveRatio / 100))
+    const negativeCount = Math.max(0, totalReviews - positiveCount)
+
+    return {
+      positiveCount,
+      negativeCount,
+      totalCount: totalReviews,
+    }
+  }
+
+  if (positiveReviews > 0 && negativeReviews === 0 && totalReviews === positiveReviews) {
+    return {
+      positiveCount: positiveReviews,
+      negativeCount: 0,
+      totalCount: positiveReviews,
+    }
+  }
+
+  if (positiveReviews > 0 || negativeReviews > 0) {
+    return {
+      positiveCount: positiveReviews,
+      negativeCount: negativeReviews,
+      totalCount: positiveReviews + negativeReviews,
+    }
+  }
+
+  return {
+    positiveCount: 0,
+    negativeCount: 0,
+    totalCount: 0,
+  }
 }
 
 function findPriceBand(price: number, isFree: boolean): PriceBandConfig {
@@ -769,18 +816,6 @@ function calculateAveragePrice(games: Game[]) {
   return total / pricedGames.length
 }
 
-function calculatePositiveRateFromCounts(positiveValue: unknown, negativeValue: unknown) {
-  const positive = toNumber(positiveValue)
-  const negative = toNumber(negativeValue)
-  const total = positive + negative
-
-  if (total <= 0) {
-    return 0
-  }
-
-  return (positive / total) * 100
-}
-
 function getGameId(game: Game) {
   return readField(game, ['game_id', 'id', 'app_id', 'appid', 'steam_appid'])
 }
@@ -821,32 +856,48 @@ function getGameImage(game: Game) {
 }
 
 function getReliableReviewCount(game: Game) {
-  const positive = toNumber(readField(game, ['positive_reviews']))
-  const negative = toNumber(readField(game, ['negative_reviews']))
-  const fallback = toNumber(readField(game, ['total_reviews', 'review_count']))
+  const positive = toNumber(readField(game, ['positive_reviews', 'positiveReviews']))
+  const negative = toNumber(readField(game, ['negative_reviews', 'negativeReviews']))
+  const total = toNumber(
+    readField(game, ['total_reviews', 'totalReviews', 'review_count', 'reviewCount', 'reviews']),
+  )
 
-  return positive + negative || fallback
+  return total || positive + negative
 }
 
 function getPositiveRate(game: Game) {
-  const positive = toNumber(readField(game, ['positive_reviews']))
-  const negative = toNumber(readField(game, ['negative_reviews']))
-  const total = positive + negative
+  const sentimentCounts = getSentimentCounts(game)
 
-  if (total > 0) {
-    return (positive / total) * 100
+  if (sentimentCounts.totalCount > 0) {
+    return (sentimentCounts.positiveCount / sentimentCounts.totalCount) * 100
   }
 
-  return normalizeRatio(readField(game, ['positive_ratio', 'positive_rate']))
+  return normalizeRatio(
+    readField(game, ['positive_ratio', 'positiveRate', 'positive_rate', 'positive_percent']),
+  )
 }
 
 function getPrice(game: Game) {
-  return normalizePrice(readField(game, ['price', 'price_usd']))
+  return normalizePrice(readField(game, ['price', 'price_usd', 'current_price', 'final_price']))
 }
 
 function getBoolean(value: unknown, keys: string[]) {
   const field = readField(value, keys)
-  return Boolean(field)
+
+  if (typeof field === 'boolean') {
+    return field
+  }
+
+  if (typeof field === 'number') {
+    return field === 1
+  }
+
+  if (typeof field === 'string') {
+    const normalized = field.trim().toLowerCase()
+    return normalized === 'true' || normalized === '1' || normalized === 'yes'
+  }
+
+  return false
 }
 
 function normalizePrice(value: unknown) {

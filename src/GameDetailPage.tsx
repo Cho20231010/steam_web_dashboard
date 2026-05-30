@@ -19,7 +19,7 @@ import {
 
 /**
  * 게임 상세 분석 화면에서 사용할 기간 옵션입니다.
- * 7일 데이터는 없다고 판단해서 30일, 90일만 유지합니다.
+ * 7일 데이터는 없는 것으로 판단해서 30일, 90일만 사용합니다.
  */
 type PeriodOption = 30 | 90
 
@@ -252,7 +252,8 @@ function GameDetailPage() {
   }, [games])
 
   /**
-   * 검색창 포커스 시 보여줄 장르/게임 추천 목록입니다.
+   * 검색창 포커스 시 보여줄 장르 추천 목록입니다.
+   * 기존의 추천 게임명 목록은 제거하고 장르만 보여줍니다.
    */
   const searchSuggestions = useMemo(() => {
     const genreSet = new Set<string>()
@@ -267,7 +268,6 @@ function GameDetailPage() {
 
     return {
       genres: Array.from(genreSet).sort((a, b) => a.localeCompare(b)),
-      games: gameSummaries.slice(0, 12),
     }
   }, [gameSummaries])
 
@@ -631,7 +631,7 @@ function GameDetailPage() {
 
   return (
     <div className="game-detail-page">
-      {/* 상단 검색 영역입니다. 게임 목록/상세 영역과 분리된 독립 헤더입니다. */}
+      {/* 상단 검색 영역입니다. */}
       <section className="game-detail-header">
         <p className="game-detail-sample-note">
           ※ 현재 분석 화면은 50개 게임 샘플을 대상으로 하며, 각 수치는 Steam/SteamSpy
@@ -682,64 +682,31 @@ function GameDetailPage() {
                   )}
                 </>
               ) : (
-                <>
-                  <div className="game-detail-dropdown-section">
-                    <div className="game-detail-dropdown-section-title">검색 가능한 장르</div>
+                <div className="game-detail-dropdown-section">
+                  <div className="game-detail-dropdown-section-title">검색 가능한 장르</div>
 
-                    <div className="game-detail-dropdown-chip-list">
-                      {searchSuggestions.genres.map((genre) => (
-                        <button
-                          className="chip-button"
-                          key={genre}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => handleGenreSuggestionClick(genre)}
-                          type="button"
-                        >
-                          {genre}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="game-detail-dropdown-chip-list">
+                    {searchSuggestions.genres.map((genre) => (
+                      <button
+                        className="chip-button"
+                        key={genre}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handleGenreSuggestionClick(genre)}
+                        type="button"
+                      >
+                        {genre}
+                      </button>
+                    ))}
                   </div>
-
-                  <div className="game-detail-dropdown-section">
-                    <div className="game-detail-dropdown-section-title">추천 게임명</div>
-
-                    <div className="game-detail-dropdown-game-list">
-                      {[allGameSummary, ...searchSuggestions.games].map((game) => (
-                        <button
-                          key={game.id}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => handleGameSuggestionClick(game.gameId)}
-                          type="button"
-                        >
-                          <GameSummaryThumbnail
-                            game={game}
-                            className="game-detail-search-thumb"
-                          />
-
-                          <span>
-                            <strong>{game.name}</strong>
-                            <em>{game.genre}</em>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                </div>
               )}
             </div>
           )}
         </div>
       </section>
 
-      {/* 
-        핵심 수정 영역입니다.
-        기존에는 게임 목록, 상세 영역, 키워드 그룹, 하단 요약이 모두 하나의 grid 안에 있었습니다.
-        이제 상단에는 게임 목록과 오른쪽 상세 분석만 배치하고,
-        키워드 그룹과 하단 요약은 아래 별도 섹션으로 분리했습니다.
-      */}
+      {/* 게임 목록과 오른쪽 상세 분석을 상단 2열로 배치합니다. */}
       <section className="game-detail-top-layout">
-        {/* 왼쪽 게임 목록 패널입니다. 오른쪽 상세 영역과 높이를 억지로 맞추지 않고 독립적으로 스크롤됩니다. */}
         <aside className="game-detail-result-panel">
           <div className="game-detail-panel-title">
             <strong>게임 목록</strong>
@@ -765,7 +732,6 @@ function GameDetailPage() {
           </div>
         </aside>
 
-        {/* 오른쪽 상세 분석 영역입니다. 게임 목록과 분리되어 독립적으로 세로 배치됩니다. */}
         <div className="game-detail-main-area">
           <section className="game-detail-hero-card">
             <div className="game-detail-cover">
@@ -829,7 +795,6 @@ function GameDetailPage() {
             </div>
           </section>
 
-          {/* 상단 요약 카드 영역입니다. [전체] 선택 시 총 Steam 리뷰 수 카드가 추가되어 6개로 표시됩니다. */}
           <div className={`game-detail-summary-wrap ${isAllSelected ? 'is-all' : 'is-single'}`}>
             <section className="game-detail-summary-grid">
               <SummaryCard
@@ -878,7 +843,6 @@ function GameDetailPage() {
             </section>
           </div>
 
-          {/* 그래프 영역입니다. 가격 변동 추이와 리뷰 추이는 세로 막대 그래프 형태로 표시됩니다. */}
           <section className="game-detail-chart-grid">
             <article className="game-detail-card">
               <div className="game-detail-card-head chart-card-head">
@@ -1034,7 +998,6 @@ function GameDetailPage() {
         </div>
       </section>
 
-      {/* 키워드 그룹은 상단 grid 밖으로 분리했습니다. 그래서 게임 목록 높이에 영향을 받지 않습니다. */}
       <section className="game-detail-keyword-group-section">
         <article className="game-detail-card keyword-group-card">
           <div className="game-detail-card-head keyword-group-head">
@@ -1073,7 +1036,6 @@ function GameDetailPage() {
         </article>
       </section>
 
-      {/* 하단 요약 카드들도 상단 grid 밖으로 분리했습니다. */}
       <section className="game-detail-bottom-grid-fixed">
         <article className="game-detail-card quick-summary-card">
           <div className="game-detail-card-head">
@@ -2189,47 +2151,110 @@ const TOPIC_KO_MAP: Record<string, string> = {
   games: '게임',
   gameplay: '게임플레이',
   play: '플레이',
+  playing: '플레이',
+  played: '플레이 경험',
   player: '플레이어',
   players: '플레이어',
   fun: '재미',
+  enjoyable: '재미',
   good: '긍정 평가',
   great: '호평',
+  best: '높은 만족도',
   bad: '부정 평가',
   like: '선호도',
+  love: '애정도',
+  want: '요구사항',
   time: '플레이 시간',
+  hours: '플레이 시간',
   story: '스토리',
+  narrative: '서사',
+  character: '캐릭터',
+  characters: '캐릭터',
+  graphics: '그래픽',
+  visual: '비주얼',
+  visuals: '비주얼',
+  art: '아트',
+  animation: '애니메이션',
+  sound: '사운드',
+  music: '음악',
   combat: '전투',
+  battle: '전투',
+  boss: '보스전',
+  bosses: '보스전',
+  open: '오픈월드',
+  world: '세계관',
   price: '가격',
   value: '가성비',
+  worth: '가치',
+  dlc: 'DLC',
   bug: '버그',
   bugs: '버그',
   crash: '충돌 오류',
+  crashes: '충돌 오류',
   lag: '렉',
   optimization: '최적화',
   performance: '성능',
   server: '서버',
   online: '온라인',
   multiplayer: '멀티플레이',
+  coop: '협동',
+  'co op': '협동',
+  friends: '친구',
   difficulty: '난이도',
+  easy: '쉬움',
   hard: '어려움',
+  challenge: '도전성',
+  balance: '밸런스',
+  tutorial: '튜토리얼',
+  guide: '가이드',
+  controls: '조작감',
+  camera: '카메라',
+  ui: 'UI',
+  interface: '인터페이스',
+  system: '시스템',
+  mode: '모드',
+  quest: '퀘스트',
+  mission: '미션',
+  level: '레벨',
+  puzzle: '퍼즐',
+  replay: '반복 플레이',
   access: '접근성',
+  'early access': '얼리 액세스',
+  vehicles: '차량',
+  tanks: '전차',
 }
 
 const TOPIC_EN_MAP: Record<string, string> = {
   게임: 'game',
   게임플레이: 'gameplay',
   플레이: 'play',
+  플레이경험: 'played',
   플레이어: 'player',
   재미: 'fun',
   긍정평가: 'good',
   호평: 'great',
+  높은만족도: 'best',
   부정평가: 'bad',
   선호도: 'like',
+  애정도: 'love',
+  요구사항: 'want',
   플레이시간: 'time',
   스토리: 'story',
+  서사: 'narrative',
+  캐릭터: 'character',
+  그래픽: 'graphics',
+  비주얼: 'visual',
+  아트: 'art',
+  애니메이션: 'animation',
+  사운드: 'sound',
+  음악: 'music',
   전투: 'combat',
+  보스전: 'boss',
+  오픈월드: 'open world',
+  세계관: 'world',
   가격: 'price',
   가성비: 'value',
+  가치: 'worth',
   버그: 'bug',
   충돌오류: 'crash',
   렉: 'lag',
@@ -2238,9 +2263,30 @@ const TOPIC_EN_MAP: Record<string, string> = {
   서버: 'server',
   온라인: 'online',
   멀티플레이: 'multiplayer',
+  협동: 'co-op',
+  친구: 'friends',
   난이도: 'difficulty',
+  쉬움: 'easy',
   어려움: 'hard',
+  도전성: 'challenge',
+  밸런스: 'balance',
+  튜토리얼: 'tutorial',
+  가이드: 'guide',
+  조작감: 'controls',
+  카메라: 'camera',
+  ui: 'ui',
+  인터페이스: 'interface',
+  시스템: 'system',
+  모드: 'mode',
+  퀘스트: 'quest',
+  미션: 'mission',
+  레벨: 'level',
+  퍼즐: 'puzzle',
+  반복플레이: 'replay',
   접근성: 'access',
+  얼리액세스: 'early access',
+  차량: 'vehicles',
+  전차: 'tanks',
 }
 
 function extractParenthesesText(value: string) {

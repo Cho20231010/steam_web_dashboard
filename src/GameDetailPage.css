@@ -254,10 +254,7 @@
   gap: 12px;
 }
 
-/* 
-  왼쪽 게임 목록 패널입니다.
-  실제 height는 GameDetailPage.tsx에서 오른쪽 상세 영역 높이를 측정해서 inline style로 넣습니다.
-*/
+/* 왼쪽 게임 목록 패널입니다. */
 .game-detail-result-panel {
   align-self: start;
   min-height: 0;
@@ -691,7 +688,7 @@
 /* 가격 변동 추이와 리뷰 추이 세로 막대 그래프입니다. */
 .game-detail-price-bar-chart,
 .game-detail-bar-chart {
-  height: 154px;
+  height: 178px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12px, 1fr));
   align-items: end;
@@ -713,7 +710,7 @@
   flex-direction: column;
   justify-content: end;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .game-detail-price-bar-chart span,
@@ -738,8 +735,39 @@
   white-space: nowrap;
 }
 
+/* 그래프 막대 하나의 묶음입니다. */
+.game-detail-trend-bar-item {
+  position: relative;
+}
+
+/* 막대 위에 표시되는 실제 수치입니다. */
+.game-detail-trend-value {
+  display: block;
+  min-height: 16px;
+  color: #071426;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 리뷰 그래프에서 날짜 아래에 표시되는 리뷰 수입니다. */
+.game-detail-trend-sub-value {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  color: #8a94a8;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .game-detail-no-trend {
-  min-height: 154px;
+  min-height: 178px;
   display: grid;
   place-items: center;
   text-align: center;

@@ -449,10 +449,6 @@ function GameDetailPage() {
     return normalizeTopicSummary(topics)
   }, [topics])
 
-  /**
-   * 가격 변동 추이는 가격 이력 API(historyData)만 사용합니다.
-   * 리뷰 추이 데이터와 섞지 않습니다.
-   */
   const priceTrendPoints = useMemo(() => {
     if (selectedGameId === ALL_GAME_ID) {
       return []
@@ -461,10 +457,6 @@ function GameDetailPage() {
     return normalizePriceTrendPoints(historyData)
   }, [historyData, selectedGameId])
 
-  /**
-   * 리뷰 수 & 긍정 비율 추이는 리뷰 추이 API(reviewTrendData)만 사용합니다.
-   * 가격 이력 데이터와 섞지 않습니다.
-   */
   const reviewTrendPoints = useMemo(() => {
     if (selectedGameId === ALL_GAME_ID) {
       return []
@@ -874,13 +866,18 @@ function GameDetailPage() {
               {priceTrendPoints.length > 0 ? (
                 <div className="game-detail-price-bar-chart">
                   {priceTrendPoints.map((point) => (
-                    <div key={point.label}>
+                    <div className="game-detail-trend-bar-item" key={point.label}>
+                      <strong className="game-detail-trend-value">
+                        {formatSteamPrice(point.price)}
+                      </strong>
+
                       <span
                         style={{
                           height: `${calculatePriceBarHeight(point.price, priceTrendPoints)}%`,
                         }}
-                        title={`${point.label} / ${formatSteamPrice(point.price)}`}
+                        title={`${point.label} / 가격 ${formatSteamPrice(point.price)}`}
                       />
+
                       <em>{point.label}</em>
                     </div>
                   ))}
@@ -920,7 +917,11 @@ function GameDetailPage() {
               {reviewTrendPoints.length > 0 ? (
                 <div className="game-detail-bar-chart">
                   {reviewTrendPoints.map((point) => (
-                    <div key={point.label}>
+                    <div className="game-detail-trend-bar-item" key={point.label}>
+                      <strong className="game-detail-trend-value">
+                        {point.positiveRate > 0 ? `${point.positiveRate.toFixed(1)}%` : '0%'}
+                      </strong>
+
                       <span
                         style={{
                           height: `${Math.max(12, Math.min(92, point.positiveRate))}%`,
@@ -929,7 +930,12 @@ function GameDetailPage() {
                           1,
                         )}% / 리뷰 ${formatNumber(point.reviewCount)}`}
                       />
+
                       <em>{point.label}</em>
+
+                      <small className="game-detail-trend-sub-value">
+                        리뷰 {formatNumber(point.reviewCount)}
+                      </small>
                     </div>
                   ))}
                 </div>

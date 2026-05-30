@@ -238,14 +238,14 @@
 
 /* 
   게임 목록과 오른쪽 상세 분석을 상단 2열로 배치합니다.
-  200% 디스플레이 배율에서도 목록 길이가 갑자기 줄어들지 않도록 고정 높이를 유지합니다.
+  align-items: stretch로 왼쪽 게임 목록 패널이 오른쪽 상세 영역 높이에 맞춰집니다.
 */
 .game-detail-top-layout {
   width: 100%;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 /* 오른쪽 상세 분석 영역입니다. */
@@ -259,13 +259,13 @@
 
 /* 
   왼쪽 게임 목록 패널입니다.
-  중간 길이인 780px로 고정하고, 내부 게임 목록만 스크롤되도록 합니다.
+  고정 height를 제거하고, grid stretch에 따라 오른쪽 상세 영역 높이에 맞춥니다.
 */
 .game-detail-result-panel {
-  align-self: start;
-  height: 780px;
-  max-height: 780px;
-  min-height: 780px;
+  align-self: stretch;
+  height: auto;
+  max-height: none;
+  min-height: 0;
   overflow: hidden;
   padding: 14px;
   border-radius: 20px;
@@ -299,8 +299,8 @@
 .game-detail-result-list {
   flex: 1;
   min-height: 0;
-  height: 100%;
-  max-height: 100%;
+  height: auto;
+  max-height: none;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1378,10 +1378,7 @@
   font-weight: 950;
 }
 
-/* 
-  1180px 이하에서도 게임 목록 높이를 줄이지 않습니다.
-  200% 배율 환경에서 이 구간이 쉽게 적용되기 때문입니다.
-*/
+/* 1180px 이하 화면 대응입니다. 높이는 고정하지 않고 stretch를 유지합니다. */
 @media (max-width: 1180px) {
   .game-detail-page {
     max-width: 100%;
@@ -1390,21 +1387,21 @@
   .game-detail-top-layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 14px;
-    align-items: start;
+    align-items: stretch;
   }
 
   .game-detail-result-panel {
-    height: 780px;
-    max-height: 780px;
-    min-height: 780px;
-    align-self: start;
+    align-self: stretch;
+    height: auto;
+    max-height: none;
+    min-height: 0;
   }
 
   .game-detail-result-list {
     flex: 1;
     min-height: 0;
-    height: 100%;
-    max-height: 100%;
+    height: auto;
+    max-height: none;
     overflow-y: auto;
   }
 
@@ -1453,10 +1450,7 @@
   }
 }
 
-/* 
-  모바일 대응입니다.
-  기존 900px 기준은 200% 배율 환경에서 너무 빨리 적용되므로 760px 이하로 낮췄습니다.
-*/
+/* 모바일 대응입니다. */
 @media (max-width: 760px) {
   .game-detail-header {
     justify-content: stretch;
@@ -1486,6 +1480,7 @@
 
   .game-detail-result-panel {
     order: 2;
+    align-self: auto;
     height: auto;
     min-height: 0;
     max-height: none;

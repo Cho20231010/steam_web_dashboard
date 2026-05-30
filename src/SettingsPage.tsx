@@ -10,17 +10,13 @@ const THEME_STORAGE_KEY = 'steam-dashboard-theme'
 
 type ConnectionStatus = 'idle' | 'checking' | 'success' | 'error'
 type ThemeMode = '라이트 모드' | '다크 모드'
-type SettingsTab = 'general' | 'data' | 'notification' | 'display' | 'etc'
+type SettingsTab = 'general' | 'notification' | 'display' | 'etc'
 
 type DashboardSettings = {
   language: string
   currency: string
   timezone: string
   defaultPage: string
-  analysisPeriod: string
-  sampleScope: string
-  chartFormat: string
-  maxCount: string
   priceChangeAlert: boolean
   reviewIncreaseAlert: boolean
   newGameAlert: boolean
@@ -35,10 +31,6 @@ const DEFAULT_SETTINGS: DashboardSettings = {
   currency: 'USD (달러)',
   timezone: '(UTC+09:00) 서울',
   defaultPage: '대시보드',
-  analysisPeriod: '최근 30일',
-  sampleScope: '전체 데이터',
-  chartFormat: '퍼센트 (%)',
-  maxCount: '1000',
   priceChangeAlert: true,
   reviewIncreaseAlert: true,
   newGameAlert: true,
@@ -50,7 +42,6 @@ const DEFAULT_SETTINGS: DashboardSettings = {
 
 const SETTINGS_TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: 'general', label: '일반 설정' },
-  { id: 'data', label: '데이터 설정' },
   { id: 'notification', label: '알림 설정' },
   { id: 'display', label: '표시 설정' },
   { id: 'etc', label: '기타' },
@@ -210,39 +201,6 @@ function SettingsPage() {
           />
         </SettingsCard>
 
-        <SettingsCard
-          className={activeTab === 'data' || activeTab === 'display' ? 'focused' : ''}
-          title="데이터 설정"
-        >
-          <SelectField
-            label="기본 분석 기간"
-            value={settings.analysisPeriod}
-            options={['최근 7일', '최근 30일', '최근 90일', '전체 기간']}
-            onChange={(value) => updateSetting('analysisPeriod', value)}
-          />
-
-          <SelectField
-            label="샘플 기준"
-            value={settings.sampleScope}
-            options={['전체 데이터', '샘플 50개', '상위 100개', '관심 게임']}
-            onChange={(value) => updateSetting('sampleScope', value)}
-          />
-
-          <SelectField
-            label="그래프 데이터 포맷"
-            value={settings.chartFormat}
-            options={['퍼센트 (%)', '건수', '점수', '원본 값']}
-            onChange={(value) => updateSetting('chartFormat', value)}
-          />
-
-          <SelectField
-            label="최대 (건)"
-            value={settings.maxCount}
-            options={['50', '100', '500', '1000', '전체']}
-            onChange={(value) => updateSetting('maxCount', value)}
-          />
-        </SettingsCard>
-
         <div className="settings-side-stack">
           <SettingsCard
             className={activeTab === 'notification' ? 'focused' : ''}
@@ -321,7 +279,7 @@ function SettingsPage() {
 
       <footer className="settings-footer">
         <p>
-          설정값은 화면 표시 기준에만 적용되며, 백엔드 데이터 자체는 변경되지 않습니다.
+          설정값은 화면 표시와 알림 UI 기준에만 적용되며, 백엔드 데이터 자체는 변경되지 않습니다.
           {saveMessage && <span>{saveMessage}</span>}
         </p>
 

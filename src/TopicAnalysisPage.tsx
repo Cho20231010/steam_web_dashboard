@@ -478,8 +478,9 @@ function TopicClusterView({
         <article className="topic-analysis-card">
           <h2>토픽-키워드 연결 구조</h2>
           <p className="topic-card-caption">
-            노드는 토픽과 키워드를 각각 하나의 항목으로 표현한 것이며, 연결은 특정 토픽과
-            해당 토픽을 구성하는 키워드 사이의 관계를 의미합니다.
+            노드는 토픽 그룹과 키워드를 각각 하나의 항목으로 표현한 것이며, 연결은 특정 토픽 그룹과
+            해당 그룹을 구성하는 키워드 사이의 관계를 의미합니다. 연결 강도는 키워드가 해당 토픽 그룹에
+            얼마나 기여했는지를 나타냅니다.
           </p>
 
           <TopicClusterConnectionView
@@ -1200,7 +1201,7 @@ function createTopicTitleFromKeywords(keywords: string[], topicId: number | null
     .filter((keyword) => keyword.length > 0)
 
   if (normalizedKeywords.length === 0) {
-    return topicId === null ? '대표 토픽' : `Topic ${topicId}`
+    return topicId === null ? '대표 토픽' : formatTopicGroupLabel(topicId)
   }
 
   if (hasKeyword(normalizedKeywords, ['story', 'feel', 'combat'])) {
@@ -1234,7 +1235,7 @@ function createTopicTitleFromKeywords(keywords: string[], topicId: number | null
     return uniqueLabels[0]
   }
 
-  return topicId === null ? '대표 토픽' : `Topic ${topicId}`
+  return topicId === null ? '대표 토픽' : formatTopicGroupLabel(topicId)
 }
 
 function hasKeyword(keywords: string[], candidates: string[]): boolean {
@@ -1309,10 +1310,10 @@ function createClusterNodeDisplayLabel(
     const topicName = representativeTopicLabelMap.get(topicId)
 
     if (topicName) {
-      return `Topic ${topicId} · ${topicName}`
+      return `${formatTopicGroupLabel(topicId)} · ${topicName}`
     }
 
-    return `Topic ${topicId}`
+    return formatTopicGroupLabel(topicId)
   }
 
   if (normalizedType.includes('keyword')) {
@@ -1320,6 +1321,16 @@ function createClusterNodeDisplayLabel(
   }
 
   return node.displayLabel
+}
+
+function formatTopicGroupLabel(topicId: number): string {
+  return `토픽 그룹 ${topicId + 1}`
+}
+
+function formatTopicLabelFromRaw(label: string): string {
+  const topicId = extractTopicIdFromLabel(label)
+
+  return topicId === null ? label : formatTopicGroupLabel(topicId)
 }
 
 function extractTopicIdFromLabel(label: string): number | null {
@@ -1360,11 +1371,11 @@ function formatClusterNodeLabel(label: string, type: string): string {
   }
 
   if (normalizedType.includes('topic')) {
-    return label
+    return formatTopicLabelFromRaw(label)
   }
 
   if (isTopicLabel(label)) {
-    return label
+    return formatTopicLabelFromRaw(label)
   }
 
   if (/^[a-zA-Z0-9\s,/|_-]+$/.test(label)) {

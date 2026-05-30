@@ -92,12 +92,34 @@ type ReviewInsight = {
   negativeSummary: string
 }
 
+type AggregateGameStats = {
+  totalGames: number
+  positiveReviews: number
+  negativeReviews: number
+  totalReviews: number
+  positiveRate: number
+  negativeRate: number
+  averagePlaytime: number
+  averagePrice: number
+  pricedGameCount: number
+  freeGameCount: number
+  estimatedOwners: number
+  ownerCount: number
+  topGenres: Array<{
+    name: string
+    count: number
+    ratio: number
+  }>
+  topGenreLabel: string
+}
+
 const USD_TO_KRW = 1350
+const ALL_GAME_ID = '__ALL__'
 const FAVORITE_GAMES_UPDATED_EVENT = 'favorite-games-updated'
 
 function GameDetailPage() {
   const [games, setGames] = useState<ApiRecord[]>([])
-  const [selectedGameId, setSelectedGameId] = useState<string>('')
+  const [selectedGameId, setSelectedGameId] = useState<string>(ALL_GAME_ID)
   const [searchText, setSearchText] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [favoriteGames, setFavoriteGames] = useState<FavoriteGame[]>([])
@@ -112,6 +134,8 @@ function GameDetailPage() {
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+
+  const isAllSelected = selectedGameId === ALL_GAME_ID
 
   useEffect(() => {
     function syncFavoriteGames() {
@@ -138,11 +162,7 @@ function GameDetailPage() {
         const gameList = await getGameList()
         setGames(gameList)
 
-        const firstGame = gameList.find((game) => getGameId(game) !== undefined)
-
-        if (firstGame) {
-          setSelectedGameId(String(toSafeGameId(getGameId(firstGame), 0)))
-        }
+        setSelectedGameId(ALL_GAME_ID)
       } catch (error) {
         console.error(error)
         setErrorMessage('게임 목록을 불러오지 못했습니다.')
@@ -153,6 +173,10 @@ function GameDetailPage() {
 
     loadGames()
   }, [])
+
+  const allGameSummary = useMemo(() => {
+    return createAllGameSummary(games.length)
+  }, [games.length])
 
   const gameSummaries = useMemo(() => {
     return games.map((game, index) => normalizeGameSummary(game, index))
@@ -192,10 +216,50 @@ function GameDetailPage() {
     })
   }, [gameSummaries, searchText])
 
-  useEffect(() => {
-    const keyword = searchText.trim()
+  const displayGames = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
 
-    if (!keyword || filteredGames.length === 0) {
+    if (!keyword) {
+      return [allGameSummary, ...filteredGames]
+    }
+
+    const isAllKeywordMatched =
+      allGameSummary.name.toLowerCase().includes(keyword) ||
+      allGameSummary.genre.toLowerCase().includes(keyword) ||
+      allGameSummary.genreSearchText.includes(keyword)
+
+    if (isAllKeywordMatched) {
+      return [allGameSummary, ...filteredGames]
+    }
+
+    return filteredGames
+  }, [allGameSummary, filteredGames, searchText])
+
+  const resultCountLabel = useMemo(() => {
+    if (searchText.trim()) {
+      return `${filteredGames.length}개`
+    }
+
+    return `전체 + ${filteredGames.length}개`
+  }, [filteredGames.length, searchText])
+
+  useEffect(() => {
+    const keyword = searchText.trim().toLowerCase()
+
+    if (!keyword) {
+      return
+    }
+
+    const isAllKeywordMatched =
+      allGameSummary.name.toLowerCase().includes(keyword) ||
+      allGameSummary.genre.toLowerCase().includes(keyword) ||
+      allGameSummary.genreSearchText.includes(keyword)
+
+    if (selectedGameId === ALL_GAME_ID && isAllKeywordMatched) {
+      return
+    }
+
+    if (filteredGames.length === 0) {
       return
     }
 
@@ -206,11 +270,22 @@ function GameDetailPage() {
     if (!selectedGameIsVisible) {
       setSelectedGameId(String(filteredGames[0].gameId))
     }
-  }, [filteredGames, searchText, selectedGameId])
+  }, [allGameSummary, filteredGames, searchText, selectedGameId])
 
   useEffect(() => {
     async function loadSelectedGame() {
       if (!selectedGameId) {
+        return
+      }
+
+      if (selectedGameId === ALL_GAME_ID) {
+        setDetailLoading(false)
+        setGameDetail(null)
+        setSentimentData(null)
+        setTopicData([])
+        setHistoryData([])
+        setReviewTrendData([])
+        setReviewInsightData(null)
         return
       }
 
@@ -281,6 +356,10 @@ function GameDetailPage() {
   }, [games, selectedGameId])
 
   const selectedGame = useMemo(() => {
+    if (selectedGameId === ALL_GAME_ID) {
+      return normalizeAllGameDetail(games)
+    }
+
     const fallback = games.find((game, index) => {
       const gameId = toSafeGameId(getGameId(game), index)
       return String(gameId) === selectedGameId
@@ -296,7 +375,7 @@ function GameDetailPage() {
   }, [gameDetail, games, selectedGameId])
 
   const isSelectedGameFavorite = useMemo(() => {
-    if (!selectedGame) {
+    if (!selectedGame || selectedGame.gameId === ALL_GAME_ID) {
       return false
     }
 
@@ -304,30 +383,57 @@ function GameDetailPage() {
   }, [favoriteGames, selectedGame])
 
   const sentiment = useMemo(() => {
+    if (selectedGameId === ALL_GAME_ID) {
+      return normalizeAllSentiment(games, selectedGame)
+    }
+
     return normalizeSentiment(sentimentData, selectedGame)
-  }, [sentimentData, selectedGame])
+  }, [games, selectedGame, selectedGameId, sentimentData])
 
   const topics = useMemo(() => {
+    if (selectedGameId === ALL_GAME_ID) {
+      return normalizeAllTopics(games)
+    }
+
     return normalizeTopics(topicData)
-  }, [topicData])
+  }, [games, selectedGameId, topicData])
 
   const topicSummary = useMemo(() => {
     return normalizeTopicSummary(topics)
   }, [topics])
 
   const trendPoints = useMemo(() => {
+    if (selectedGameId === ALL_GAME_ID) {
+      return []
+    }
+
     return normalizeTrendPoints(historyData, reviewTrendData)
-  }, [historyData, reviewTrendData])
+  }, [historyData, reviewTrendData, selectedGameId])
 
   const reviewInsight = useMemo(() => {
+    if (selectedGameId === ALL_GAME_ID) {
+      return normalizeAllReviewInsight(games)
+    }
+
     return normalizeReviewInsight(reviewInsightData)
-  }, [reviewInsightData])
+  }, [games, reviewInsightData, selectedGameId])
 
   const quickSummaryItems = useMemo(() => {
     return createQuickSummaryItems(selectedGame, sentiment, topics, reviewInsight)
   }, [selectedGame, sentiment, topics, reviewInsight])
 
+  function handleShowAllGames() {
+    setSelectedGameId(ALL_GAME_ID)
+    setSearchText('')
+    setIsSearchFocused(false)
+  }
+
   function handleSelectGame(gameId: string | number) {
+    if (String(gameId) === ALL_GAME_ID) {
+      handleShowAllGames()
+      return
+    }
+
     setSelectedGameId(String(gameId))
     setSearchText('')
   }
@@ -358,7 +464,7 @@ function GameDetailPage() {
   }
 
   function handleAddFavoriteGame() {
-    if (!selectedGame) {
+    if (!selectedGame || selectedGame.gameId === ALL_GAME_ID) {
       return
     }
 
@@ -405,11 +511,19 @@ function GameDetailPage() {
     )
   }
 
+  const summaryScopeLabel = isAllSelected ? '전체 데이터 기준' : '선택 게임 기준'
+  const keywordGroupTitle = isAllSelected ? '전체 데이터 키워드 그룹' : '게임별 키워드 그룹'
+  const keywordGroupDescription = isAllSelected
+    ? '현재 불러온 게임 목록 전체에서 많이 등장한 대표 장르와 키워드 묶음입니다.'
+    : '선택한 게임의 리뷰에서 함께 자주 등장한 키워드 묶음입니다.'
+
   return (
     <div className="game-detail-page">
       <section className="game-detail-header">
         <p className="game-detail-sample-note">
-          ※ 현재 분석 화면은 샘플 데이터 기준 50개 게임을 대상으로 제공합니다.
+          {isAllSelected
+            ? `※ [전체] 선택 중: 현재 불러온 ${formatNumber(games.length)}개 게임 목록 전체를 기준으로 집계합니다.`
+            : '※ 개별 게임 선택 시 해당 게임의 상세 분석 데이터를 제공합니다.'}
         </p>
 
         <div className="game-detail-search-box">
@@ -432,21 +546,18 @@ function GameDetailPage() {
                 <>
                   <div className="game-detail-dropdown-section-title">검색 결과</div>
 
-                  {filteredGames.length > 0 ? (
-                    filteredGames.slice(0, 12).map((game) => (
+                  {displayGames.length > 0 ? (
+                    displayGames.slice(0, 12).map((game) => (
                       <button
                         key={game.id}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => handleGameSuggestionClick(game.gameId)}
                         type="button"
                       >
-                        <span className="game-detail-search-thumb">
-                          {game.image ? (
-                            <img src={game.image} alt={`${game.name} 이미지`} />
-                          ) : (
-                            game.name.slice(0, 2)
-                          )}
-                        </span>
+                        <GameSummaryThumbnail
+                          game={game}
+                          className="game-detail-search-thumb"
+                        />
 
                         <span>
                           <strong>{game.name}</strong>
@@ -484,20 +595,17 @@ function GameDetailPage() {
                     <div className="game-detail-dropdown-section-title">추천 게임명</div>
 
                     <div className="game-detail-dropdown-game-list">
-                      {searchSuggestions.games.map((game) => (
+                      {[allGameSummary, ...searchSuggestions.games].map((game) => (
                         <button
                           key={game.id}
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => handleGameSuggestionClick(game.gameId)}
                           type="button"
                         >
-                          <span className="game-detail-search-thumb">
-                            {game.image ? (
-                              <img src={game.image} alt={`${game.name} 이미지`} />
-                            ) : (
-                              game.name.slice(0, 2)
-                            )}
-                          </span>
+                          <GameSummaryThumbnail
+                            game={game}
+                            className="game-detail-search-thumb"
+                          />
 
                           <span>
                             <strong>{game.name}</strong>
@@ -518,24 +626,18 @@ function GameDetailPage() {
         <aside className="game-detail-result-panel">
           <div className="game-detail-panel-title">
             <strong>검색 결과</strong>
-            <span>{filteredGames.length}개</span>
+            <span>{resultCountLabel}</span>
           </div>
 
           <div className="game-detail-result-list">
-            {filteredGames.map((game) => (
+            {displayGames.map((game) => (
               <button
                 className={String(game.gameId) === selectedGameId ? 'active' : ''}
                 key={game.id}
                 onClick={() => handleSelectGame(game.gameId)}
                 type="button"
               >
-                <span className="game-detail-result-thumb">
-                  {game.image ? (
-                    <img src={game.image} alt={`${game.name} 이미지`} />
-                  ) : (
-                    game.name.slice(0, 2)
-                  )}
-                </span>
+                <GameSummaryThumbnail game={game} className="game-detail-result-thumb" />
 
                 <span className="game-detail-result-text">
                   <strong>{game.name}</strong>
@@ -552,7 +654,7 @@ function GameDetailPage() {
               {selectedGame.image ? (
                 <img src={selectedGame.image} alt={`${selectedGame.name} 이미지`} />
               ) : (
-                <div>{selectedGame.name.slice(0, 2)}</div>
+                <div>{isAllSelected ? '전체' : selectedGame.name.slice(0, 2)}</div>
               )}
             </div>
 
@@ -578,14 +680,14 @@ function GameDetailPage() {
                 <MetaItem label="메타스코어" value={selectedGame.metacriticScore} />
                 <MetaItem
                   label="평가"
-                  value={`매우 긍정적 (${selectedGame.positiveRate.toFixed(1)}%)`}
+                  value={`${getEvaluationLabel(selectedGame.positiveRate)} (${selectedGame.positiveRate.toFixed(1)}%)`}
                   positive
                 />
               </div>
             </div>
 
             <div className="game-detail-action-card">
-              <span>현재 가격</span>
+              <span>{isAllSelected ? '평균 가격' : '현재 가격'}</span>
               <strong>{selectedGame.priceLabel}</strong>
               <b>{selectedGame.priceKrwLabel}</b>
               <p>
@@ -596,11 +698,15 @@ function GameDetailPage() {
 
               <button
                 className={isSelectedGameFavorite ? 'secondary added' : 'secondary'}
-                disabled={isSelectedGameFavorite}
+                disabled={isAllSelected || isSelectedGameFavorite}
                 onClick={handleAddFavoriteGame}
                 type="button"
               >
-                {isSelectedGameFavorite ? '관심 게임에 추가됨' : '관심 게임 추가'}
+                {isAllSelected
+                  ? '전체 데이터 선택 중'
+                  : isSelectedGameFavorite
+                    ? '관심 게임에 추가됨'
+                    : '관심 게임 추가'}
               </button>
             </div>
           </section>
@@ -609,11 +715,11 @@ function GameDetailPage() {
             <SummaryCard
               title="긍정 비율"
               value={`${sentiment.positive.toFixed(1)}%`}
-              description="선택 게임 기준"
+              description={summaryScopeLabel}
               type="positive"
             />
             <SummaryCard
-              title="총 리뷰 수"
+              title={isAllSelected ? '분석 샘플 리뷰 수' : '총 리뷰 수'}
               value={formatNumber(sentiment.totalCount || selectedGame.totalReviews)}
               description="긍정/중립/부정 합산 우선"
               type="blue"
@@ -625,13 +731,13 @@ function GameDetailPage() {
               type="neutral"
             />
             <SummaryCard
-              title="보유자 추정"
+              title={isAllSelected ? '전체 게임 수' : '보유자 추정'}
               value={selectedGame.owners}
-              description="SteamSpy 기준"
+              description={isAllSelected ? '현재 불러온 목록 기준' : 'SteamSpy 기준'}
               type="blue"
             />
             <SummaryCard
-              title="현재 가격"
+              title={isAllSelected ? '평균 가격' : '현재 가격'}
               value={selectedGame.priceLabel}
               description={selectedGame.priceKrwLabel}
               type="neutral"
@@ -674,8 +780,9 @@ function GameDetailPage() {
                 <div className="game-detail-no-trend">
                   <strong>가격 변동 데이터 없음</strong>
                   <p>
-                    현재 API에서 이 게임의 가격 이력 데이터를 제공하지 않아 추이 그래프를
-                    표시하지 않습니다.
+                    {isAllSelected
+                      ? '[전체] 항목은 특정 게임의 기간별 가격 이력 API를 호출하지 않습니다.'
+                      : '현재 API에서 이 게임의 가격 이력 데이터를 제공하지 않아 추이 그래프를 표시하지 않습니다.'}
                   </p>
                 </div>
               )}
@@ -710,8 +817,9 @@ function GameDetailPage() {
                 <div className="game-detail-no-trend">
                   <strong>리뷰 추이 데이터 없음</strong>
                   <p>
-                    현재 API에서 이 게임의 기간별 리뷰 수 또는 긍정 비율 변화를 제공하지
-                    않습니다.
+                    {isAllSelected
+                      ? '[전체] 항목은 현재 불러온 게임 목록의 합산 지표를 보여주며, 기간별 추이는 표시하지 않습니다.'
+                      : '현재 API에서 이 게임의 기간별 리뷰 수 또는 긍정 비율 변화를 제공하지 않습니다.'}
                   </p>
                 </div>
               )}
@@ -771,8 +879,8 @@ function GameDetailPage() {
             <article className="game-detail-card keyword-group-card">
               <div className="game-detail-card-head keyword-group-head">
                 <div>
-                  <h3>게임별 키워드 그룹</h3>
-                  <p>선택한 게임의 리뷰에서 함께 자주 등장한 키워드 묶음입니다.</p>
+                  <h3>{keywordGroupTitle}</h3>
+                  <p>{keywordGroupDescription}</p>
                 </div>
 
                 <span>{topics.length}개 그룹</span>
@@ -797,7 +905,9 @@ function GameDetailPage() {
                 </div>
               ) : (
                 <p className="game-detail-empty">
-                  이 게임의 키워드 그룹 데이터가 없습니다.
+                  {isAllSelected
+                    ? '전체 데이터에서 표시할 키워드 그룹이 없습니다.'
+                    : '이 게임의 키워드 그룹 데이터가 없습니다.'}
                 </p>
               )}
             </article>
@@ -823,6 +933,24 @@ function GameDetailPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+function GameSummaryThumbnail({
+  game,
+  className,
+}: {
+  game: GameSummary
+  className: string
+}) {
+  if (game.gameId === ALL_GAME_ID) {
+    return <span className={className}>전체</span>
+  }
+
+  return (
+    <span className={className}>
+      {game.image ? <img src={game.image} alt={`${game.name} 이미지`} /> : game.name.slice(0, 2)}
+    </span>
   )
 }
 
@@ -977,6 +1105,17 @@ function SentimentSummaryRow({
   )
 }
 
+function createAllGameSummary(totalGames: number): GameSummary {
+  return {
+    id: ALL_GAME_ID,
+    gameId: ALL_GAME_ID,
+    name: '[전체]',
+    genre: `${formatNumber(totalGames)}개 게임 전체 데이터`,
+    genreSearchText: '전체 전체게임 전체 데이터 all total aggregate',
+    genres: ['전체'],
+  }
+}
+
 function normalizeGameSummary(game: ApiRecord, index: number): GameSummary {
   const gameId = toSafeGameId(getGameId(game), index)
   const genreSource = getMergedGenreSource(game)
@@ -994,6 +1133,39 @@ function normalizeGameSummary(game: ApiRecord, index: number): GameSummary {
   }
 }
 
+function normalizeAllGameDetail(games: ApiRecord[]): GameDetailView {
+  const stats = calculateAggregateGameStats(games)
+  const topGenres = stats.topGenres.map((genre) => genre.name)
+  const displayGenres =
+    topGenres.length > 0 ? ['전체 데이터', ...topGenres] : ['전체 데이터', '장르 정보 없음']
+
+  return {
+    id: ALL_GAME_ID,
+    gameId: ALL_GAME_ID,
+    name: '[전체]',
+    genre: stats.topGenreLabel,
+    genreSearchText: '전체 전체게임 전체 데이터 all total aggregate',
+    genres: displayGenres,
+    priceLabel:
+      stats.averagePrice > 0 ? `평균 ${formatSteamPrice(stats.averagePrice)}` : '가격 정보 없음',
+    priceKrwLabel:
+      stats.averagePrice > 0 ? `(${formatEstimatedKrw(stats.averagePrice)})` : '(가격 정보 없음)',
+    priceSubLabelLine1: '현재 불러온 전체 목록 기준,',
+    priceSubLabelLine2: '평균 가격 추정 값',
+    owners: `${formatNumber(stats.totalGames)}개`,
+    positiveReviews: stats.positiveReviews,
+    negativeReviews: stats.negativeReviews,
+    totalReviews: stats.totalReviews,
+    positiveRate: stats.positiveRate,
+    negativeRate: stats.negativeRate,
+    averagePlaytime: stats.averagePlaytime,
+    releaseDate: '전체 데이터',
+    developer: '전체 집계',
+    publisher: '전체 집계',
+    metacriticScore: '전체 집계',
+  }
+}
+
 function normalizeGameDetail(game: ApiRecord): GameDetailView {
   const gameId = toSafeGameId(getGameId(game), 'unknown')
   const positiveReviews = toNumber(game.positive_reviews ?? game.positiveReviews)
@@ -1004,7 +1176,9 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
   )
   const totalReviews = calculatedTotalReviews > 0 ? calculatedTotalReviews : apiTotalReviews
 
-  const price = normalizePrice(game.price ?? game.final_price ?? game.initial_price ?? game.price_usd ?? game.current_price)
+  const price = normalizePrice(
+    game.price ?? game.final_price ?? game.initial_price ?? game.price_usd ?? game.current_price,
+  )
   const isFree =
     Boolean(game.is_free ?? game.free ?? game.isFree ?? game.free_to_play) || price <= 0
   const genreSource = getMergedGenreSource(game)
@@ -1036,6 +1210,32 @@ function normalizeGameDetail(game: ApiRecord): GameDetailView {
         ? '정보 없음'
         : String(game.metacritic_score),
     image: getGameImage(game),
+  }
+}
+
+function normalizeAllSentiment(
+  games: ApiRecord[],
+  selectedGame: GameDetailView | null,
+): SentimentView {
+  const stats = calculateAggregateGameStats(games)
+  const totalCount = stats.totalReviews || selectedGame?.totalReviews || 0
+  const positiveCount = stats.positiveReviews
+  const negativeCount = stats.negativeReviews
+  const neutralCount = Math.max(0, totalCount - positiveCount - negativeCount)
+
+  return {
+    positive: stats.positiveRate,
+    neutral:
+      totalCount > 0
+        ? Math.max(0, 100 - stats.positiveRate - stats.negativeRate)
+        : selectedGame
+          ? Math.max(0, 100 - selectedGame.positiveRate - selectedGame.negativeRate)
+          : 0,
+    negative: stats.negativeRate,
+    positiveCount,
+    neutralCount,
+    negativeCount,
+    totalCount,
   }
 }
 
@@ -1078,20 +1278,20 @@ function normalizeSentiment(
         sentimentData.positive_ratio ??
           sentimentData.positive_rate ??
           sentimentData.positiveRate,
-      ) || (totalCount > 0 ? (positiveCount / totalCount) * 100 : selectedGame?.positiveRate || 0)
+      ) ||
+      (totalCount > 0 ? (positiveCount / totalCount) * 100 : selectedGame?.positiveRate || 0)
 
     const negative =
       normalizeRatio(
         sentimentData.negative_ratio ??
           sentimentData.negative_rate ??
           sentimentData.negativeRate,
-      ) || (totalCount > 0 ? (negativeCount / totalCount) * 100 : selectedGame?.negativeRate || 0)
+      ) ||
+      (totalCount > 0 ? (negativeCount / totalCount) * 100 : selectedGame?.negativeRate || 0)
 
     const neutral =
       normalizeRatio(
-        sentimentData.neutral_ratio ??
-          sentimentData.neutral_rate ??
-          sentimentData.neutralRate,
+        sentimentData.neutral_ratio ?? sentimentData.neutral_rate ?? sentimentData.neutralRate,
       ) || Math.max(0, 100 - positive - negative)
 
     return {
@@ -1127,6 +1327,30 @@ function normalizeSentiment(
     totalCount:
       selectedGame.positiveReviews + selectedGame.negativeReviews || selectedGame.totalReviews,
   }
+}
+
+function normalizeAllTopics(games: ApiRecord[]): TopicView[] {
+  const stats = calculateAggregateGameStats(games)
+
+  return stats.topGenres.slice(0, 6).map((genre, index) => {
+    const positiveRate = calculateGenrePositiveRate(games, genre.name)
+
+    return {
+      id: `all-topic-${index}`,
+      groupName: `대표 장르 ${index + 1}`,
+      keywords: [genre.name],
+      mentionRate: genre.ratio,
+      positiveRate,
+      sentimentLabel:
+        positiveRate >= 70
+          ? '매우 긍정'
+          : positiveRate >= 50
+            ? '긍정'
+            : positiveRate > 0
+              ? '혼합'
+              : '분석 중',
+    }
+  })
 }
 
 function normalizeTopics(topicData: ApiRecord[]): TopicView[] {
@@ -1467,6 +1691,18 @@ function normalizeTrendPoints(
   })
 }
 
+function normalizeAllReviewInsight(games: ApiRecord[]): ReviewInsight {
+  const stats = calculateAggregateGameStats(games)
+
+  return {
+    positiveSummary: `전체 ${formatNumber(stats.totalGames)}개 게임을 기준으로 긍정 비율은 ${stats.positiveRate.toFixed(1)}%입니다.`,
+    negativeSummary:
+      stats.negativeRate >= 25
+        ? `전체 기준 부정 비율이 ${stats.negativeRate.toFixed(1)}%로 비교적 높게 나타납니다.`
+        : `전체 기준 부정 비율은 ${stats.negativeRate.toFixed(1)}%입니다.`,
+  }
+}
+
 function normalizeReviewInsight(reviewInsightData: unknown): ReviewInsight {
   const record = isRecord(reviewInsightData) ? reviewInsightData : {}
 
@@ -1500,6 +1736,19 @@ function createQuickSummaryItems(
     return ['선택된 게임 데이터가 없습니다.']
   }
 
+  if (selectedGame.gameId === ALL_GAME_ID) {
+    const mainTopic = topics[0]
+    const mainKeywords = mainTopic?.keywords.slice(0, 3).join(', ') ?? '대표 장르 없음'
+
+    return [
+      `현재 불러온 전체 게임 수는 ${selectedGame.owners}입니다.`,
+      `전체 긍정 비율은 ${sentiment.positive.toFixed(1)}%입니다.`,
+      `분석 샘플 리뷰 수는 ${formatNumber(sentiment.totalCount || selectedGame.totalReviews)}개입니다.`,
+      `대표 장르/키워드는 ${mainKeywords} 중심으로 나타납니다.`,
+      `전체 평균 가격은 ${selectedGame.priceLabel} 기준입니다.`,
+    ]
+  }
+
   const mainGroup = topics[0]
   const mainKeywords = mainGroup?.keywords.slice(0, 3).join(', ') ?? '키워드 그룹 없음'
   const satisfaction =
@@ -1528,6 +1777,140 @@ function compactSentence(text: string) {
   }
 
   return `${cleaned.slice(0, 42)}...`
+}
+
+function calculateAggregateGameStats(games: ApiRecord[]): AggregateGameStats {
+  let positiveReviews = 0
+  let negativeReviews = 0
+  let totalReviews = 0
+  let playtimeSum = 0
+  let playtimeCount = 0
+  let priceSum = 0
+  let pricedGameCount = 0
+  let freeGameCount = 0
+  let ownerSum = 0
+  let ownerCount = 0
+
+  const genreCountMap = new Map<string, number>()
+  const positiveRateValues: number[] = []
+  const negativeRateValues: number[] = []
+
+  games.forEach((game) => {
+    const positive = toNumber(game.positive_reviews ?? game.positiveReviews)
+    const negative = toNumber(game.negative_reviews ?? game.negativeReviews)
+    const calculatedReviews = positive + negative
+    const apiTotalReviews = toNumber(
+      game.total_reviews ?? game.totalReviews ?? game.review_count ?? game.reviews,
+    )
+    const gameTotalReviews = calculatedReviews > 0 ? calculatedReviews : apiTotalReviews
+
+    positiveReviews += positive
+    negativeReviews += negative
+    totalReviews += gameTotalReviews
+
+    const positiveRate = getPositiveRate(game)
+    const negativeRate = getNegativeRate(game)
+
+    if (positiveRate > 0) {
+      positiveRateValues.push(positiveRate)
+    }
+
+    if (negativeRate > 0) {
+      negativeRateValues.push(negativeRate)
+    }
+
+    const playtime = toNumber(game.average_playtime ?? game.avg_playtime)
+
+    if (playtime > 0) {
+      playtimeSum += playtime
+      playtimeCount += 1
+    }
+
+    const price = normalizePrice(
+      game.price ?? game.final_price ?? game.initial_price ?? game.price_usd ?? game.current_price,
+    )
+
+    if (price > 0) {
+      priceSum += price
+      pricedGameCount += 1
+    } else {
+      freeGameCount += 1
+    }
+
+    const ownerNumber = parseOwnerNumber(getOwners(game))
+
+    if (ownerNumber > 0) {
+      ownerSum += ownerNumber
+      ownerCount += 1
+    }
+
+    const genres = formatGenreList(getMergedGenreSource(game))
+
+    genres.forEach((genre) => {
+      if (!genre || genre === '장르 없음') {
+        return
+      }
+
+      genreCountMap.set(genre, (genreCountMap.get(genre) ?? 0) + 1)
+    })
+  })
+
+  const topGenres = Array.from(genreCountMap.entries())
+    .map(([name, count]) => ({
+      name,
+      count,
+      ratio: games.length > 0 ? (count / games.length) * 100 : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  const positiveRate =
+    totalReviews > 0
+      ? (positiveReviews / totalReviews) * 100
+      : averageNumber(positiveRateValues)
+
+  const negativeRate =
+    totalReviews > 0
+      ? (negativeReviews / totalReviews) * 100
+      : averageNumber(negativeRateValues)
+
+  return {
+    totalGames: games.length,
+    positiveReviews,
+    negativeReviews,
+    totalReviews,
+    positiveRate,
+    negativeRate,
+    averagePlaytime: playtimeCount > 0 ? playtimeSum / playtimeCount : 0,
+    averagePrice: pricedGameCount > 0 ? priceSum / pricedGameCount : 0,
+    pricedGameCount,
+    freeGameCount,
+    estimatedOwners: ownerCount > 0 ? ownerSum : 0,
+    ownerCount,
+    topGenres,
+    topGenreLabel: topGenres.length > 0 ? topGenres[0].name : '전체 데이터',
+  }
+}
+
+function calculateGenrePositiveRate(games: ApiRecord[], targetGenre: string) {
+  const positiveRates = games
+    .filter((game) => {
+      const genres = formatGenreList(getMergedGenreSource(game))
+      return genres.includes(targetGenre)
+    })
+    .map(getPositiveRate)
+    .filter((rate) => rate > 0)
+
+  return averageNumber(positiveRates)
+}
+
+function averageNumber(values: number[]) {
+  if (values.length === 0) {
+    return 0
+  }
+
+  const total = values.reduce((sum, value) => sum + value, 0)
+
+  return total / values.length
 }
 
 function getGameId(game: ApiRecord) {
@@ -1604,6 +1987,36 @@ function formatOwners(value: unknown) {
   return formatNumber(number)
 }
 
+function parseOwnerNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value !== 'string') {
+    return 0
+  }
+
+  const matchedNumbers = value.match(/\d[\d,]*/g)
+
+  if (!matchedNumbers || matchedNumbers.length === 0) {
+    return 0
+  }
+
+  const numbers = matchedNumbers
+    .map((item) => Number(item.replace(/,/g, '')))
+    .filter((item) => Number.isFinite(item) && item > 0)
+
+  if (numbers.length === 0) {
+    return 0
+  }
+
+  if (numbers.length === 1) {
+    return numbers[0]
+  }
+
+  return (numbers[0] + numbers[numbers.length - 1]) / 2
+}
+
 function getPositiveRate(game: ApiRecord) {
   const positiveReviews = toNumber(game.positive_reviews ?? game.positiveReviews)
   const negativeReviews = toNumber(game.negative_reviews ?? game.negativeReviews)
@@ -1652,6 +2065,26 @@ function getNegativeRate(game: ApiRecord) {
   return (negativeReviews / totalReviews) * 100
 }
 
+function getEvaluationLabel(positiveRate: number) {
+  if (positiveRate >= 85) {
+    return '매우 긍정적'
+  }
+
+  if (positiveRate >= 70) {
+    return '긍정적'
+  }
+
+  if (positiveRate >= 50) {
+    return '복합적'
+  }
+
+  if (positiveRate > 0) {
+    return '부정적'
+  }
+
+  return '정보 없음'
+}
+
 function getKeywords(topic: ApiRecord) {
   return normalizeKeywordCandidate(
     topic.keywords ??
@@ -1674,13 +2107,7 @@ function normalizeKeywordCandidate(value: unknown): string[] {
         }
 
         if (isRecord(item)) {
-          const word =
-            item.keyword ??
-            item.word ??
-            item.term ??
-            item.name ??
-            item.label ??
-            item.text
+          const word = item.keyword ?? item.word ?? item.term ?? item.name ?? item.label ?? item.text
 
           if (word !== null && word !== undefined) {
             return String(word)
@@ -1728,8 +2155,7 @@ function normalizeKeywordCandidate(value: unknown): string[] {
   }
 
   if (isRecord(value)) {
-    const word =
-      value.keyword ?? value.word ?? value.term ?? value.name ?? value.label ?? value.text
+    const word = value.keyword ?? value.word ?? value.term ?? value.name ?? value.label ?? value.text
 
     if (word !== null && word !== undefined) {
       return [String(word).trim()].filter(Boolean)

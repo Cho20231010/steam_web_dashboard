@@ -824,12 +824,20 @@ function GameDetailPage() {
 
           <section className="game-detail-chart-grid">
             <article className="game-detail-card">
-              <div className="game-detail-card-head">
-                <h3>가격 변동 추이</h3>
+              <div className="game-detail-card-head chart-card-head">
+                <div className="game-detail-card-title-group">
+                  <h3>가격 변동 추이</h3>
+                  <span
+                    className={
+                      isAllSelected ? 'game-detail-fixed-note disabled' : 'game-detail-fixed-note'
+                    }
+                  >
+                    {periodNote}
+                  </span>
+                </div>
 
                 <PeriodSelector
                   disabled={isAllSelected}
-                  note={periodNote}
                   selectedPeriod={selectedPeriod}
                   onChange={handlePeriodChange}
                 />
@@ -867,12 +875,20 @@ function GameDetailPage() {
             </article>
 
             <article className="game-detail-card">
-              <div className="game-detail-card-head">
-                <h3>리뷰 수 & 긍정 비율 추이</h3>
+              <div className="game-detail-card-head chart-card-head">
+                <div className="game-detail-card-title-group">
+                  <h3>리뷰 수 & 긍정 비율 추이</h3>
+                  <span
+                    className={
+                      isAllSelected ? 'game-detail-fixed-note disabled' : 'game-detail-fixed-note'
+                    }
+                  >
+                    {periodNote}
+                  </span>
+                </div>
 
                 <PeriodSelector
                   disabled={isAllSelected}
-                  note={periodNote}
                   selectedPeriod={selectedPeriod}
                   onChange={handlePeriodChange}
                 />
@@ -1032,35 +1048,27 @@ function GameDetailPage() {
 function PeriodSelector({
   selectedPeriod,
   disabled,
-  note,
   onChange,
 }: {
   selectedPeriod: PeriodOption
   disabled: boolean
-  note: string
   onChange: (period: PeriodOption) => void
 }) {
   const periods: PeriodOption[] = [7, 30, 90]
 
   return (
-    <div className="game-detail-chart-action-wrap">
-      <div className="game-detail-chart-actions">
-        {periods.map((period) => (
-          <button
-            className={selectedPeriod === period ? 'active' : ''}
-            disabled={disabled}
-            key={period}
-            onClick={() => onChange(period)}
-            type="button"
-          >
-            {period}일
-          </button>
-        ))}
-      </div>
-
-      <span className={disabled ? 'game-detail-fixed-note disabled' : 'game-detail-fixed-note'}>
-        {note}
-      </span>
+    <div className="game-detail-chart-actions">
+      {periods.map((period) => (
+        <button
+          className={selectedPeriod === period ? 'active' : ''}
+          disabled={disabled}
+          key={period}
+          onClick={() => onChange(period)}
+          type="button"
+        >
+          {period}일
+        </button>
+      ))}
     </div>
   )
 }

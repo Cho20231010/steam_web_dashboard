@@ -587,6 +587,17 @@
   margin-bottom: 16px;
 }
 
+.chart-card-head {
+  align-items: flex-start;
+}
+
+.game-detail-card-title-group {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .game-detail-card-head h3 {
   margin: 0;
   color: #071426;
@@ -597,19 +608,12 @@
   word-break: keep-all;
 }
 
-.game-detail-card-head > div {
-  display: flex;
-  gap: 6px;
-}
-
-.game-detail-chart-action-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 5px;
+.game-detail-card-title-group h3 {
+  margin: 0;
 }
 
 .game-detail-chart-actions {
+  flex-shrink: 0;
   display: flex;
   gap: 6px;
 }
@@ -618,8 +622,9 @@
   color: #3157ff;
   font-size: 10px;
   font-weight: 800;
-  line-height: 1.2;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .game-detail-fixed-note.disabled {
@@ -1392,8 +1397,12 @@
     align-items: flex-start;
   }
 
-  .game-detail-chart-action-wrap {
+  .chart-card-head {
     align-items: flex-start;
+  }
+
+  .game-detail-chart-actions {
+    flex-wrap: wrap;
   }
 
   .game-detail-meta-grid {

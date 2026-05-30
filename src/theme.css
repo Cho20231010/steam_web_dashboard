@@ -2,28 +2,34 @@ html.theme-dark {
   --bg: #0b1120;
   --panel: #111827;
   --panel-soft: #172033;
-  --line: #2b3648;
+  --panel-deep: #0f172a;
+  --line: #334155;
 
-  /* 다크 모드 글자 색상 */
   --text: #f8fafc;
   --sub: #e2e8f0;
   --muted: #cbd5e1;
   --soft-muted: #d1d5db;
 
-  --navy-1: #020617;
-  --navy-2: #07111f;
-  --blue: #8b9cff;
-  --blue-soft: rgba(139, 156, 255, 0.16);
-  --green: #34d399;
-  --green-soft: rgba(52, 211, 153, 0.14);
-  --gray: #cbd5e1;
-  --red: #fb7185;
-  --red-soft: rgba(251, 113, 133, 0.14);
-  --yellow: #fbbf24;
-  --yellow-soft: rgba(251, 191, 36, 0.14);
+  --blue: #93c5fd;
+  --blue-strong: #60a5fa;
+  --blue-soft: rgba(96, 165, 250, 0.18);
+
   --purple: #a78bfa;
-  --purple-soft: rgba(167, 139, 250, 0.16);
+  --purple-soft: rgba(167, 139, 250, 0.18);
+
+  --green: #34d399;
+  --green-soft: rgba(52, 211, 153, 0.16);
+
+  --yellow: #fbbf24;
+  --yellow-soft: rgba(251, 191, 36, 0.16);
+
+  --red: #fb7185;
+  --red-soft: rgba(251, 113, 133, 0.16);
+
+  --grid-line: rgba(226, 232, 240, 0.2);
+  --axis-line: rgba(226, 232, 240, 0.36);
   --shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+
   color-scheme: dark;
 }
 
@@ -40,9 +46,10 @@ html.theme-dark body {
   color: var(--text);
 }
 
+/* 사이드바 */
 html.theme-dark .sidebar {
   background: linear-gradient(180deg, #020617 0%, #061326 52%, #081a31 100%);
-  border-right: 1px solid rgba(148, 163, 184, 0.16);
+  border-right: 1px solid rgba(226, 232, 240, 0.12);
 }
 
 html.theme-dark .sidebar-nav button {
@@ -124,7 +131,7 @@ html.theme-dark .review-alert-item,
 html.theme-dark .favorite-feature-card,
 html.theme-dark .guide-box {
   background: var(--panel-soft);
-  border-color: rgba(203, 213, 225, 0.22);
+  border-color: rgba(226, 232, 240, 0.18);
   color: var(--text);
 }
 
@@ -133,6 +140,7 @@ html.theme-dark h1,
 html.theme-dark h2,
 html.theme-dark h3,
 html.theme-dark strong,
+html.theme-dark b,
 html.theme-dark .home-v2-header h1,
 html.theme-dark .home-v2-card-header h2,
 html.theme-dark .home-v2-metric-card strong,
@@ -191,7 +199,7 @@ html.theme-dark .settings-status-inline strong {
   color: var(--text);
 }
 
-/* 설명/보조 텍스트 - 밝은 회색 */
+/* 설명/보조 텍스트 */
 html.theme-dark p,
 html.theme-dark span,
 html.theme-dark em,
@@ -258,7 +266,7 @@ html.theme-dark .settings-status-inline span {
   color: var(--sub);
 }
 
-/* 더 연한 보조 회색이 필요한 정보 */
+/* 흐린 회색 텍스트 보정 */
 html.theme-dark .text-muted,
 html.theme-dark .muted,
 html.theme-dark .sub-text,
@@ -266,7 +274,6 @@ html.theme-dark .caption,
 html.theme-dark .description,
 html.theme-dark .game-detail-result-text em,
 html.theme-dark .game-detail-search-dropdown em,
-html.theme-dark .game-detail-tags span,
 html.theme-dark .review-topic-empty,
 html.theme-dark .favorite-price-empty,
 html.theme-dark .search-table thead th,
@@ -284,8 +291,8 @@ html.theme-dark .search-filter-item select,
 html.theme-dark .target-price-input,
 html.theme-dark .settings-field-group select,
 html.theme-dark .settings-field-group input {
-  background: #0f172a;
-  border-color: rgba(203, 213, 225, 0.28);
+  background: var(--panel-deep);
+  border-color: rgba(226, 232, 240, 0.28);
   color: var(--text);
 }
 
@@ -296,11 +303,11 @@ html.theme-dark .search-input::placeholder {
 }
 
 html.theme-dark select option {
-  background: #111827;
+  background: var(--panel);
   color: var(--text);
 }
 
-/* 일반 버튼 */
+/* 버튼 */
 html.theme-dark .page-nav,
 html.theme-dark .page-number,
 html.theme-dark .search-button,
@@ -314,8 +321,8 @@ html.theme-dark .topic-analysis-tabs button,
 html.theme-dark .market-distribution-tabs button,
 html.theme-dark .favorite-tab-button,
 html.theme-dark .settings-tab-bar button {
-  border-color: rgba(203, 213, 225, 0.28);
-  background: #0f172a;
+  border-color: rgba(226, 232, 240, 0.28);
+  background: var(--panel-deep);
   color: #e5e7eb;
 }
 
@@ -331,7 +338,7 @@ html.theme-dark .market-distribution-tabs button.active,
 html.theme-dark .favorite-tab-button.active,
 html.theme-dark .settings-tab-bar button.active {
   background: linear-gradient(135deg, #5d63f1, #2563eb);
-  border-color: #8b9cff;
+  border-color: #93c5fd;
   color: #ffffff;
 }
 
@@ -350,8 +357,8 @@ html.theme-dark .search-table thead th,
 html.theme-dark .favorite-table th,
 html.theme-dark .favorite-table-wrap,
 html.theme-dark .search-table-wrap {
-  background: #0f172a;
-  border-color: rgba(203, 213, 225, 0.2);
+  background: var(--panel-deep);
+  border-color: rgba(226, 232, 240, 0.2);
 }
 
 html.theme-dark td,
@@ -359,13 +366,264 @@ html.theme-dark .search-table tbody td,
 html.theme-dark .favorite-table td,
 html.theme-dark .home-v2-table-row,
 html.theme-dark .topic-sentiment-row {
-  border-color: rgba(203, 213, 225, 0.16);
+  border-color: rgba(226, 232, 240, 0.16);
   color: var(--text);
+}
+
+/* 홈 화면 - 가격 vs 인기 그래프 보정 */
+html.theme-dark .home-v2-bubble-chart,
+html.theme-dark [class*='bubble-chart'],
+html.theme-dark [class*='BubbleChart'] {
+  background:
+    linear-gradient(rgba(226, 232, 240, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 232, 240, 0.09) 1px, transparent 1px),
+    #0f172a;
+  background-size: 44px 44px;
+  border: 1px solid rgba(226, 232, 240, 0.22);
+  border-radius: 16px;
+}
+
+html.theme-dark .home-v2-bubble-chart::before,
+html.theme-dark .home-v2-bubble-chart::after {
+  background: rgba(226, 232, 240, 0.34);
+}
+
+html.theme-dark .home-v2-bubble,
+html.theme-dark .bubble-point,
+html.theme-dark [class*='bubble-point'],
+html.theme-dark [class*='bubble-dot'] {
+  background: #93c5fd;
+  border: 2px solid #dbeafe;
+  box-shadow:
+    0 0 0 5px rgba(147, 197, 253, 0.18),
+    0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+html.theme-dark .bubble-label-y,
+html.theme-dark .bubble-label-x,
+html.theme-dark [class*='bubble-label'] {
+  color: #e2e8f0;
+  font-weight: 900;
+}
+
+/* 게임 상세 분석 - 검색 결과 게임 목록 */
+html.theme-dark .game-detail-result-panel {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+html.theme-dark .game-detail-result-list {
+  max-height: min(720px, calc(100vh - 270px));
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+html.theme-dark .game-detail-result-list button,
+html.theme-dark .game-detail-search-dropdown button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text);
+}
+
+html.theme-dark .game-detail-result-list button:hover,
+html.theme-dark .game-detail-search-dropdown button:hover {
+  background: rgba(147, 197, 253, 0.12);
+}
+
+html.theme-dark .game-detail-result-list button.active {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: rgba(147, 197, 253, 0.36);
+}
+
+html.theme-dark .game-detail-result-text strong,
+html.theme-dark .game-detail-search-dropdown strong {
+  color: #f8fafc;
+}
+
+html.theme-dark .game-detail-result-text em,
+html.theme-dark .game-detail-search-dropdown em {
+  color: #cbd5e1;
+}
+
+/* 게임 상세 분석 - 그래프 보정 */
+html.theme-dark .game-detail-line-chart,
+html.theme-dark .game-detail-bar-chart {
+  background:
+    linear-gradient(rgba(226, 232, 240, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 232, 240, 0.09) 1px, transparent 1px),
+    #0f172a;
+  background-size: 46px 46px;
+  border: 1px solid rgba(226, 232, 240, 0.22);
+}
+
+html.theme-dark .game-detail-line-chart span {
+  background: #93c5fd;
+  border: 3px solid #dbeafe;
+  box-shadow:
+    0 0 0 6px rgba(147, 197, 253, 0.2),
+    0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+html.theme-dark .game-detail-bar-chart div span {
+  background: linear-gradient(180deg, #93c5fd 0%, #6366f1 100%);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+}
+
+html.theme-dark .game-detail-chart-labels em,
+html.theme-dark .game-detail-bar-chart div em {
+  color: #e2e8f0;
+  font-weight: 850;
+}
+
+/* 게임 상세 분석 - 키워드 그룹 개수 배지 */
+html.theme-dark .keyword-group-head > span,
+html.theme-dark .game-detail-card-head.keyword-group-head > span,
+html.theme-dark .game-detail-card-head > span {
+  background: rgba(96, 165, 250, 0.18);
+  border: 1px solid rgba(147, 197, 253, 0.34);
+  color: #dbeafe;
+  font-weight: 950;
+}
+
+/* 게임 상세 분석 - 키워드 그룹 */
+html.theme-dark .game-detail-keyword-group-item {
+  background: #0f172a;
+  border-color: rgba(226, 232, 240, 0.18);
+}
+
+html.theme-dark .game-detail-keyword-group-title strong {
+  color: #f8fafc;
+}
+
+html.theme-dark .game-detail-keyword-group-title em {
+  color: #93c5fd;
+}
+
+html.theme-dark .game-detail-topic-chip-list span {
+  background: rgba(147, 197, 253, 0.16);
+  border: 1px solid rgba(147, 197, 253, 0.26);
+  color: #dbeafe;
+}
+
+/* 게임 상세 분석 - 빠른 요약 */
+html.theme-dark .quick-summary-card,
+html.theme-dark .quick-summary-card ul,
+html.theme-dark .quick-summary-card li {
+  color: #e2e8f0;
+}
+
+html.theme-dark .quick-summary-card li {
+  background: rgba(226, 232, 240, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.14);
+}
+
+html.theme-dark .quick-summary-card li::marker {
+  color: #93c5fd;
+}
+
+/* 리뷰 인사이트 - 감성 분포 카드 숫자 */
+html.theme-dark .review-summary-card,
+html.theme-dark .review-card,
+html.theme-dark .sentiment-card {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+html.theme-dark .review-summary-value,
+html.theme-dark .review-summary-card strong,
+html.theme-dark .review-summary-card b,
+html.theme-dark .sentiment-card strong,
+html.theme-dark .sentiment-card b,
+html.theme-dark .review-card strong,
+html.theme-dark .review-card b,
+html.theme-dark .review-sentiment-number,
+html.theme-dark [class*='sentiment'] strong,
+html.theme-dark [class*='sentiment'] b,
+html.theme-dark [class*='sentiment'] .value,
+html.theme-dark [class*='sentiment'] .number {
+  color: #f8fafc;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+html.theme-dark .review-summary-label,
+html.theme-dark .review-summary-sub {
+  color: #e2e8f0;
+}
+
+html.theme-dark .review-sentiment-card,
+html.theme-dark [class*='sentiment-card'],
+html.theme-dark [class*='SentimentCard'] {
+  background: #0f172a;
+  border-color: rgba(226, 232, 240, 0.18);
+}
+
+/* 트렌드 비교 - 그래프 배경/축/그리드 */
+html.theme-dark .trend-compare-chart-body,
+html.theme-dark .trend-chart-wrapper,
+html.theme-dark .trend-compare-line-chart,
+html.theme-dark [class*='trend-chart'],
+html.theme-dark [class*='TrendChart'] {
+  background:
+    linear-gradient(rgba(226, 232, 240, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 232, 240, 0.09) 1px, transparent 1px),
+    #0f172a;
+  background-size: 48px 48px;
+  border: 1px solid rgba(226, 232, 240, 0.22);
+  border-radius: 16px;
+}
+
+html.theme-dark .trend-compare-grid-lines span,
+html.theme-dark .trend-grid-line,
+html.theme-dark .trend-axis-line,
+html.theme-dark .market-card--trend .trend-grid-line {
+  border-color: var(--grid-line);
+  stroke: var(--grid-line);
+}
+
+html.theme-dark .trend-axis-label,
+html.theme-dark .trend-x-tick,
+html.theme-dark .trend-y-tick,
+html.theme-dark .trend-compare-y-axis,
+html.theme-dark .trend-compare-x-axis {
+  color: #e2e8f0;
+  fill: #e2e8f0;
+  font-weight: 850;
+}
+
+html.theme-dark .trend-line-path {
+  stroke: #93c5fd;
+  filter: drop-shadow(0 3px 8px rgba(147, 197, 253, 0.28));
+}
+
+html.theme-dark .trend-point-core,
+html.theme-dark .trend-point-dot,
+html.theme-dark [class*='trend-point'] {
+  fill: #93c5fd;
+  background: #93c5fd;
+  border-color: #dbeafe;
+}
+
+/* 그래프/트랙 공통 */
+html.theme-dark .topic-distribution-chart-track,
+html.theme-dark .topic-weight-track,
+html.theme-dark .trend-compare-price-track,
+html.theme-dark .trend-compare-stacked-track,
+html.theme-dark .sentiment-summary-track,
+html.theme-dark .release-year-bar-wrap,
+html.theme-dark .vertical-bar-track {
+  background: rgba(226, 232, 240, 0.14);
+  border-color: rgba(226, 232, 240, 0.18);
+}
+
+html.theme-dark .topic-weight-track i,
+html.theme-dark .sentiment-summary-track i,
+html.theme-dark .vertical-bar-fill,
+html.theme-dark .release-year-bar {
+  background: linear-gradient(180deg, #93c5fd 0%, #6366f1 100%);
 }
 
 /* 칩/태그 */
 html.theme-dark .game-detail-tags span,
-html.theme-dark .game-detail-topic-chip-list span,
 html.theme-dark .review-topic-chip,
 html.theme-dark .trend-summary-chip,
 html.theme-dark .sample-mode-pill,
@@ -373,7 +631,7 @@ html.theme-dark .favorite-status-badge,
 html.theme-dark .settings-badge.success {
   background: var(--blue-soft);
   color: #dbeafe;
-  border-color: rgba(139, 156, 255, 0.25);
+  border-color: rgba(147, 197, 253, 0.28);
 }
 
 html.theme-dark .favorite-waiting-badge,
@@ -391,14 +649,14 @@ html.theme-dark .review-error {
 html.theme-dark .favorite-neutral-badge,
 html.theme-dark .review-topic-empty,
 html.theme-dark .favorite-price-empty {
-  background: rgba(203, 213, 225, 0.16);
+  background: rgba(226, 232, 240, 0.14);
   color: #e2e8f0;
 }
 
 html.theme-dark .favorite-price-label,
 html.theme-dark .price-cell,
 html.theme-dark .price-krw {
-  background: rgba(203, 213, 225, 0.12);
+  background: rgba(226, 232, 240, 0.12);
   color: var(--text);
 }
 
@@ -410,38 +668,6 @@ html.theme-dark .sentiment-summary-row.positive strong {
   color: var(--green);
 }
 
-/* 그래프/트랙 */
-html.theme-dark .home-v2-bubble-chart,
-html.theme-dark .topic-distribution-chart-track,
-html.theme-dark .topic-weight-track,
-html.theme-dark .trend-compare-price-track,
-html.theme-dark .trend-compare-stacked-track,
-html.theme-dark .sentiment-summary-track,
-html.theme-dark .release-year-bar-wrap,
-html.theme-dark .vertical-bar-track,
-html.theme-dark .trend-chart-wrapper {
-  background: rgba(203, 213, 225, 0.12);
-  border-color: rgba(203, 213, 225, 0.18);
-}
-
-html.theme-dark .trend-grid-line,
-html.theme-dark .trend-axis-line,
-html.theme-dark .trend-compare-grid-lines span,
-html.theme-dark .market-card--trend .trend-grid-line {
-  stroke: rgba(203, 213, 225, 0.24);
-  border-color: rgba(203, 213, 225, 0.22);
-}
-
-html.theme-dark .trend-line-path {
-  stroke: #93c5fd;
-}
-
-html.theme-dark .trend-point-core,
-html.theme-dark .trend-point-dot {
-  fill: #93c5fd;
-  background: #93c5fd;
-}
-
 /* 이미지 placeholder */
 html.theme-dark .game-thumb.placeholder,
 html.theme-dark .favorite-game-image.fallback,
@@ -451,7 +677,7 @@ html.theme-dark .game-detail-search-thumb {
   color: #e2e8f0;
 }
 
-/* 설정 화면 전용 */
+/* 설정 화면 */
 html.theme-dark .settings-toggle {
   background: #64748b;
 }
@@ -461,7 +687,7 @@ html.theme-dark .settings-toggle.active {
 }
 
 html.theme-dark .settings-outline-button.blue {
-  border-color: #8b9cff;
+  border-color: #93c5fd;
   color: #dbeafe;
 }
 
@@ -476,7 +702,7 @@ html.theme-dark .settings-badge.checking {
 }
 
 html.theme-dark .settings-badge.idle {
-  background: rgba(203, 213, 225, 0.16);
+  background: rgba(226, 232, 240, 0.16);
   color: #e2e8f0 !important;
 }
 
@@ -492,7 +718,7 @@ html.theme-dark [style*='color:#94a3b8'] {
   color: var(--sub) !important;
 }
 
-/* 다크 모드에서 일반 회색 클래스 전체 보정 */
+/* 회색 텍스트 클래스 보정 */
 html.theme-dark .gray,
 html.theme-dark .grey,
 html.theme-dark .secondary-text,
@@ -500,6 +726,18 @@ html.theme-dark .helper-text,
 html.theme-dark .meta-text,
 html.theme-dark .sub-label {
   color: var(--sub) !important;
+}
+
+/* SVG 내부 텍스트 보정 */
+html.theme-dark svg text,
+html.theme-dark svg tspan {
+  fill: #e2e8f0;
+}
+
+html.theme-dark svg line,
+html.theme-dark svg path.grid,
+html.theme-dark svg .grid {
+  stroke: rgba(226, 232, 240, 0.22);
 }
 
 /* 스크롤바 */
